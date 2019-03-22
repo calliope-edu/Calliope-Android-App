@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+        <item android:state_pressed="true">
+            <shape android:shape="rectangle">
+                <corners android:radius="8dp" />
+                <solid android:color="@color/green" />
+            </shape>
+        </item>
+        <item android:state_focused="true">
+            <shape android:shape="rectangle">
+                <corners android:radius="8dp" />
+                <solid android:color="@color/green" />
+            </shape>
+        </item>
+        <item>
+            <shape android:shape="rectangle">
+                <corners android:radius="8dp" />
+                <solid android:color="@color/green" />
+            </shape>
+        </item>
+
+    </selector>
+
+<!--
+<?xml version="1.0" encoding="utf-8"?>
+<ripple
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/colorAccent">     &lt;!&ndash; ripple color &ndash;&gt;
+
+    &lt;!&ndash; for Button &ndash;&gt;
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="8dp" />
+            <solid android:color="@color/colorPrimary"/>
+        </shape>
+    </item>
+
+</ripple>-->

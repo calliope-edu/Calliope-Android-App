@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<android.support.constraint.ConstraintLayout android:id="@+id/device_container"
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:clickable="true"
+	android:focusable="true"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content">
+
+	<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		xmlns:app="http://schemas.android.com/apk/res-auto"
+		xmlns:tools="http://schemas.android.com/tools"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:layout_marginBottom="4dp"
+		android:layout_marginEnd="8dp"
+		android:layout_marginStart="8dp"
+		android:layout_marginTop="4dp"
+
+		android:background="@drawable/btn_grey_rounded"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toTopOf="parent">
+
+
+		<include
+			android:id="@+id/include3"
+			layout="@layout/pattern"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_marginBottom="8dp"
+			android:layout_marginStart="12dp"
+			android:layout_marginTop="8dp"
+			app:layout_constraintBottom_toBottomOf="parent"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toTopOf="parent" />
+
+		<TextView
+			android:id="@+id/device_name"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_marginEnd="8dp"
+			android:layout_marginStart="16dp"
+			android:layout_marginTop="16dp"
+			android:layout_toLeftOf="@+id/rssi"
+			android:layout_toRightOf="@id/pattern"
+			android:ellipsize="end"
+			android:singleLine="true"
+			android:textColor="@color/background"
+			android:textSize="24sp"
+			app:fontFamily="@font/roboto_mono"
+			app:layout_constraintEnd_toStartOf="@+id/rssi"
+			app:layout_constraintHorizontal_bias="0.0"
+			app:layout_constraintStart_toEndOf="@+id/include3"
+			app:layout_constraintTop_toTopOf="parent"
+			tools:text="Nordic_Blinky" />
+
+		<TextView
+			android:id="@+id/device_address"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_below="@+id/device_name"
+			android:layout_marginBottom="8dp"
+			android:layout_marginTop="8dp"
+			android:layout_toLeftOf="@+id/rssi"
+			android:layout_toRightOf="@id/pattern"
+			android:textSize="12sp"
+			app:fontFamily="@font/roboto_mono"
+			android:textColor="@color/background"
+			app:layout_constraintBottom_toBottomOf="parent"
+			app:layout_constraintStart_toStartOf="@+id/device_name"
+			app:layout_constraintTop_toBottomOf="@+id/device_name"
+			tools:text="AA:BB:CC:DD:EE:FF" />
+
+		<ImageView
+			android:id="@+id/rssi"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_alignParentRight="true"
+			android:layout_centerVertical="true"
+			android:layout_marginBottom="8dp"
+			android:layout_marginEnd="16dp"
+			android:layout_marginTop="8dp"
+			android:src="@drawable/ic_rssi_bar"
+			app:layout_constraintBottom_toBottomOf="parent"
+			app:layout_constraintEnd_toEndOf="parent"
+			app:layout_constraintTop_toTopOf="parent"
+			tools:src="@drawable/ic_rssi_3_bars" />
+
+
+</android.support.constraint.ConstraintLayout>
+
+</android.support.constraint.ConstraintLayout>

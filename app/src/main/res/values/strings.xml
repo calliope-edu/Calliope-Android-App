@@ -1,0 +1,127 @@
+<!--
+  ~ Copyright (c) 2015, Nordic Semiconductor
+  ~ All rights reserved.
+  ~
+  ~ Redistribution and use in source and binary forms, with or without
+  ~ modification, are permitted provided that the following conditions are met:
+  ~
+  ~ * Redistributions of source code must retain the above copyright notice, this
+  ~   list of conditions and the following disclaimer.
+  ~
+  ~ * Redistributions in binary form must reproduce the above copyright notice,
+  ~   this list of conditions and the following disclaimer in the documentation
+  ~   and/or other materials provided with the distribution.
+  ~
+  ~ * Neither the name of copyright holder nor the names of its
+  ~   contributors may be used to endorse or promote products derived from
+  ~   this software without specific prior written permission.
+  ~
+  ~ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  ~ AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  ~ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  ~ DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  ~ FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  ~ DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  ~ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  ~ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  ~ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  ~ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  -->
+
+<resources>
+    <string name="app_name" translatable="false">Calliope mini</string>
+
+    <string name="title_activity_main" translatable="false">Calliope mini</string>
+    <string name="title_activity_my_code" translatable="false">Calliope mini</string>
+    <string name="title_activity_dfu" translatable="false">Calliope mini</string>
+    <string name="title_activity_settings" translatable="false">Calliope mini</string>
+
+    <string name="feature_name" translatable="false">mini</string>
+
+    <string name="button_connect_mini">Mit mini verbinden</string>
+    <string name="button_create_code">Code erstellen</string>
+    <string name="button_my_programs">Deine Programme</string>
+    <string name="text_welcome">Spiele eigene Programme auf deinen mini!</string>
+    <string name="text_select_editor">Wähle dein Lieblingswerkzeug aus und leg einfach los!</string>
+    <string name="button_select_editor_mini" translatable="false">Calliope mini Editor</string>
+    <string name="button_select_editor_makecode" translatable="false">MakeCode</string>
+    <string name="button_select_editor_nepo" translatable="false">Open Roberta NEPO</string>
+    <!--  <string name="refresh">SUCHEN</string>
+      <string name="button_bluetooth_on">An</string>
+      <string name="button_bluetooth_off">Aus</string>
+      <string name="button_bluetooth_disconnect">Trennen</string> -->
+
+    <string name="title" translatable="false">@string/app_name</string>
+
+    <string name="set_nepo_link_title">Modifiziere den Link zu Open Roberta</string>
+
+    <string name="download_error">Fehler beim herunterladen</string>
+    <string name="download_no_mini_connected">Datei gespeichert, kein mini verbunden</string>
+    <string name="upload_no_mini_connected">kein mini verbunden</string>
+
+
+    <string name="location_permission_title">STANDORTGENEHMIGUNG ERFORDERLICH</string>
+    <string name="location_permission_action">Erteile berechtigung</string>
+
+    <string name="bluetooth_disabled_title">BLUETOOTH DEAKTIVIERT</string>
+    <string name="bluetooth_disabled_info">Bluetooth scheint deaktiviert zu sein. Drücke unten auf „Anschalten“, um Bluetooth zu aktivieren!</string>
+    <string name="bluetooth_disabled_action">Anschalten</string>
+
+    <string name="mini_guide_title">DEIN MINI WIRD NICHT ERKANNT?</string>
+    <string name="mini_guide_location_info">3. Der Standortservice ist deaktiviert. Einige Android-Handys erfordern die Aktivierung, um nach Bluetooth-Geräten zu suchen.
+        \n\nWenn du sicher bist, dass dein mini sichtbar ist und nicht hier angezeigt wird, klicke auf die Schaltfläche unten, um den Standortservice zu aktivieren.</string>
+
+    <string name="unknown_device">Unbekanntes Gerät</string>
+
+    <!--
+   <string name="turn_on">On</string>
+   <string name="turn_off">Off</string>
+   <string name="button_pressed">PRESSED</string>
+   <string name="button_released">RELEASED</string>
+   <string name="button_unknown">UNKNOWN</string>
+   <string name="led_summary">Toggle the switch to turn the LED 3 on or off.</string>
+   <string name="button_summary">Press Button 1 on the dev kit.</string>
+
+   <string name="state_scanning">Scanning…</string>
+   <string name="state_connecting">Connecting…</string>
+   <string name="state_discovering_services">Discovering services…</string>
+
+ -->
+
+
+    <string name="btn_upload_hex">Übertragen</string>
+    <string name="btn_share_hex">Teilen</string>
+    <string name="text_no_mini_connected">Kein mini Verbunden</string>
+    <string name="text_connected_with">Verbunden mit</string>
+    <string name="mini_guide_info">1. Ist dein mini <b>angeschaltet</b>? Überprüfe die Stromverbindung
+        \n\n2. Ist Bluetooth auf dem mini aktiv? Installiere die <b>mini Firmware</b>, falls du nicht sicher bist.</string>
+    <string name="mini_guide_location_action">Anschalten</string>
+    <string name="location_permission_info">Ab Android 6.0 Marshmallow benötigt die Anwendung eine Standortberechtigung, um nach Bluetooth-Geräten zu suchen.
+        \n\nDies liegt daran, dass Bluetoothn verwendet werden kannn, um den Standort des Telefons und des Benutzers zu bestimmen. <b>mini</b> wird diese Informationen in keiner Weise verwenden.</string>
+    <string name="location_permission_settings">Einstellungen</string>
+    <string name="btn_open">Öffnen</string>
+    <string name="btn_default_program">Start-Program</string>
+    <string name="info_text_uploading_init">Initialisiere</string>
+    <string name="info_text_uploading">Übertrage Programm</string>
+    <string name="info_text"><![CDATA[ <b>Hallo und willkommen in der Calliope mini App!</b><br/>
+    <br/>
+    Mit Hilfe dieser App kannst du dich mit deinem <b>mini</b> verbinden und mobil programmieren.<br/>
+     <br/>
+    Unter <b>„Mit mini verbinden“</b> kannst du deinen <b>mini</b> finden und eine Bluetooth Verbindung herstellen.<br/>
+    Das original Skript kannst du über den Punkt <b>„Start-Program“</b> laden und auf den <b>mini</b> spielen.<br/>
+    Der Punkt <b>„Code erstellen“</b> gibt dir die Möglichkeit unterschiedliche Programmieroberflächen zu testen und deinen <b>mini</b> zu steuern.<br/>
+    Bei <b>„Deine Programme“</b> kannst du gespeicherte Programme auswählen und auf den <b>mini</b> spielen<br/>
+    <br/>
+    Infos zu tollen Projekten oder weiteren Aktionen findest du auf der Calliope Webseite unter https://calliope.cc!<br/>
+    <br/>
+    Um die App nutzen zu können, wird ein Calliope mini dringend empfohlen.<br/>
+    <br/>
+    Falls du Fragen oder Anmerkungen hast, kannst du uns an die Emailadresse info@calliope.cc eine Nachricht schreiben.<br/>
+    <br/>
+    Viel Spaß wünscht dir das Calliope Team!<br/>
+    <br/>
+    Calliope gGmbH<br/>Raumerstrasse 11<br/>
+    10437 Berlin
+    <br /><br /><br /><br /><br /> ]]></string>
+    <string name="info_text_pairing">A+B gedrückt halten, währenddessen Reset drücken und loslassen, um den mini in den Pairingmodus zu versetzen.</string>
+</resources>
