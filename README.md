@@ -1,6 +1,6 @@
 # Calliope-Android-App
 
-This is a android app to flash scriptes on the calliope mini with your android device.
+This is a android app to flash scripts on the calliope mini with your android device.
 
 It supports direct upload from the calliope MakeCode editor as well as from the Nepo editor.
 
