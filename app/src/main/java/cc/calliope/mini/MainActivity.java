@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
             final String deviceName = device.getName();
 
             final TextView deviceInfo = findViewById(R.id.deviceInfo);
-            deviceInfo.setText(R.string.text_connected_with+" "+deviceName);
+            deviceInfo.setText(deviceName + " " + R.string.text_connected_with);
 
             final ImageView pattern1 = findViewById(R.id.pattern1);
             final ImageView pattern2 = findViewById(R.id.pattern2);
@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
                 final Intent intent = new Intent(MainActivity.this, editorAcitvity.class);
                 if(device != null) intent.putExtra("cc.calliope.mini.EXTRA_DEVICE", device);
                 intent.putExtra("TARGET_NAME", "BIBLIOTHEK");
-                intent.putExtra("TARGET_URL", "https://calliope.cc/subdomain_minieditor/calliope.html");
+                intent.putExtra("TARGET_URL", getString(R.string.start_programm_url) );
                 startActivity(intent);
             }
         });

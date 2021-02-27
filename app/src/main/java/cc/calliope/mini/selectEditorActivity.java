@@ -47,7 +47,7 @@ public class selectEditorActivity extends AppCompatActivity {
         buttonMakeCode.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                openEditor("https://makecode.calliope.cc/#pub:92924-38966-79138-39825", "MAKECODE");
+                openEditor("https://makecode.calliope.cc", "MAKECODE");
             }
         });
 
@@ -55,9 +55,19 @@ public class selectEditorActivity extends AppCompatActivity {
         buttonNepo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+//                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+//                String nepoLink = prefs.getString("NEPO_URL", "https://lab.open-roberta.org/#loadSystem&&calliope2017");
+                openEditor("https://lab.open-roberta.org/#loadSystem&&calliope2017", "NEPO");
+            }
+        });
+
+        ConstraintLayout buttonCustomEditor = findViewById(R.id.buttonCustomEditor);
+        buttonCustomEditor.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-                String nepoLink = prefs.getString("NEPO_URL", "https://lab.open-roberta.org/#loadSystem&&calliope2017");
-                openEditor(nepoLink, "NEPO");
+                String customLink = prefs.getString("CUSTOM_URL", "https://calliope.cc/programmieren/editoren");
+                openEditor(customLink, "CUSTOM");
             }
         });
 
@@ -75,8 +85,8 @@ public class selectEditorActivity extends AppCompatActivity {
                 final EditText input = new EditText(view.getContext());
 
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-                String nepoLink = prefs.getString("NEPO_URL", "https://lab.open-roberta.org/#loadSystem&&calliope2017");
-                input.setText(nepoLink);
+                String customLink = prefs.getString("CUSTOM_URL", "https://calliope.cc/programmieren/editoren");
+                input.setText(customLink);
 // Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
                 input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
                 builder.setView(input);
@@ -87,7 +97,7 @@ public class selectEditorActivity extends AppCompatActivity {
                     public void onClick(DialogInterface dialog, int which) {
                         //m_Text = input.getText().toString();
                         SharedPreferences.Editor prefEditor = PreferenceManager.getDefaultSharedPreferences(getApplicationContext()).edit();
-                        prefEditor.putString("NEPO_URL", input.getText().toString());
+                        prefEditor.putString("CUSTOM_URL", input.getText().toString());
                         prefEditor.apply();
                     }
                 });

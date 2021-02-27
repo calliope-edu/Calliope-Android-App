@@ -68,7 +68,7 @@ public class myCodeActivity extends AppCompatActivity {
         File[] files = dir.listFiles();
     //        for (String list : lister.list())
         for (File file : files) {
-                Log.i("Datei", file.toString());
+//                Log.i("Datei", file.toString());
     //            adapter.add(new HexFile(list, "San Diego"));
                 Long lastmodified = file.lastModified();
                 adapter.insert(new HexFile(file, lastmodified), 0);
@@ -78,8 +78,8 @@ public class myCodeActivity extends AppCompatActivity {
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Log.i("SELECTED Position", position + "");
-                Log.i("SLECTED HexFile", adapter.getHexFileName(position));
+//                Log.i("SELECTED Position", position + "");
+//                Log.i("SELECTED HexFile", adapter.getHexFileName(position));
                 String selectedItem = adapter.getHexFile(position).toString();
 
                 if (device != null) {

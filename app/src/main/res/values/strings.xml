@@ -38,7 +38,6 @@
 
     <string name="feature_name" translatable="false">mini</string>
 
-    <string name="button_connect_mini">Mit mini verbinden</string>
     <string name="button_create_code">Code erstellen</string>
     <string name="button_my_programs">Deine Programme</string>
     <string name="text_welcome">Spiele eigene Programme auf deinen mini!</string>
@@ -53,11 +52,11 @@
 
     <string name="title" translatable="false">@string/app_name</string>
 
-    <string name="set_nepo_link_title">Modifiziere den Link zu Open Roberta</string>
+    <string name="set_nepo_link_title">Modifiziere den eigenen Link</string>
 
     <string name="download_error">Fehler beim herunterladen</string>
     <string name="download_no_mini_connected">Datei gespeichert, kein mini verbunden</string>
-    <string name="upload_no_mini_connected">kein mini verbunden</string>
+    <string name="upload_no_mini_connected">kein mini ausgewählt</string>
 
 
     <string name="location_permission_title">STANDORTGENEHMIGUNG ERFORDERLICH</string>
@@ -91,8 +90,8 @@
 
     <string name="btn_upload_hex">Übertragen</string>
     <string name="btn_share_hex">Teilen</string>
-    <string name="text_no_mini_connected">Kein mini Verbunden</string>
-    <string name="text_connected_with">Verbunden mit</string>
+    <string name="text_no_mini_connected">Kein mini ausgewählt</string>
+    <string name="text_connected_with">ausgewählt</string>
     <string name="mini_guide_info">1. Ist dein mini <b>angeschaltet</b>? Überprüfe die Stromverbindung
         \n\n2. Ist Bluetooth auf dem mini aktiv? Installiere die <b>mini Firmware</b>, falls du nicht sicher bist.</string>
     <string name="mini_guide_location_action">Anschalten</string>
@@ -101,7 +100,7 @@
     <string name="location_permission_settings">Einstellungen</string>
     <string name="btn_open">Öffnen</string>
     <string name="btn_default_program">Start-Program</string>
-    <string name="info_text_uploading_init">Initialisiere</string>
+    <string name="info_text_uploading_init">Verbinde mit mini ...</string>
     <string name="info_text_uploading">Übertrage Programm</string>
     <string name="info_text"><![CDATA[ <b>Hallo und willkommen in der Calliope mini App!</b><br/>
     <br/>
@@ -124,4 +123,6 @@
     10437 Berlin
     <br /><br /><br /><br /><br /> ]]></string>
     <string name="info_text_pairing">A+B gedrückt halten, währenddessen Reset drücken und loslassen, um den mini in den Pairingmodus zu versetzen.</string>
+    <string name="start_programm_url">https://calliope.cc/calliope-mini/25programme#25</string>
+    <string name="button_select_editor_custom">Eigener Link</string>
 </resources>

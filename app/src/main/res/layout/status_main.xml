@@ -5,126 +5,89 @@
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="208dp"
+    <android.support.constraint.ConstraintLayout
+        android:id="@+id/button_scanner"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="64dp"
-        android:layout_marginStart="64dp"
-        android:layout_marginTop="8dp"
-        android:gravity="center"
-        android:text="@string/text_welcome"
-        app:fontFamily="@font/roboto_mono"
+        android:background="@drawable/btn_pink_rounded"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="@dimen/btn_padding"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.39" />
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <TextView
+            android:id="@+id/deviceInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/text_no_mini_connected"
+            android:textColor="@color/light"
+            android:textSize="18sp"
+            app:fontFamily="@font/roboto_mono"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/pattern" />
+
+        <LinearLayout
+            android:id="@+id/pattern"
+            android:layout_width="wrap_content"
+            android:layout_height="54dp"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/pattern1"
+                android:layout_width="8dp"
+                android:layout_height="56dp"
+                app:srcCompat="@drawable/pattern0" />
+
+            <ImageView
+                android:id="@+id/pattern2"
+                android:layout_width="8dp"
+                android:layout_height="56dp"
+                android:layout_marginLeft="1dp"
+                app:srcCompat="@drawable/pattern0" />
+
+            <ImageView
+                android:id="@+id/pattern3"
+                android:layout_width="8dp"
+                android:layout_height="56dp"
+                android:layout_marginLeft="1dp"
+                app:srcCompat="@drawable/pattern0" />
+
+            <ImageView
+                android:id="@+id/pattern4"
+                android:layout_width="8dp"
+                android:layout_height="56dp"
+                android:layout_marginLeft="1dp"
+                app:srcCompat="@drawable/pattern0" />
+
+            <ImageView
+                android:id="@+id/pattern5"
+                android:layout_width="8dp"
+                android:layout_height="56dp"
+                android:layout_marginLeft="1dp"
+                app:srcCompat="@drawable/pattern0" />
+
+        </LinearLayout>
+    </android.support.constraint.ConstraintLayout>
 
     <ImageView
         android:id="@+id/imageView"
         android:layout_width="140dp"
         android:layout_height="80dp"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="32dp"
         android:layout_marginStart="32dp"
         android:layout_marginTop="8dp"
-        app:layout_constraintBottom_toTopOf="@+id/textView"
+        android:layout_marginEnd="32dp"
+        app:layout_constraintBottom_toTopOf="@+id/button_scanner"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/logo_calliope_mini" />
-
-    <ImageView
-        android:id="@+id/imageView2"
-        android:layout_width="0dp"
-        android:layout_height="64dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginLeft="16dp"
-        android:layout_marginRight="8dp"
-        android:layout_marginStart="16dp"
-        android:scaleType="fitEnd"
-        app:layout_constraintBottom_toBottomOf="@+id/textView"
-        app:layout_constraintEnd_toStartOf="@+id/textView"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/textView"
-        app:srcCompat="@drawable/splash_left" />
-
-    <ImageView
-        android:id="@+id/imageView3"
-        android:layout_width="0dp"
-        android:layout_height="64dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginStart="8dp"
-        android:scaleType="fitStart"
-        app:layout_constraintBottom_toBottomOf="@+id/textView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/textView"
-        app:layout_constraintTop_toTopOf="@+id/textView"
-        app:srcCompat="@drawable/splash_right" />
-
-    <LinearLayout
-        android:id="@+id/pattern"
-        android:layout_width="wrap_content"
-        android:layout_height="54dp"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toTopOf="@+id/deviceInfo"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <ImageView
-            android:id="@+id/pattern1"
-            android:layout_width="8dp"
-            android:layout_height="56dp"
-            app:srcCompat="@drawable/pattern0" />
-
-        <ImageView
-            android:id="@+id/pattern2"
-            android:layout_width="8dp"
-            android:layout_height="56dp"
-            android:layout_marginLeft="1dp"
-            app:srcCompat="@drawable/pattern0" />
-
-        <ImageView
-            android:id="@+id/pattern3"
-            android:layout_width="8dp"
-            android:layout_height="56dp"
-            android:layout_marginLeft="1dp"
-            app:srcCompat="@drawable/pattern0" />
-
-        <ImageView
-            android:id="@+id/pattern4"
-            android:layout_width="8dp"
-            android:layout_height="56dp"
-            android:layout_marginLeft="1dp"
-            app:srcCompat="@drawable/pattern0" />
-
-        <ImageView
-            android:id="@+id/pattern5"
-            android:layout_width="8dp"
-            android:layout_height="56dp"
-            android:layout_marginLeft="1dp"
-            app:srcCompat="@drawable/pattern0" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/deviceInfo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:text="@string/text_no_mini_connected"
-        app:fontFamily="@font/roboto_mono"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView"
-        app:layout_constraintVertical_bias="0.9" />
 
 </android.support.constraint.ConstraintLayout>

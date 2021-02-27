@@ -26,3 +26,9 @@ local.properties
 ehthumbs.db
 Thumbs.db
 app/release/output\.json
+
+dfuLibrary/build/outputs/logs/
+
+dfuLibrary/build/
+
+app/build/

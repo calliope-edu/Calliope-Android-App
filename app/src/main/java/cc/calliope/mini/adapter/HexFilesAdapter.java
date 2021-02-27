@@ -1,15 +1,23 @@
 package cc.calliope.mini.adapter;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
+import android.preference.PreferenceManager;
 import android.support.v4.content.FileProvider;
+import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,9 +38,9 @@ public class HexFilesAdapter extends ArrayAdapter<HexFile> {
     ExtendedBluetoothDevice device;
     Context ParentContext;
 
-    public HexFilesAdapter(Context context, ArrayList<HexFile> users, ExtendedBluetoothDevice SelectedDevice) {
+    public HexFilesAdapter(Context context, ArrayList<HexFile> items, ExtendedBluetoothDevice SelectedDevice) {
 
-        super(context, 0, users);
+        super(context, 0, items);
         device = SelectedDevice;
         ParentContext = context;
     }
@@ -78,8 +86,8 @@ public class HexFilesAdapter extends ArrayAdapter<HexFile> {
         btnUpload.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Log.i("SELECTED Position", position + "");
-                Log.i("SLECTED HexFile", getHexFileName(position));
+//                Log.i("SELECTED Position", position + "");
+//                Log.i("SLECTED HexFile", getHexFileName(position));
                 String selectedItem = getHexFile(position).toString();
 
                 if (device != null) {
@@ -97,9 +105,7 @@ public class HexFilesAdapter extends ArrayAdapter<HexFile> {
         btnShare.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Log.i("BUTTON Share", "AT "+position+" File: "+ getHexFile(position));
-
-
+//                Log.i("BUTTON Share", "AT "+position+" File: "+ getHexFile(position));
 
                 File file = getHexFile(position);
 
@@ -107,7 +113,7 @@ public class HexFilesAdapter extends ArrayAdapter<HexFile> {
                // intentShareFile.setType(URLConnection.guessContentTypeFromName(file.getName()));
                 intentShareFile.setType("text/plain");
                 intentShareFile.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                Uri uri = FileProvider.getUriForFile(ParentContext, "cc.calliope.fileprovider",  getHexFile(position));
+                Uri uri = FileProvider.getUriForFile(ParentContext, "cc.calliope.fileprovider",  file);
                 intentShareFile.putExtra(Intent.EXTRA_STREAM, uri);
 
                 //if you need
@@ -126,6 +132,77 @@ public class HexFilesAdapter extends ArrayAdapter<HexFile> {
             }
         });
 
+
+        ImageButton btnDelete = (ImageButton) convertView.findViewById(R.id.btnDelete);
+        btnDelete.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+//                Log.i("BUTTON Delete", "AT "+position+" File: "+ getHexFile(position));
+
+                File file = getHexFile(position);
+                file.delete();
+//                HexFilesAdapter.notifyDataSetChanged();
+                HexFilesAdapter.this.remove(getItem(position));
+                HexFilesAdapter.this.notifyDataSetChanged();
+
+            }
+        });
+
+
+        Button btnRename = (Button) convertView.findViewById(R.id.btnRename);
+        btnRename.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+//                Log.i("BUTTON RENAME", "AT "+position+" File: "+ getHexFile(position));
+
+                File file = getHexFile(position);
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
+                builder.setTitle("Rename file");
+
+// Set up the input
+                final EditText input = new EditText(view.getContext());
+
+                input.setText(file.getName());
+// Specify the type of input expected; this, for example, sets the input as a password, and will mask the text
+                input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+                builder.setView(input);
+
+// Set up the buttons
+                builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String m_Text = input.getText().toString();
+                        //                HexFilesAdapter.this.remove(getItem(position));
+                        File dir = new File(ParentContext.getFilesDir().toString());
+                        if(dir.exists()){
+                            File from = getHexFile(position);
+                            File to = new File(dir,m_Text);
+                            if(from.exists() && !to.exists())
+                                from.renameTo(to);
+                                HexFile newItem = getItem(position);
+                                newItem.File = to;
+
+                                HexFilesAdapter.this.remove(getItem(position));
+                                HexFilesAdapter.this.insert(newItem, position);
+                                HexFilesAdapter.this.notifyDataSetChanged();
+                        }
+
+                    }
+                });
+                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                });
+
+                builder.show();
+
+
+            }
+        });
+
         // Return the completed view to render on screen
 
         return convertView;
@@ -134,11 +211,6 @@ public class HexFilesAdapter extends ArrayAdapter<HexFile> {
     public File getHexFile(int position) {
         HexFile HexFile = getItem(position);
         return HexFile.File;
-    }
-
-    public String getHexFileName(int position) {
-        HexFile HexFile = getItem(position);
-        return HexFile.File.getName();
     }
 
 }
