@@ -36,6 +36,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.graphics.drawable.AnimationDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
@@ -61,7 +62,10 @@ import cc.calliope.mini.viewmodels.ScannerLiveData;
 import cc.calliope.mini.viewmodels.ScannerViewModel;
 
 public class ScannerActivity extends AppCompatActivity implements DevicesAdapter.OnItemClickListener {
-	private static final int REQUEST_ACCESS_COARSE_LOCATION = 1022; // random number
+	private static final int REQUEST_ACCESS_FINE_LOCATION = 1022; // random number
+	private static final int REQUEST_ACCESS_BLUETOOTH_SCAN = 1023; // random number
+
+
 
 	private ScannerViewModel mScannerViewModel;
 	private AnimationDrawable pairAnimation;
@@ -152,13 +156,13 @@ public class ScannerActivity extends AppCompatActivity implements DevicesAdapter
 //		} catch (Exception e) {
 //			Log.e("PAIRING", e.getMessage());
 //		}
-//	}
+
 
 	@Override
 	public void onRequestPermissionsResult(final int requestCode, @NonNull final String[] permissions, @NonNull final int[] grantResults) {
 		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 		switch (requestCode) {
-			case REQUEST_ACCESS_COARSE_LOCATION:
+			case REQUEST_ACCESS_FINE_LOCATION:
 				mScannerViewModel.refresh();
 				break;
 		}
@@ -176,10 +180,27 @@ public class ScannerActivity extends AppCompatActivity implements DevicesAdapter
 		startActivity(enableIntent);
 	}
 
+	private static final String[] BLE_PERMISSIONS = new String[]{
+			Manifest.permission.ACCESS_COARSE_LOCATION,
+			Manifest.permission.ACCESS_FINE_LOCATION
+	};
+
+	private static final String[] ANDROID_12_BLE_PERMISSIONS = new String[]{
+			Manifest.permission.BLUETOOTH_SCAN,
+			Manifest.permission.BLUETOOTH_CONNECT,
+			Manifest.permission.ACCESS_FINE_LOCATION
+	};
+
 	@OnClick(R.id.action_grant_location_permission)
 	public void onGrantLocationPermissionClicked() {
 		Utils.markLocationPermissionRequested(this);
-		ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_ACCESS_COARSE_LOCATION);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+			Log.i("PERMISSIONS", "12");
+			ActivityCompat.requestPermissions(this, ANDROID_12_BLE_PERMISSIONS, REQUEST_ACCESS_BLUETOOTH_SCAN);
+		} else {
+			Log.i("PERMISSIONS", "LEGACY");
+			ActivityCompat.requestPermissions(this, BLE_PERMISSIONS, REQUEST_ACCESS_FINE_LOCATION);
+		}
 	}
 
 	@OnClick(R.id.action_permission_settings)
@@ -193,8 +214,13 @@ public class ScannerActivity extends AppCompatActivity implements DevicesAdapter
 	 * Start scanning for Bluetooth devices or displays a message based on the scanner state.
 	 */
 	private void startScan(final ScannerLiveData state) {
+		Log.v("Scan Permission: ", Utils.isBluetoothScanPermissionsGranted(this)+"");
+		Log.v("Location Permission: ", Utils.isLocationPermissionsGranted(this)+"");
+		Log.v("Version", Build.VERSION.SDK_INT+"");
 		// First, check the Location permission. This is required on Marshmallow onwards in order to scan for Bluetooth LE devices.
-		if (Utils.isLocationPermissionsGranted(this)) {
+		if (Utils.isLocationPermissionsGranted(this)
+		&& (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || Utils.isBluetoothScanPermissionsGranted(this))
+		) {
 			mNoLocationPermissionView.setVisibility(View.GONE);
 
 			// Bluetooth must be enabled

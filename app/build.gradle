@@ -1,15 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 27
-    buildToolsVersion '28.0.3'
+    compileSdkVersion 31
 
     defaultConfig {
         applicationId "cc.calliope.mini"
         minSdkVersion 18
-        targetSdkVersion 27
-        versionCode 8
-        versionName "1.0.2"
+        targetSdkVersion 30
+        versionCode 11
+        versionName "1.1.1"
         resConfigs "de", "en"
         vectorDrawables.useSupportLibrary = true
     }
@@ -17,12 +16,10 @@ android {
     buildTypes {
         debug {
             minifyEnabled false
-            useProguard true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
         release {
             minifyEnabled true
-            useProguard true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
