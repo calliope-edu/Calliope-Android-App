@@ -48,7 +48,7 @@ public class PatternMatrixView extends View {
         }
     }
 
-    public void setOnCheckedChangeListener(OnPatternChangeListener listener) {
+    public void setOnPatternChangeListener(OnPatternChangeListener listener) {
         this.onPatternChangeListener = listener;
     }
 

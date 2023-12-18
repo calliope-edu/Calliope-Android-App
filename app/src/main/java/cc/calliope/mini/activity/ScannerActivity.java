@@ -102,10 +102,6 @@ public abstract class ScannerActivity extends AppCompatActivity implements Dialo
         });
     }
 
-    public void onPatternChange(int column, float value){
-        Utils.log(Log.ASSERT, "BAR_MAIN", "Column " + column + ": " + value);
-    }
-
     private static boolean matchesPattern(String numberPattern, String letterPattern) {
         return false;
     }

@@ -14,38 +14,33 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.RatingBar;
 
-import java.util.Arrays;
 import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
+import cc.calliope.mini.MyDeviceKt;
+import cc.calliope.mini.PatternMatrixView;
+import cc.calliope.mini.ScanViewModelKt;
 import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.R;
 import cc.calliope.mini.ExtendedBluetoothDevice;
 import cc.calliope.mini.databinding.DialogPatternBinding;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.viewmodels.ScannerLiveData;
-import cc.calliope.mini.viewmodels.ScannerViewModel;
-import cc.calliope.mini.views.SvgPatternBar;
+import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResults;
 
-//TODO -> Activity + viewModel
 public class PatternDialogFragment extends DialogFragment {
     private final static int DIALOG_WIDTH = 220; //dp
     private final static int DIALOG_HEIGHT = 240; //dp
     private static final String FOB_PARAMS_PARCELABLE = "fob_params_parcelable";
     private DialogPatternBinding binding;
-    private Float[] oldPattern = {0f, 0f, 0f, 0f, 0f};
-    private Float[] currentPattern = {0f, 0f, 0f, 0f, 0f};
-
-    private boolean connectClicked = false;
-
-    private ScannerViewModel scannerViewModel;
-//    private ExtendedBluetoothDevice currentDevice;
+    private ScanViewModelKt scanViewModelKt;
+    private String currentPattern;
 
     public PatternDialogFragment() {
         // Empty constructor is required for DialogFragment
@@ -67,49 +62,37 @@ public class PatternDialogFragment extends DialogFragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         binding = DialogPatternBinding.inflate(inflater, container, false);
-
-
-        // Create view model containing utility methods for scanning
-        scannerViewModel = new ViewModelProvider(requireActivity()).get(ScannerViewModel.class);
-        scannerViewModel.getScannerState().observe(getViewLifecycleOwner(), this::scanResults);
-
         return binding.getRoot();
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
         customizingDialog(view);
 
-        oldPattern = scannerViewModel.getScannerState().getCurrentPattern();
-        currentPattern = Arrays.copyOf(oldPattern, oldPattern.length);
+        binding.patternView.setOnPatternChangeListener(pattern -> currentPattern = pattern);
 
-//        List<SvgPatternBar> pattern = List.of(
-//                binding.patternMatrix.columnA,
-//                binding.patternMatrix.columnB,
-//                binding.patternMatrix.columnC,
-//                binding.patternMatrix.columnD,
-//                binding.patternMatrix.columnE
-//        );
-//
-//        for (int i = 0; i < 5; i++) {
-//            pattern.get(i).setValue(currentPattern[i]);
-//        }
+        scanViewModelKt = new ViewModelProvider(this).get(ScanViewModelKt.class);
+        scanViewModelKt.getDevices().observe(this, new Observer<List<BleScanResults>>() {
+            @Override
+            public void onChanged(List<BleScanResults> scanResults) {
+                for (BleScanResults results : scanResults) {
+                    MyDeviceKt device = new MyDeviceKt(results);
 
-//        binding.patternMatrix.columnA.setValue(currentPattern[0]);
-//        binding.patternMatrix.columnB.setValue(currentPattern[1]);
-//        binding.patternMatrix.columnC.setValue(currentPattern[2]);
-//        binding.patternMatrix.columnD.setValue(currentPattern[3]);
-//        binding.patternMatrix.columnE.setValue(currentPattern[4]);
-//
-//        binding.patternMatrix.columnA.setOnChangeListener((bar, v, b) -> onPatternChange(0, v));
-//        binding.patternMatrix.columnB.setOnChangeListener((bar, v, b) -> onPatternChange(1, v));
-//        binding.patternMatrix.columnC.setOnChangeListener((bar, v, b) -> onPatternChange(2, v));
-//        binding.patternMatrix.columnD.setOnChangeListener((bar, v, b) -> onPatternChange(3, v));
-//        binding.patternMatrix.columnE.setOnChangeListener((bar, v, b) -> onPatternChange(4, v));
+                    if (!device.getPattern().isEmpty() && device.getPattern().equals(currentPattern)) {
+                        binding.buttonAction.setBackgroundResource(device.isActual() ? R.drawable.btn_connect_green : R.drawable.btn_connect_aqua);
+                        Log.println(Log.DEBUG, "scannerViewModel",
+                                "address: " + device.getAddress() + ", " +
+                                        "pattern: " + device.getPattern() + ", " +
+                                        "bonded: " + device.isBonded() + ", " +
+                                        "actual: " + device.isActual());
+                    }
+                }
+            }
+        });
+        scanViewModelKt.startScan();
 
-        binding.buttonAction.setOnClickListener(view1 -> onConnectClick());
+        binding.buttonAction.setOnClickListener(this::onConnectClick);
     }
 
     @Override
@@ -157,25 +140,11 @@ public class PatternDialogFragment extends DialogFragment {
     @Override
     public void onDismiss(@NonNull final DialogInterface dialog) {
         super.onDismiss(dialog);
-//        if (scannerViewModel.getScannerState().getCurrentDevice() != null) {
-//            pairDevice(scannerViewModel.getScannerState().getCurrentDevice().getDevice());
-//        }
-        if (!connectClicked) {
-            scannerViewModel.setCurrentPattern(oldPattern);
-        } else {
-            scannerViewModel.createBond();
-        }
 
         final Activity activity = getActivity();
         if (activity instanceof DialogInterface.OnDismissListener) {
             ((DialogInterface.OnDismissListener) activity).onDismiss(dialog);
         }
-    }
-
-    public void onPatternChange(int column, float value){
-        Utils.log(Log.ASSERT, "BAR_MAIN", "Column " + column + ": " + value);
-        currentPattern[column] = value;
-//        scannerViewModel.setCurrentPattern(currentPattern);
     }
 
     private void setButtonBackground(ExtendedBluetoothDevice device) {
@@ -187,9 +156,8 @@ public class PatternDialogFragment extends DialogFragment {
         }
     }
 
-    // Call this method to send the data back to the parent fragment
-    public void onConnectClick() {
-        connectClicked = true;
+    public void onConnectClick(View view) {
+
         dismiss();
     }
 

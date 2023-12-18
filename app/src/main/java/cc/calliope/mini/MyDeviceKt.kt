@@ -31,10 +31,6 @@ class MyDeviceKt(bleScanResults: BleScanResults) {
         return pattern.find(serverDevice.name.uppercase())?.groupValues?.get(1) ?: ""
     }
 
-    fun getNumPattern(): String {
-        return getPattern().map { LetterMapping.getNumber(it) }.joinToString("")
-    }
-
     fun isActual(): Boolean {
         bleScanResultData?.let {
             val timeSinceBoot = nanosecondsToSeconds(SystemClock.elapsedRealtimeNanos())
