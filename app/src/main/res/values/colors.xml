@@ -1,14 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="yellow">#FDC800</color>
-    <color name="green">#00D265</color>
-    <color name="aqua">#00C8C6</color>
-    <color name="pink">#E6006A</color>
+    <color name="aqua_200">#FF00C8C6</color>
+    <color name="aqua_500">#FF009896</color>
+    <color name="aqua_700">#FF057876</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
     <color name="purple">#8073e5</color>
-    <color name="lightgrey">#A4A9AF</color>
-    <color name="grey">#4A5362</color>
-    <color name="dark">#010101</color>
-    <color name="light">#FFFFFF</color>
-    <color name="background">#ffffff</color>
-    <color name="transparent">#00000000</color>
+
+    <!--personal-->
+    <color name="yellow">#FFFDC800</color>
+    <color name="pink">#FFE6006A</color>
+    <color name="green">#FF00D265</color>
+    <color name="green_dark">#FF00A235</color>
+    <color name="red">#FFB00020</color>
+    <color name="grey_transparent">#80C1C1C1</color>
+    <color name="grey_200">#FFC1C1C1</color>
+    <color name="grey_500">#FF818181</color>
+    <color name="grey_700">#FF585858</color>
+    <color name="grey_900">#FF414141</color>
+    <color name="orange">#FFFF8B3D</color>
+    <color name="transparent">#00FFFFFF</color>
+
+    <color name="yellow_200">#FFFDC800</color>
+    <color name="yellow_500">#FFDD9800</color>
+
+    <color name="ic_fill_primary">#FF000000</color>
+    <color name="ic_fill_secondary">#FFFFFFFF</color>
+    <color name="ic_fill_pattern">#FFEEEEEE</color>
 </resources>

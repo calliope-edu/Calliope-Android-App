@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/test_menu_item"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="end|center_vertical"
+    android:padding="4dp">
+
+    <TextView
+        android:id="@+id/custom_menu_item_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxHeight="32dp"
+        android:gravity="center"
+        android:background="@drawable/btn_grey_transparent"
+        android:paddingHorizontal="@dimen/fab_title_horizontal_padding"
+        android:paddingVertical="@dimen/fab_title_vertical_padding"
+        android:layout_marginEnd="@dimen/margin_half"
+        android:text="@string/menu_fab_connect"
+        android:textColor="@color/white"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
+        android:clickable="false"
+        android:textSize="@dimen/text_size_button"/>
+
+    <ImageView
+        android:id="@+id/custom_menu_item_icon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center"
+        android:src="@drawable/ic_connect"
+        android:background="@drawable/circle_shape"
+        android:padding="4dp"
+        android:elevation="6dp"
+        android:scaleType="centerInside"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
+        android:clickable="false"
+        app:tint="@color/white" />
+</LinearLayout>

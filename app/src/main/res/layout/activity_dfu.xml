@@ -1,57 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#ffffff"
-    tools:context=".DFUActivity">
+    android:padding="@dimen/horizontal_margin"
+    tools:context=".activity.FlashingActivity">
 
-
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
+    <cc.calliope.mini.views.BoardProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="32dp"
-        android:indeterminate="true"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:adjustViewBounds="true"
+        android:scaleType="fitCenter"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-
     <TextView
-        android:id="@+id/statusInfo"
-        android:layout_width="wrap_content"
+        android:id="@+id/progress_text_view"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="24dp"
-        android:layout_marginEnd="8dp"
         android:gravity="center"
         android:keepScreenOn="true"
-        android:text="..."
-        android:textColor="@color/aqua"
-        android:textSize="40sp"
-        app:fontFamily="@font/roboto_mono"
+        android:text="@string/points"
+        android:textColor="@color/aqua_200"
+        android:textSize="@dimen/text_size_status"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/progressBar" />
+        app:layout_constraintTop_toBottomOf="@+id/progress_bar" />
 
     <TextView
-        android:id="@+id/timerText"
-        android:layout_width="wrap_content"
+        android:id="@+id/status_text_view"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="32dp"
-        android:text="TextView"
-        android:textColor="@color/lightgrey"
-        android:textSize="18sp"
-        app:fontFamily="@font/roboto_mono"
+        android:gravity="center"
+        android:layout_marginTop="@dimen/vertical_margin"
+        android:text="@string/flashing_device_connecting"
+        android:textColor="@color/ic_fill_primary"
+        android:textSize="@dimen/text_size_default"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/statusInfo" />
+        app:layout_constraintTop_toBottomOf="@+id/progress_text_view" />
 
-</android.support.constraint.ConstraintLayout>
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/retryButton"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:background="@drawable/btn_aqua"
+        android:textColor="@color/white"
+        android:textSize="@dimen/text_size_button"
+        android:paddingHorizontal="@dimen/padding"
+        android:text="@string/button_retry"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

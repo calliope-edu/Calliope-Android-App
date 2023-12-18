@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory
+        android:title="@string/title_settings"
+        app:iconSpaceReserved="false">
+
+        <CheckBoxPreference
+            android:key="pref_key_enable_auto_flashing"
+            android:title="@string/title_auto_flashing"
+            android:summary="@string/summary_auto_flashing"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
+
+        <CheckBoxPreference
+            android:key="pref_key_rename_files"
+            android:title="@string/title_rename_files"
+            android:summary="@string/summary_rename_files"
+            android:defaultValue="false"
+            app:iconSpaceReserved="false"/>
+
+        <CheckBoxPreference
+            android:key="pref_key_enable_partial_flashing"
+            android:title="@string/title_partial_flashing"
+            android:summary="@string/summary_partial_flashing"
+            android:defaultValue="false"
+            app:iconSpaceReserved="false"/>
+
+        <cc.calliope.mini.dialog.CustomLinkDialogPreference
+            android:key="pref_key_custom_link"
+            android:title="@string/title_custom"
+            android:summary="@string/summary_custom"
+            android:defaultValue="https://makecode.calliope.cc"
+            app:iconSpaceReserved="false"/>
+
+    </PreferenceCategory>
+</PreferenceScreen>

@@ -1,0 +1,55 @@
+<!-- fragment_edit_name.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/edit_name"
+    android:layout_width="200dp"
+    android:layout_height="200dp"
+    android:orientation="vertical"
+    android:rotation="270">
+
+    <cc.calliope.mini.views.SvgPatternBar
+        android:id="@+id/column_a"
+        android:layout_width="200dp"
+        android:layout_height="40dp"
+        android:numStars="5"
+        android:progressDrawable="@drawable/ratingbar"
+        android:stepSize="1"
+        tools:ignore="SpeakableTextPresentCheck" />
+
+    <cc.calliope.mini.views.SvgPatternBar
+        android:id="@+id/column_b"
+        android:layout_width="200dp"
+        android:layout_height="40dp"
+        android:numStars="5"
+        android:progressDrawable="@drawable/ratingbar"
+        android:stepSize="1"
+        tools:ignore="SpeakableTextPresentCheck" />
+
+    <cc.calliope.mini.views.SvgPatternBar
+        android:id="@+id/column_c"
+        android:layout_width="200dp"
+        android:layout_height="40dp"
+        android:numStars="5"
+        android:progressDrawable="@drawable/ratingbar"
+        android:stepSize="1"
+        tools:ignore="SpeakableTextPresentCheck" />
+
+    <cc.calliope.mini.views.SvgPatternBar
+        android:id="@+id/column_d"
+        android:layout_width="200dp"
+        android:layout_height="40dp"
+        android:numStars="5"
+        android:progressDrawable="@drawable/ratingbar"
+        android:stepSize="1"
+        tools:ignore="SpeakableTextPresentCheck" />
+
+    <cc.calliope.mini.views.SvgPatternBar
+        android:id="@+id/column_e"
+        android:layout_width="200dp"
+        android:layout_height="40dp"
+        android:numStars="5"
+        android:progressDrawable="@drawable/ratingbar"
+        android:stepSize="1"
+        tools:ignore="SpeakableTextPresentCheck" />
+
+</LinearLayout>
