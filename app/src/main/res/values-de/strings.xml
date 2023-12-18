@@ -1,0 +1,127 @@
+<resources>
+    <string name="title_home">Startseite</string>
+    <string name="title_editors">Programmieren</string>
+    <string name="title_help">Hilfe</string>
+
+    <string name="title_location_permission">STANDORTGENEHMIGUNG ERFORDERLICH</string>
+    <string name="title_bluetooth_permission">BLUETOOTH-ERLAUBNIS ERFORDERLICH</string>
+    <string name="title_notification_permission">ANZEIGEERLAUBNIS ERFORDERLICH</string>
+    <string name="info_location_permission">Ab Android 6.0 (Marshmallow) benötigt die Anwendung eine Standortberechtigung, um nach Bluetooth-Geräten zu suchen.
+        \n\nDies liegt daran, dass Bluetoothn verwendet werden kannn, um den Standort des Telefons und des Benutzers zu bestimmen. <b>Calliope</b> wird diese Informationen in keiner Weise verwenden.</string>
+    <string name="info_bluetooth_permission">Um die Bluetooth-Funktionen für die Kommunikation der App mit deinem <b>Calliope mini</b> zu nutzen, musst du mehrere Berechtigungen vergeben.</string>
+
+    <string name="info_notification_permission">Klicken Sie auf \"Zulassen\", damit die App Ihnen Benachrichtigungen über den Status der Firmware senden kann.</string>
+    <string name="settings_btn_permission">Einstellungen</string>
+    <string name="action_btn_permission">Erlaubnis erteilen</string>
+
+    <string name="title_library">Vorinstallierte Programme</string>
+    <string name="title_custom">Eigener Editor</string>
+    <string name="title_scripts">Deine Skripte</string>
+    <string name="info_make_code">MakeCode vermittelt allen Schülern Programmierung mit unterhaltsamen Projekten, sofortigen Ergebnissen mit Block- und Texteditoren für alle Kenntnisstufen.</string>
+    <string name="info_roberta">Das Open Roberta Lab ist eine Cloud-basierte integrierte Programmierumgebung, die es Kindern und Jugendlichen ermöglicht, auf einfache Weise verschiedene Roboter/Mikrocontroller-Systeme zu programmieren.</string>
+    <string name="info_library">Hier findest du die Originalprogramme, die verändert oder neu geladen werden können.</string>
+    <string name="info_custom">Hier können Sie zum benutzerdefinierten Editor gehen.</string>
+    <string name="info_scripts">Hier sind deine Skripte.</string>
+
+    <string name="title_welcome">Los geht\'s</string>
+    <string name="info_welcome">Auf dieser Seite erfährst du, wie du den Calliope mini in Betrieb nehmen kannst.</string>
+
+    <string name="title_battery">Verbinden</string>
+    <string name="info_battery"><![CDATA[
+    Bevor du starten kannst, muss der Calliope mini mit Strom versorgt werden. Es gibt zwei Möglichkeiten.
+    <br/>
+    <br/>1. Nutze das Batteriefach mit zwei Batterien des Typs <b>AAA</b>. Achte auf die richtige Ausrichtung der Batterien.
+    <br/>
+    <br/>2. Nimm den mitgelieferten Batterieblock und stecke das kleine, <b>weiße Plastikende</b> vorsichtig in den auf dem Calliope mini befestigten Batterieanschluss.
+    <br/>
+    <br/>Achte darauf, dass die geschlossene Steckerseite mit der Erhöhung in der Mitte oben ist. Wenn der Kabelstecker leicht in den Batterieanschluss des Boards passt, ist es richtig.
+    ]]></string>
+
+    <string name="title_demo">Demo Sequenz</string>
+    <string name="info_demo"><![CDATA[
+    Der Calliope mini zeigt dir auf der LED-Matrix an, welche Eingabe du ausführen sollst.
+    <br/>
+    <br/>1. Drücke die <b>Taste A</b>.
+    <br/>2. Drücke die <b>Taste B</b>.
+    <br/>3. Drücke die <b>Tasten A+B</b> gleichzeitig.
+    <br/>4. <b>Der Lagesensor</b> - schüttel den Calliope mini.
+    <br/>5. <b>Fertig!</b>
+    ]]></string>
+
+    <string name="info_app"><![CDATA[
+    <b>Hallo und willkommen in der Calliope mini App!</b>
+    <br/>
+    <br/>Mit Hilfe dieser App kannst du dich mit deinem <b>Calliope mini</b> verbinden und diesen mobil programmieren.
+    <br/>
+    <br/>Um die App nutzen zu können, wird ein Calliope mini dringend empfohlen.
+    <br/>
+    <br/>Falls du Fragen oder Anmerkungen hast, kannst du uns an die Emailadresse <a href="mailto:info@calliope.cc">info@calliope.cc</a> eine Nachricht schreiben.
+    <br/>
+    <br/>Viel Spaß wünscht dir das Calliope Team!
+    <br/>
+    <br/>Calliope gGmbH<br/>Raumerstrasse 11
+    <br/>10437 Berlin
+    ]]></string>
+
+    <string name="welcome">Willkommen</string>
+
+    <string name="title_rename">umbenennen</string>
+    <string name="title_share">freigeben</string>
+    <string name="title_delete">löschen</string>
+
+    <string name="title_dialog_rename">Datei umbenennen</string>
+    <string name="title_dialog_delete">Datei löschen</string>
+
+    <string name="button_cancel">abbrechen</string>
+    <string name="button_rename">umbenennen</string>
+    <string name="button_continue">fortsetzen</string>
+    <string name="button_enable">aktivieren</string>
+
+    <string name="info_dialog_delete">\"%s\" wird entgültig gelöscht.</string>
+    <string name="title_dialog_share">Datei teilen</string>
+    <string name="subject_dialog_share">Datei teilen…</string>
+    <string name="text_dialog_share">Calliope mini Skript teilen</string>
+
+    <string name="error_snackbar_no_connected">Kein Calliope mini verbunden</string>
+    <string name="error_snackbar_name_exists">Die Datei mit diesem Namen existiert bereits</string>
+    <string name="error_snackbar_no_internet">Kein Internet verfügbar</string>
+    <string name="error_snackbar_download_error">Fehler beim Herunterladen</string>
+    <string name="error_snackbar_bluetooth_disable">Bluetooth ist deaktiviert</string>
+    <string name="error_snackbar_location_disable">Standort ist deaktiviert</string>
+    <string name="open_hex_info">
+        Du versuchst, die Datei \"%s\" zu öffnen und auf deinen Calliope mini zu übertragen.
+        \n\nWenn du eine falsche oder beschädigte Datei kopierst, kann das dazu führen, dass du deinen Calliope mini mit dem Computer verbinden musst, um ihn zurückzusetzen.</string>
+    <string name="open_hex_button">Flashen</string>
+
+    <string name="flashing_device_connecting">Gerät verbinden…</string>
+    <string name="flashing_process_starting">Prozessbeginn…</string>
+    <string name="flashing_enabling_dfu_mode">Aktivieren des DFU-Modus…</string>
+    <string name="flashing_firmware_validating">Validierung der Firmware…</string>
+    <string name="flashing_device_disconnecting">Gerät trennt die Verbindung…</string>
+    <string name="flashing_completed">Flashen abgeschlossen</string>
+    <string name="flashing_aborted">Flashen abgebrochen</string>
+    <string name="flashing_uploading">Hochladen…</string>
+    <string name="flashing_error">Fehler %d. %s</string>
+    <string name="flashing_connection_fail">Verbindung fehlgeschlagen</string>
+    <string name="flashing_status">Zustand %d</string>
+    <string name="title_dialog_edit_link">Link bearbeiten</string>
+    <string name="button_save">Speichern</string>
+    <string name="menu_fab_connect">Verbindung</string>
+    <string name="menu_fab_scripts">Skripte</string>
+    <string name="menu_fab_full_screen">Vollbild</string>
+    <string name="error_snackbar_save_file_error">Fehler beim Speichern der Datei</string>
+    <string name="summary_custom">Link zum benutzerdefinierten Editor</string>
+    <string name="summary_partial_flashing">aktivieren oder deaktivieren</string>
+    <string name="title_rename_files">Dateien umbenennen</string>
+    <string name="title_settings">Einstellungen</string>
+    <string name="bonding_started">Bindung begonnen</string>
+    <string name="bonding_succeeded">Bindung gelungen</string>
+    <string name="bonding_not_succeeded">Bindung nicht gelungen</string>
+    <string name="button_retry">Wiederholen</string>
+    <string name="title_copy">Kopieren</string>
+    <string name="summary_auto_flashing">Aunach dem Herunterladen der .hex-Datei.</string>
+    <string name="title_partial_flashing">Partielles Flashen</string>
+    <string name="title_auto_flashing">Automatisches Flashen</string>
+    <string name="button_ok">Ja</string>
+    <string name="summary_rename_files">angehängtes (n), wenn Datei vorhanden ist</string>
+</resources>

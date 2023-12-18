@@ -1,0 +1,45 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.CalliopeMini" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Roboto Designed by Christian Robertson -->
+        <item name="android:fontFamily">@font/roboto_mono_regular</item>
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/aqua_200</item>
+        <item name="colorPrimaryVariant">@color/aqua_200</item>
+        <item name="colorOnPrimary">@color/black</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/aqua_200</item>
+        <item name="colorSecondaryVariant">@color/aqua_200</item>
+        <item name="colorOnSecondary">@color/black</item>
+        <!-- Status bar color. -->
+        <item name="android:statusBarColor" >?attr/colorPrimaryVariant</item>
+        <!-- Snackbar Style. -->
+        <item name="snackbarStyle">@style/SnackBarStyle</item>
+        <item name="snackbarButtonStyle">@style/SnackbarButton</item>
+        <item name="snackbarTextViewStyle">@style/SnackbarTextView</item>
+
+        <item name="bottomSheetDialogTheme">@style/ModalBottomSheetDialog</item>
+    </style>
+
+    <!-- snackbar style in res/values -->
+    <style name="SnackBarStyle" parent="Widget.MaterialComponents.Snackbar">
+        <item name="actionTextColorAlpha">1</item>
+        <item name="android:backgroundTint">@color/red</item>
+    </style>
+
+    <style name="SnackbarButton" parent="Widget.MaterialComponents.Button.TextButton.Snackbar">
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <style name="SnackbarTextView" parent="@style/Widget.MaterialComponents.Snackbar.TextView">
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="ModalBottomSheet" parent="Widget.MaterialComponents.BottomSheet.Modal">
+        <!-- Apply attributes here -->
+    </style>
+
+    <style name="ModalBottomSheetDialog" parent="ThemeOverlay.MaterialComponents.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/ModalBottomSheet</item>
+    </style>
+</resources>

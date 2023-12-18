@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <item android:id="@+id/background">
+        <inset android:drawable="@drawable/ic_ble_00"/>
+    </item>
+    <item android:id="@+id/led_01">
+        <inset android:drawable="@drawable/led_01"/>
+    </item>
+    <item android:id="@+id/led_02">
+        <inset android:drawable="@drawable/led_02"/>
+    </item>
+    <item android:id="@+id/led_03">
+        <inset android:drawable="@drawable/led_03"/>
+    </item>
+    <item android:id="@+id/led_04">
+        <inset android:drawable="@drawable/led_04"/>
+    </item>
+    <item android:id="@+id/led_05">
+        <inset android:drawable="@drawable/led_05"/>
+    </item>
+    <item android:id="@+id/led_06">
+        <inset android:drawable="@drawable/led_06"/>
+    </item>
+    <item android:id="@+id/led_07">
+        <inset android:drawable="@drawable/led_07"/>
+    </item>
+    <item android:id="@+id/led_08">
+        <inset android:drawable="@drawable/led_08"/>
+    </item>
+    <item android:id="@+id/led_09">
+        <inset android:drawable="@drawable/led_09"/>
+    </item>
+    <item android:id="@+id/led_10">
+        <inset android:drawable="@drawable/led_10"/>
+    </item>
+    <item android:id="@+id/led_11">
+        <inset android:drawable="@drawable/led_11"/>
+    </item>
+    <item android:id="@+id/led_12">
+        <inset android:drawable="@drawable/led_12"/>
+    </item>
+    <item android:id="@+id/led_13">
+        <inset android:drawable="@drawable/led_13"/>
+    </item>
+    <item android:id="@+id/led_14">
+        <inset android:drawable="@drawable/led_14"/>
+    </item>
+    <item android:id="@+id/led_15">
+        <inset android:drawable="@drawable/led_15"/>
+    </item>
+    <item android:id="@+id/led_16">
+        <inset android:drawable="@drawable/led_16"/>
+    </item>
+    <item android:id="@+id/led_17">
+        <inset android:drawable="@drawable/led_17"/>
+    </item>
+    <item android:id="@+id/led_18">
+        <inset android:drawable="@drawable/led_18"/>
+    </item>
+    <item android:id="@+id/led_19">
+        <inset android:drawable="@drawable/led_19"/>
+    </item>
+    <item android:id="@+id/led_20">
+        <inset android:drawable="@drawable/led_20"/>
+    </item>
+    <item android:id="@+id/led_21">
+        <inset android:drawable="@drawable/led_21"/>
+    </item>
+    <item android:id="@+id/led_22">
+        <inset android:drawable="@drawable/led_22"/>
+    </item>
+    <item android:id="@+id/led_23">
+        <inset android:drawable="@drawable/led_23"/>
+    </item>
+    <item android:id="@+id/led_24">
+        <inset android:drawable="@drawable/led_24"/>
+    </item>
+    <item android:id="@+id/led_25">
+        <inset android:drawable="@drawable/led_25"/>
+    </item>
+</layer-list>
