@@ -24,7 +24,6 @@ import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import cc.calliope.mini.MyDeviceKt;
-import cc.calliope.mini.PatternMatrixView;
 import cc.calliope.mini.ScanViewModelKt;
 import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.R;
@@ -39,8 +38,9 @@ public class PatternDialogFragment extends DialogFragment {
     private final static int DIALOG_HEIGHT = 240; //dp
     private static final String FOB_PARAMS_PARCELABLE = "fob_params_parcelable";
     private DialogPatternBinding binding;
-    private ScanViewModelKt scanViewModelKt;
     private String currentPattern;
+    private record Position(int x, int y) {
+    }
 
     public PatternDialogFragment() {
         // Empty constructor is required for DialogFragment
@@ -68,11 +68,11 @@ public class PatternDialogFragment extends DialogFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        customizingDialog(view);
+        customizeDialog(view);
 
         binding.patternView.setOnPatternChangeListener(pattern -> currentPattern = pattern);
 
-        scanViewModelKt = new ViewModelProvider(this).get(ScanViewModelKt.class);
+        ScanViewModelKt scanViewModelKt = new ViewModelProvider(this).get(ScanViewModelKt.class);
         scanViewModelKt.getDevices().observe(this, new Observer<List<BleScanResults>>() {
             @Override
             public void onChanged(List<BleScanResults> scanResults) {
@@ -95,46 +95,55 @@ public class PatternDialogFragment extends DialogFragment {
         binding.buttonAction.setOnClickListener(this::onConnectClick);
     }
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        binding = null;
-    }
-
-    private void customizingDialog(View view) {
+    private void customizeDialog(View view) {
         Dialog dialog = getDialog();
-        if (dialog != null) {
-            Window window = dialog.getWindow();
-            window.setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
+        if (dialog == null) return;
 
-            Bundle bundle = getArguments();
-            if (bundle != null) {
-                FobParams fobParams = bundle.getParcelable(FOB_PARAMS_PARCELABLE);
+        Window window = dialog.getWindow();
+        if (window == null) return;
 
-                // set "origin" to top left corner, so to speak
-                window.setGravity(Gravity.TOP | Gravity.START);
-                // after that, setting values for x and y works "naturally"
-                WindowManager.LayoutParams layoutParams = window.getAttributes();
-                layoutParams.x = getPosition(window, fobParams).getX();
-                layoutParams.y = getPosition(window, fobParams).getY();
+        window.setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
+        window.setGravity(Gravity.TOP | Gravity.START);
 
-                window.setAttributes(layoutParams);
-            }
+        Bundle bundle = getArguments();
+        if (bundle != null) {
+            FobParams fobParams = bundle.getParcelable(FOB_PARAMS_PARCELABLE);
+            Position position = calculateDialogPosition(window, fobParams);
 
-            view.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    view.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                    Log.v("DIALOG", String.format("Window size: width %d; height %d", view.getWidth(), view.getHeight()));
-                }
-            });
+            WindowManager.LayoutParams layoutParams = window.getAttributes();
+            layoutParams.x = position.x;
+            layoutParams.y = position.y;
+            window.setAttributes(layoutParams);
         }
+
+        view.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                view.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                Log.v("DIALOG", String.format("Window size: width %d; height %d", view.getWidth(), view.getHeight()));
+            }
+        });
     }
 
-    @Override
-    public void onStop() {
-        super.onStop();
-//        scannerViewModel.stopScan();
+    private Position calculateDialogPosition(Window window, FobParams fobParams) {
+        Activity activity = getActivity();
+        if (activity == null) return new Position(0, 0);
+
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        window.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+
+        int dialogWidth = Utils.convertDpToPixel(activity, DIALOG_WIDTH);
+        int dialogHeight = Utils.convertDpToPixel(activity, DIALOG_HEIGHT);
+        int halfWidth = displayMetrics.widthPixels / 2;
+        int halfHeight = displayMetrics.heightPixels / 2;
+
+        int fobX = fobParams.getCenterX();
+        int fobY = fobParams.getCenterY();
+
+        int posX = fobX > halfWidth ? fobX - dialogWidth : fobX;
+        int posY = fobY > halfHeight ? fobY - dialogHeight : fobY;
+
+        return new Position(posX, posY);
     }
 
     @Override
@@ -145,6 +154,12 @@ public class PatternDialogFragment extends DialogFragment {
         if (activity instanceof DialogInterface.OnDismissListener) {
             ((DialogInterface.OnDismissListener) activity).onDismiss(dialog);
         }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        binding = null;
     }
 
     private void setButtonBackground(ExtendedBluetoothDevice device) {
@@ -186,47 +201,5 @@ public class PatternDialogFragment extends DialogFragment {
 //        }
 //    }
 
-    private Position getPosition(Window window, FobParams fobParams) {
-        Activity activity = getActivity();
-        if (activity != null) {
-            DisplayMetrics displayMetrics = new DisplayMetrics();
-            window.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
 
-            int halfWidth = displayMetrics.widthPixels / 2;
-            int halfHeight = displayMetrics.heightPixels / 2;
-            int fobX = fobParams.getCenterX();
-            int fobY = fobParams.getCenterY();
-            int dialogWidth = Utils.convertDpToPixel(getActivity(), DIALOG_WIDTH);
-            int dialogHeight = Utils.convertDpToPixel(getActivity(), DIALOG_HEIGHT);
-
-            if (fobX <= halfWidth && fobY <= halfHeight) {
-                return new Position(fobX, fobY);
-            } else if (fobX > halfWidth && fobY <= halfHeight) {
-                return new Position(fobX - dialogWidth, fobY);
-            } else if (fobX <= halfWidth) {
-                return new Position(fobX, fobY - dialogHeight);
-            } else {
-                return new Position(fobX - dialogWidth, fobY - dialogHeight);
-            }
-        }
-        return new Position(0, 0);
-    }
-
-    private static class Position {
-        private final int x;
-        private final int y;
-
-        public Position(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
-
-        public int getX() {
-            return x;
-        }
-
-        public int getY() {
-            return y;
-        }
-    }
 }
