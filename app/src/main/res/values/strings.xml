@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">Calliope mini Next (BETA)</string>
+    <string name="app_name" translatable="false">Calliope mini</string>
     <string name="title_home">Home</string>
     <string name="title_editors">Editors</string>
     <string name="title_help">Help</string>
