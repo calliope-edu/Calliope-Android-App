@@ -7,10 +7,10 @@ android {
     compileSdk 33
 
     defaultConfig {
-        applicationId "cc.calliope.mini"
+        applicationId "cc.calliope.mini.app"
         minSdk 21
         targetSdk 33
-        versionCode 16
+        versionCode 7
         versionName "2.0.0"
         multiDexEnabled true
 
