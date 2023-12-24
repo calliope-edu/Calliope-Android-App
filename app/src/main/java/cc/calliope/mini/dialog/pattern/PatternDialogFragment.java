@@ -2,7 +2,9 @@ package cc.calliope.mini.dialog.pattern;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
@@ -24,14 +26,15 @@ import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import cc.calliope.mini.MyDeviceKt;
+import cc.calliope.mini.PatternMatrixView;
 import cc.calliope.mini.ScanViewModelKt;
 import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.R;
-import cc.calliope.mini.ExtendedBluetoothDevice;
 import cc.calliope.mini.databinding.DialogPatternBinding;
 import cc.calliope.mini.utils.Utils;
-import cc.calliope.mini.viewmodels.ScannerLiveData;
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResults;
+
+import androidx.preference.PreferenceManager;
 
 public class PatternDialogFragment extends DialogFragment {
     private final static int DIALOG_WIDTH = 220; //dp
@@ -39,6 +42,7 @@ public class PatternDialogFragment extends DialogFragment {
     private static final String FOB_PARAMS_PARCELABLE = "fob_params_parcelable";
     private DialogPatternBinding binding;
     private String currentPattern;
+    private String currentAddress;
     private record Position(int x, int y) {
     }
 
@@ -70,7 +74,15 @@ public class PatternDialogFragment extends DialogFragment {
         super.onViewCreated(view, savedInstanceState);
         customizeDialog(view);
 
-        binding.patternView.setOnPatternChangeListener(pattern -> currentPattern = pattern);
+        loadCurrentDevice();
+
+        PatternMatrixView patternView = binding.patternView;
+
+        patternView.setPattern(currentPattern);
+        patternView.setOnPatternChangeListener(pattern -> {
+            binding.buttonAction.setBackgroundResource(R.drawable.btn_connect_aqua);
+            currentPattern = pattern;
+        });
 
         ScanViewModelKt scanViewModelKt = new ViewModelProvider(this).get(ScanViewModelKt.class);
         scanViewModelKt.getDevices().observe(this, new Observer<List<BleScanResults>>() {
@@ -80,8 +92,10 @@ public class PatternDialogFragment extends DialogFragment {
                     MyDeviceKt device = new MyDeviceKt(results);
 
                     if (!device.getPattern().isEmpty() && device.getPattern().equals(currentPattern)) {
+                        currentAddress = device.getAddress();
                         binding.buttonAction.setBackgroundResource(device.isActual() ? R.drawable.btn_connect_green : R.drawable.btn_connect_aqua);
-                        Log.println(Log.DEBUG, "scannerViewModel",
+
+                        Log.println(Log.DEBUG, "DIALOG",
                                 "address: " + device.getAddress() + ", " +
                                         "pattern: " + device.getPattern() + ", " +
                                         "bonded: " + device.isBonded() + ", " +
@@ -162,44 +176,27 @@ public class PatternDialogFragment extends DialogFragment {
         binding = null;
     }
 
-    private void setButtonBackground(ExtendedBluetoothDevice device) {
-//        Log.i("DIALOG: ", "currentDevice: " + device);
-        if (device != null && device.isRelevant()) {
-            binding.buttonAction.setBackgroundResource(R.drawable.btn_connect_green);
-        } else {
-            binding.buttonAction.setBackgroundResource(R.drawable.btn_connect_aqua);
-        }
-    }
-
     public void onConnectClick(View view) {
-
+        saveCurrentDevice();
         dismiss();
     }
 
-    private void scanResults(final ScannerLiveData state) {
-        // Bluetooth must be enabled
-        if (state.isBluetoothEnabled()) {
-//            scannerViewModel.startScan();
-            setButtonBackground(state.getCurrentDevice());
-        } else {
-            setButtonBackground(null);
-        }
+    public void saveCurrentDevice() {
+        Context context = getContext();
+        if(context == null) return;
+
+        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(context).edit();
+        editor.putString("DEVICE_ADDRESS", currentAddress);
+        editor.putString("DEVICE_PATTERN", currentPattern);
+        editor.apply();
     }
 
-//    public void savePattern() {
-//        SharedPreferences.Editor edit = PreferenceManager.getDefaultSharedPreferences(getActivity()).edit();
-//        for (int i = 0; i < 5; i++) {
-//            edit.putFloat("PATTERN_" + i, currentPattern.get(i));
-//        }
-//        edit.apply();
-//    }
-//
-//    public void loadPattern() {
-//        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
-//        for (int i = 0; i < 5; i++) {
-//            currentPattern.set(i, preferences.getFloat("PATTERN_" + i, 0f));
-//        }
-//    }
+    public void loadCurrentDevice() {
+        Context context = getContext();
+        if(context == null) return;
 
-
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        currentAddress = preferences.getString("DEVICE_ADDRESS", "");
+        currentPattern = preferences.getString("DEVICE_PATTERN", "ZUZUZ");
+    }
 }
