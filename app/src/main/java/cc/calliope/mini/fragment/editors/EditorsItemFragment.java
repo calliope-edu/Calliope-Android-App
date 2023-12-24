@@ -18,8 +18,6 @@ import cc.calliope.mini.databinding.FragmentItemBinding;
 import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Utils;
 
-import static cc.calliope.mini.utils.Preference.PREF_KEY_CUSTOM_LINK;
-
 public class EditorsItemFragment extends Fragment {
     private static final String ARG_POSITION = "arg_position";
     private FragmentItemBinding binding;
@@ -110,7 +108,7 @@ public class EditorsItemFragment extends Fragment {
         if (Utils.isNetworkConnected(activity)) {
             String url = editor.getUrl();
             if (editor == Editor.CUSTOM) {
-                url = Preference.getString(getContext(), PREF_KEY_CUSTOM_LINK, Editor.CUSTOM.getUrl());
+                url = Preference.getCustomLink(getContext());
             }
             showWebFragment(url, editor.toString());
         } else {

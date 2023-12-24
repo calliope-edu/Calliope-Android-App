@@ -309,7 +309,7 @@ public class WebFragment extends Fragment implements DownloadListener {
     }
 
     private void startDfuActivity(File file) {
-        boolean autoFlashing = Preference.getBoolean(getContext(), Preference.PREF_KEY_ENABLE_AUTO_FLASHING, true);
+        boolean autoFlashing = Preference.isAutoFlashingEnable(getContext());
         if (!autoFlashing) {
             return;
         }

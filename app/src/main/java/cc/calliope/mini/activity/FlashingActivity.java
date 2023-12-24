@@ -4,6 +4,7 @@ import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -32,10 +33,10 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.preference.PreferenceManager;
 
 import cc.calliope.mini.service.PartialFlashingService;
 import cc.calliope.mini.ProgressCollector;
-import cc.calliope.mini.ExtendedBluetoothDevice;
 import cc.calliope.mini.service.DfuControlService;
 import cc.calliope.mini.ProgressListener;
 import cc.calliope.mini.R;
@@ -71,13 +72,14 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
     private final Handler timerHandler = new Handler();
     private final Runnable deferredFinish = this::finish;
     private BluetoothDevice currentDevice;
-    private String pattern;
-    private String filePath;
+    private String currentAddress;
+    private String currentPattern;
+    private String currentPath;
     private ProgressCollector progressCollector;
 
     ActivityResultLauncher<Intent> bluetoothEnableResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
-                checkBluetooth();
+                initFlashing();
             }
     );
 
@@ -100,7 +102,7 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
         getLifecycle().addObserver(progressCollector);
         progressCollector.registerReceivers();
 
-        initFlashing();
+        getExtras();
     }
 
     @Override
@@ -212,42 +214,36 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
 
     private void onRetryClicked(View view) {
         view.setVisibility(View.INVISIBLE);
-        checkBluetooth();
+        initFlashing();
     }
 
     private void finishActivity() {
         timerHandler.postDelayed(deferredFinish, DELAY_TO_FINISH_ACTIVITY);
     }
 
-    private void initFlashing() {
-        ExtendedBluetoothDevice extendedDevice;
+    private void getExtras() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        currentAddress = preferences.getString("DEVICE_ADDRESS", "");
+        currentPattern = preferences.getString("DEVICE_PATTERN", "ZUZUZ");
 
-        try {
-            Intent intent = getIntent();
-            extendedDevice = intent.getParcelableExtra(StaticExtra.EXTRA_DEVICE);
-            filePath = intent.getStringExtra(StaticExtra.EXTRA_FILE_PATH);
-        } catch (NullPointerException exception) {
-            Utils.log(Log.ERROR, TAG, "NullPointerException: " + exception.getMessage());
-            return;
+        Intent intent = getIntent();
+        currentPath = intent.getStringExtra(StaticExtra.EXTRA_FILE_PATH);
+
+        Utils.log(Log.INFO, TAG, "Device: " + currentAddress + " " + currentPattern);
+        Utils.log(Log.INFO, TAG, "File path: " + currentPath);
+
+        if (currentPath != null && !currentPath.isEmpty() && !currentAddress.isEmpty()) {
+            initFlashing();
+        } else {
+            Utils.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_no_connected)).show();
         }
-
-        if (extendedDevice == null || filePath == null) {
-            Utils.log(Log.ERROR, TAG, "No Extra received");
-            return;
-        }
-
-        currentDevice = extendedDevice.getDevice();
-        pattern = extendedDevice.getPattern();
-
-        Utils.log(Log.INFO, TAG, "Device: " + extendedDevice.getAddress() + " " + extendedDevice.getName());
-        Utils.log(Log.INFO, TAG, "File path: " + filePath);
-
-        checkBluetooth();
     }
 
-    private void checkBluetooth() {
-        if (Utils.isBluetoothEnabled()) {
-            if (Preference.getBoolean(getApplicationContext(), Preference.PREF_KEY_ENABLE_PARTIAL_FLASHING, false)) {
+    private void initFlashing() {
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (bluetoothAdapter.isEnabled()) {
+            currentDevice = bluetoothAdapter.getRemoteDevice(currentAddress);
+            if (Preference.isPartialFlashingEnable(this)) {
                 startPartialFlashing();
             } else {
                 startDfuControlService();
@@ -262,7 +258,7 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
 
         Intent service = new Intent(this, PartialFlashingService.class);
         service.putExtra(PartialFlashingBaseService.EXTRA_DEVICE_ADDRESS, currentDevice.getAddress());
-        service.putExtra(PartialFlashingBaseService.EXTRA_FILE_PATH, filePath); // a path or URI must be provided.
+        service.putExtra(PartialFlashingBaseService.EXTRA_FILE_PATH, currentPath); // a path or URI must be provided.
         startService(service);
     }
 
@@ -283,7 +279,7 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
             return;
         }
 
-        HexToDfu hexToDFU = universalHexToDFU(filePath, hardwareVersion);
+        HexToDfu hexToDFU = universalHexToDFU(currentPath, hardwareVersion);
         String hexPath = hexToDFU.getPath();
         int hexSize = hexToDFU.getSize();
 
@@ -296,7 +292,7 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
 
         if (hardwareVersion == MINI_V1) {
             new DfuServiceInitiator(currentDevice.getAddress())
-                    .setDeviceName(pattern)
+                    .setDeviceName(currentPattern)
                     .setPrepareDataObjectDelay(300L)
                     .setNumberOfRetries(NUMBER_OF_RETRIES)
                     .setRebootTime(REBOOT_TIME)
@@ -324,7 +320,7 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
             }
 
             new DfuServiceInitiator(currentDevice.getAddress())
-                    .setDeviceName(pattern)
+                    .setDeviceName(currentPattern)
                     .setPrepareDataObjectDelay(300L)
                     .setNumberOfRetries(NUMBER_OF_RETRIES)
                     .setRebootTime(REBOOT_TIME)
