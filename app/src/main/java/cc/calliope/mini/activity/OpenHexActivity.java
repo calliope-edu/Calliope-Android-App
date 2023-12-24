@@ -20,6 +20,7 @@ import java.net.URLDecoder;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
 import cc.calliope.mini.R;
 import cc.calliope.mini.ExtendedBluetoothDevice;
 import cc.calliope.mini.databinding.ActivityHexBinding;
@@ -34,7 +35,6 @@ import cc.calliope.mini.viewmodels.ScannerLiveData;
 public class OpenHexActivity extends ScannerActivity {
     private static final int REQUEST_CODE_PERMISSIONS = 123;
     private ActivityHexBinding binding;
-    private ExtendedBluetoothDevice device;
     private boolean isStartFlashing;
 
     @Override
@@ -46,7 +46,7 @@ public class OpenHexActivity extends ScannerActivity {
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             // Запитуємо дозвіл на читання зовнішнього сховища
-            ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.READ_EXTERNAL_STORAGE }, REQUEST_CODE_PERMISSIONS);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_CODE_PERMISSIONS);
         }
 
         setPatternFab(binding.patternFab);
@@ -109,19 +109,13 @@ public class OpenHexActivity extends ScannerActivity {
     }
 
     @Override
-    protected void scanResults(final ScannerLiveData state) {
-        super.scanResults(state);
-        device = state.getCurrentDevice();
-    }
-
-    @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         if (Version.VERSION_TIRAMISU_AND_NEWER || (requestCode == REQUEST_CODE_PERMISSIONS && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
             // Дозвіл на читання зовнішнього сховища отримано
             Log.w("HexActivity", "Дозвіл на читання зовнішнього сховища отримано");
-        }else{
+        } else {
             finish();
         }
     }
@@ -142,13 +136,8 @@ public class OpenHexActivity extends ScannerActivity {
     }
 
     private void startDFUActivity(File file) {
-        if (device != null && device.isRelevant()) {
-            final Intent intent = new Intent(this, FlashingActivity.class);
-            intent.putExtra(StaticExtra.EXTRA_DEVICE, device);
-            intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
-            startActivity(intent);
-        } else {
-            Utils.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_no_connected)).show();
-        }
+        final Intent intent = new Intent(this, FlashingActivity.class);
+        intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
+        startActivity(intent);
     }
 }

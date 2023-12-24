@@ -54,8 +54,6 @@ import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResults;
 public abstract class ScannerActivity extends AppCompatActivity implements DialogInterface.OnDismissListener {
     private static final int SNACKBAR_DURATION = 10000; // how long to display the snackbar message.
     private static boolean requestWasSent = false;
-//    private ScannerViewModel scannerViewModel;
-    private ScanViewModelKt viewModel;
     private MovableFloatingActionButton patternFab;
     private ConstraintLayout rootView;
     private int screenWidth;
@@ -79,31 +77,6 @@ public abstract class ScannerActivity extends AppCompatActivity implements Dialo
 //        scannerViewModel = new ViewModelProvider(this).get(ScannerViewModel.class);
 //        scannerViewModel.getScannerState().observe(this, this::scanResults);
 
-        viewModel = new ViewModelProvider(this).get(ScanViewModelKt.class);
-        viewModel.getDevices().observe(this, new Observer<List<BleScanResults>>() {
-            @Override
-            public void onChanged(List<BleScanResults> scanResults) {
-//                Log.w(TAG, "_________________________________________________");
-//                for (BleScanResults results : scanResults) {
-//                    MyDeviceKt device = new MyDeviceKt(results);
-//
-//                    if (!device.getPattern().isEmpty() && matchesPattern("51422", device.getPattern())) {
-//                        int level = device.isActual() ? Log.DEBUG : Log.ASSERT;
-//
-//                        Log.println(level, "scannerViewModel",
-//                                "address: " + device.getAddress() + ", " +
-//                                "pattern: " + device.getPattern() + ", " +
-//                                "numPattern: " + device.getNumPattern() + ", " +
-//                                "bonded: " + device.isBonded() + ", " +
-//                                "actual: " + device.isActual());
-//                    }
-//                }
-            }
-        });
-    }
-
-    private static boolean matchesPattern(String numberPattern, String letterPattern) {
-        return false;
     }
 
     @Override
@@ -161,39 +134,19 @@ public abstract class ScannerActivity extends AppCompatActivity implements Dialo
             } else if (!Version.VERSION_S_AND_NEWER && !Utils.isLocationEnabled(this)) {
                 showLocationDisabledWarning();
             }
-//            scannerViewModel.startScan();
-            viewModel.startScan();
         } else {
             startNoPermissionActivity();
         }
     }
 
-    protected void scanResults(ScannerLiveData state) {
-        if (hasOpenedPatternDialog()) {
-            return;
-        }
-
-        if (!state.isBluetoothEnabled() && !requestWasSent) {
+    private void showPatternDialog(FobParams params) {
+        if(Utils.isBluetoothEnabled()){
+            FragmentManager fragmentManager = getSupportFragmentManager();
+            PatternDialogFragment dialogFragment = PatternDialogFragment.newInstance(params);
+            dialogFragment.show(fragmentManager, "fragment_pattern");
+        } else {
             showBluetoothDisabledWarning();
         }
-
-        setDevice(state.getCurrentDevice());
-    }
-
-    protected void setDevice(ExtendedBluetoothDevice device) {
-        if (patternFab != null) {
-            boolean colorGreen = (device != null && device.isRelevant()) || app.getAppState() != App.APP_STATE_STANDBY;
-            int color = colorGreen ? R.color.green : R.color.orange;
-            patternFab.setColor(color);
-        }
-    }
-
-    private void showPatternDialog(FobParams params) {
-//        scannerViewModel.startScan(); // On older devices, "auto-start" scanning does not work after bluetooth is turned on.
-
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        PatternDialogFragment dialogFragment = PatternDialogFragment.newInstance(params);
-        dialogFragment.show(fragmentManager, "fragment_pattern");
     }
 
     private void showBluetoothDisabledWarning() {

@@ -2,8 +2,12 @@ package cc.calliope.mini.dialog.pattern;
 
 import android.app.Activity;
 import android.app.Dialog;
+import android.bluetooth.BluetoothAdapter;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
@@ -43,6 +47,7 @@ public class PatternDialogFragment extends DialogFragment {
     private DialogPatternBinding binding;
     private String currentPattern;
     private String currentAddress;
+    private Context context;
     private record Position(int x, int y) {
     }
 
@@ -65,6 +70,12 @@ public class PatternDialogFragment extends DialogFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        context = getContext();
+        if (context == null) {
+            dismiss();
+        }
+
+        context.registerReceiver(bluetoothStateBroadcastReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
         binding = DialogPatternBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
@@ -140,14 +151,11 @@ public class PatternDialogFragment extends DialogFragment {
     }
 
     private Position calculateDialogPosition(Window window, FobParams fobParams) {
-        Activity activity = getActivity();
-        if (activity == null) return new Position(0, 0);
-
         DisplayMetrics displayMetrics = new DisplayMetrics();
         window.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
 
-        int dialogWidth = Utils.convertDpToPixel(activity, DIALOG_WIDTH);
-        int dialogHeight = Utils.convertDpToPixel(activity, DIALOG_HEIGHT);
+        int dialogWidth = Utils.convertDpToPixel(context, DIALOG_WIDTH);
+        int dialogHeight = Utils.convertDpToPixel(context, DIALOG_HEIGHT);
         int halfWidth = displayMetrics.widthPixels / 2;
         int halfHeight = displayMetrics.heightPixels / 2;
 
@@ -173,6 +181,7 @@ public class PatternDialogFragment extends DialogFragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        context.unregisterReceiver(bluetoothStateBroadcastReceiver);
         binding = null;
     }
 
@@ -181,10 +190,23 @@ public class PatternDialogFragment extends DialogFragment {
         dismiss();
     }
 
-    public void saveCurrentDevice() {
-        Context context = getContext();
-        if(context == null) return;
+    private final BroadcastReceiver bluetoothStateBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(final Context context, final Intent intent) {
+            final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.STATE_OFF);
+            final int previousState = intent.getIntExtra(BluetoothAdapter.EXTRA_PREVIOUS_STATE, BluetoothAdapter.STATE_OFF);
 
+            switch (state) {
+                case BluetoothAdapter.STATE_TURNING_OFF, BluetoothAdapter.STATE_OFF -> {
+                    if (previousState != BluetoothAdapter.STATE_TURNING_OFF && previousState != BluetoothAdapter.STATE_OFF) {
+                        dismiss();
+                    }
+                }
+            }
+        }
+    };
+
+    public void saveCurrentDevice() {
         SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(context).edit();
         editor.putString("DEVICE_ADDRESS", currentAddress);
         editor.putString("DEVICE_PATTERN", currentPattern);
@@ -192,9 +214,6 @@ public class PatternDialogFragment extends DialogFragment {
     }
 
     public void loadCurrentDevice() {
-        Context context = getContext();
-        if(context == null) return;
-
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         currentAddress = preferences.getString("DEVICE_ADDRESS", "");
         currentPattern = preferences.getString("DEVICE_PATTERN", "ZUZUZ");

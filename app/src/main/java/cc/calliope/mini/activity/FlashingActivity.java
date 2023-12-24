@@ -85,6 +85,8 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        //Utils.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_no_connected)).show();
+
         binding = ActivityDfuBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
