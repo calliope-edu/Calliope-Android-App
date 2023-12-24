@@ -16,11 +16,9 @@ import android.view.animation.OvershootInterpolator;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.PopupWindow;
-import android.widget.RatingBar;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -30,26 +28,17 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProvider;
 
 import cc.calliope.mini.App;
-import cc.calliope.mini.MyDeviceKt;
-import cc.calliope.mini.ScanViewModelKt;
-import cc.calliope.mini.dialog.pattern.PatternEnum;
 import cc.calliope.mini.popup.PopupAdapter;
 import cc.calliope.mini.popup.PopupItem;
 import cc.calliope.mini.R;
-import cc.calliope.mini.ExtendedBluetoothDevice;
 import cc.calliope.mini.dialog.pattern.PatternDialogFragment;
 import cc.calliope.mini.utils.Permission;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.utils.Version;
-import cc.calliope.mini.viewmodels.ScannerLiveData;
-import cc.calliope.mini.viewmodels.ScannerViewModel;
 import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.views.MovableFloatingActionButton;
-import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResults;
 
 public abstract class ScannerActivity extends AppCompatActivity implements DialogInterface.OnDismissListener {
     private static final int SNACKBAR_DURATION = 10000; // how long to display the snackbar message.

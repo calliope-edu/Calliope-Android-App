@@ -8,6 +8,7 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+
 import cc.calliope.mini.activity.FlashingActivity;
 import cc.calliope.mini.R;
 import cc.calliope.mini.utils.Preference;
@@ -16,7 +17,6 @@ import cc.calliope.mini.ExtendedBluetoothDevice;
 import cc.calliope.mini.utils.FileUtils;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.utils.Version;
-import cc.calliope.mini.viewmodels.ScannerViewModel;
 
 import android.os.StrictMode;
 import android.util.Base64;
@@ -63,7 +63,6 @@ public class WebFragment extends Fragment implements DownloadListener {
     private String editorUrl;
     private String editorName;
     private WebView webView;
-    private ExtendedBluetoothDevice device;
 
     private class JavaScriptInterface {
         private final Context context;
@@ -158,9 +157,6 @@ public class WebFragment extends Fragment implements DownloadListener {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_web, container, false);
-
-        ScannerViewModel scannerViewModel = new ViewModelProvider(requireActivity()).get(ScannerViewModel.class);
-        scannerViewModel.getScannerState().observe(getViewLifecycleOwner(), result -> device = result.getCurrentDevice());
 
         webView = view.findViewById(R.id.webView);
         WebSettings webSettings = webView.getSettings();
@@ -314,19 +310,13 @@ public class WebFragment extends Fragment implements DownloadListener {
 
     private void startDfuActivity(File file) {
         boolean autoFlashing = Preference.getBoolean(getContext(), Preference.PREF_KEY_ENABLE_AUTO_FLASHING, true);
-        if(!autoFlashing){
+        if (!autoFlashing) {
             return;
         }
 
-        if (device != null && device.isRelevant()) {
-            Log.e(TAG, "start DFU Activity");
-            final Intent intent = new Intent(getActivity(), FlashingActivity.class);
-            intent.putExtra(StaticExtra.EXTRA_DEVICE, device);
-            intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
-            startActivity(intent);
-        } else {
-            Utils.errorSnackbar(webView, getString(R.string.error_snackbar_no_connected)).show();
-        }
+        final Intent intent = new Intent(getActivity(), FlashingActivity.class);
+        intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
+        startActivity(intent);
     }
 
     @Override

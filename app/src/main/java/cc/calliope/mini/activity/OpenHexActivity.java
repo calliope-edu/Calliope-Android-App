@@ -22,14 +22,11 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import cc.calliope.mini.R;
-import cc.calliope.mini.ExtendedBluetoothDevice;
 import cc.calliope.mini.databinding.ActivityHexBinding;
 import cc.calliope.mini.fragment.editors.Editor;
 import cc.calliope.mini.utils.FileUtils;
 import cc.calliope.mini.utils.StaticExtra;
-import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.utils.Version;
-import cc.calliope.mini.viewmodels.ScannerLiveData;
 
 
 public class OpenHexActivity extends ScannerActivity {

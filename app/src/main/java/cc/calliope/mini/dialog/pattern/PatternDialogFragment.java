@@ -70,11 +70,7 @@ public class PatternDialogFragment extends DialogFragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        context = getContext();
-        if (context == null) {
-            dismiss();
-        }
-
+        context = requireContext();
         context.registerReceiver(bluetoothStateBroadcastReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
         binding = DialogPatternBinding.inflate(inflater, container, false);
         return binding.getRoot();

@@ -44,6 +44,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import cc.calliope.mini.activity.FlashingActivity;
 import cc.calliope.mini.FileWrapper;
 import cc.calliope.mini.R;
@@ -54,7 +55,6 @@ import cc.calliope.mini.databinding.FragmentScriptsBinding;
 import cc.calliope.mini.fragment.editors.Editor;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.utils.Version;
-import cc.calliope.mini.viewmodels.ScannerViewModel;
 import cc.calliope.mini.views.SimpleDividerItemDecoration;
 
 import static android.app.Activity.RESULT_OK;
@@ -66,7 +66,6 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     private FragmentScriptsBinding binding;
     private FragmentActivity activity;
     private ScriptsRecyclerAdapter scriptsRecyclerAdapter;
-    private ExtendedBluetoothDevice device;
     private FrameLayout bottomSheet;
     private int state = BottomSheetBehavior.STATE_COLLAPSED;
     private String sourceFilePath;
@@ -103,9 +102,6 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentScriptsBinding.inflate(inflater, container, false);
         activity = requireActivity();
-
-        ScannerViewModel scannerViewModel = new ViewModelProvider(activity).get(ScannerViewModel.class);
-        scannerViewModel.getScannerState().observe(getViewLifecycleOwner(), result -> device = result.getCurrentDevice());
 
         return binding.getRoot();
     }
@@ -159,19 +155,9 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     }
 
     private void openDfuActivity(FileWrapper file) {
-        if (device != null && device.isRelevant()) {
-            final Intent intent = new Intent(activity, FlashingActivity.class);
-            intent.putExtra(StaticExtra.EXTRA_DEVICE, device);
-            intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
-            startActivity(intent);
-        } else {
-            if (state == BottomSheetBehavior.STATE_EXPANDED) {
-                BottomSheetBehavior<View> bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
-                bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-            }
-            Utils.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_no_connected)).show();
-
-        }
+        final Intent intent = new Intent(activity, FlashingActivity.class);
+        intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
+        startActivity(intent);
     }
 
     private void openPopupMenu(View view, FileWrapper file) {
@@ -244,7 +230,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
         }
     }
 
-    public void copyFile(FileWrapper file){
+    public void copyFile(FileWrapper file) {
         //TODO if(...)
         boolean connected = isMiniConnected();
         Utils.log(TAG, "Mini connected: " + connected);
@@ -253,7 +239,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
 
         if (Version.VERSION_Q_AND_NEWER) {
             openDocumentTreeNewApi();
-        }else {
+        } else {
             openDocumentTree();
         }
     }
@@ -273,7 +259,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
         treeUriResultLauncher.launch(intent);
     }
 
-    private void openDocumentTree(){
+    private void openDocumentTree() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
         treeUriResultLauncher.launch(intent);
     }
@@ -327,7 +313,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
         }
     }
 
-    private boolean isMiniConnected(){
+    private boolean isMiniConnected() {
         UsbManager manager = (UsbManager) activity.getSystemService(Context.USB_SERVICE);
         HashMap<String, UsbDevice> deviceList = manager.getDeviceList();
         for (UsbDevice device : deviceList.values()) {
@@ -337,7 +323,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
             Utils.log(Log.DEBUG, "USB_Device", "Device Protocol: " + device.getDeviceProtocol());
 
             String productName = device.getProductName();
-            if(productName != null && productName.contains("Calliope")) {
+            if (productName != null && productName.contains("Calliope")) {
                 Utils.log(Log.ASSERT, TAG, "it`s Calliope");
                 return true;
             }
