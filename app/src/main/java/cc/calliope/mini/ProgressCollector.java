@@ -154,7 +154,7 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
         }
     }
 
-    public void registerOnProgressListener(ProgressListener listener) {
+    public void registerProgressListener(ProgressListener listener) {
         this.listener = listener;
     }
 

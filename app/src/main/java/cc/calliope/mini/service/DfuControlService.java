@@ -26,6 +26,7 @@ import androidx.annotation.IntDef;
 import androidx.core.app.ActivityCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import cc.calliope.mini.App;
+import cc.calliope.mini.utils.StaticExtra;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.utils.Version;
 
@@ -53,7 +54,6 @@ public class DfuControlService extends Service {
     public static final String EXTRA_BOARD_VERSION = "cc.calliope.mini.DFUControlService.EXTRA_BOARD_VERSION";
     public static final String EXTRA_ERROR_CODE = "cc.calliope.mini.DFUControlService.EXTRA_ERROR_CODE";
     public static final String EXTRA_ERROR_MESSAGE = "cc.calliope.mini.DFUControlService.EXTRA_ERROR_MESSAGE";
-    public static final String EXTRA_DEVICE_ADDRESS = "cc.calliope.mini.DFUControlService.EXTRA_DEVICE_ADDRESS";
     public static final String EXTRA_MAX_RETRIES_NUMBER = "cc.calliope.mini.DFUControlService.EXTRA_MAX_RETRIES_NUMBER";
     public static final int GATT_DISCONNECTED_BY_DEVICE = 19;
     private final Object mLock = new Object();
@@ -213,7 +213,7 @@ public class DfuControlService extends Service {
 
         registerReceiver(bondStateReceiver, new IntentFilter(ACTION_BOND_STATE_CHANGED));
 
-        deviceAddress = intent.getStringExtra(EXTRA_DEVICE_ADDRESS);
+        deviceAddress = intent.getStringExtra(StaticExtra.DEVICE_ADDRESS);
         maxRetries = intent.getIntExtra(EXTRA_MAX_RETRIES_NUMBER, 2);
 
         app = (App) getApplication();

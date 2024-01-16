@@ -14,8 +14,6 @@ import android.widget.TextView;
 
 import com.google.android.material.snackbar.Snackbar;
 
-import org.microbit.android.partialflashing.PartialFlashingBaseService;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -59,7 +57,7 @@ import static cc.calliope.mini.service.DfuControlService.MINI_V1;
 import static cc.calliope.mini.service.DfuControlService.MINI_V2;
 import static cc.calliope.mini.service.DfuControlService.HardwareVersion;
 
-public class FlashingActivity extends AppCompatActivity implements ProgressListener {
+public class FlashingActivityOld extends AppCompatActivity implements ProgressListener {
     private static final String TAG = "FlashingActivity";
     private static final int NUMBER_OF_RETRIES = 3;
     private static final int REBOOT_TIME = 2000; // time required by the device to reboot, ms
@@ -78,9 +76,7 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
     private ProgressCollector progressCollector;
 
     ActivityResultLauncher<Intent> bluetoothEnableResultLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(), result -> {
-                initFlashing();
-            }
+            new ActivityResultContracts.StartActivityForResult(), result -> initFlashing()
     );
 
     @Override
@@ -223,8 +219,8 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
 
     private void getExtras() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        currentAddress = preferences.getString("DEVICE_ADDRESS", "");
-        currentPattern = preferences.getString("DEVICE_PATTERN", "ZUZUZ");
+        currentAddress = preferences.getString(StaticExtra.DEVICE_ADDRESS, "");
+        currentPattern = preferences.getString(StaticExtra.DEVICE_PATTERN, "ZUZUZ");
 
         Intent intent = getIntent();
         currentPath = intent.getStringExtra(StaticExtra.EXTRA_FILE_PATH);
@@ -257,8 +253,8 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
         Utils.log(TAG, "Starting PartialFlashing Service...");
 
         Intent service = new Intent(this, PartialFlashingService.class);
-        service.putExtra(PartialFlashingBaseService.EXTRA_DEVICE_ADDRESS, currentDevice.getAddress());
-        service.putExtra(PartialFlashingBaseService.EXTRA_FILE_PATH, currentPath); // a path or URI must be provided.
+        service.putExtra(PartialFlashingService.EXTRA_DEVICE_ADDRESS, currentDevice.getAddress());
+        service.putExtra(StaticExtra.EXTRA_FILE_PATH, currentPath); // a path or URI must be provided.
         startService(service);
     }
 
@@ -266,7 +262,7 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
         Utils.log(TAG, "Starting DfuControl Service...");
 
         Intent service = new Intent(this, DfuControlService.class);
-        service.putExtra(DfuControlService.EXTRA_DEVICE_ADDRESS, currentDevice.getAddress());
+        service.putExtra(StaticExtra.DEVICE_ADDRESS, currentDevice.getAddress());
         startService(service);
     }
 

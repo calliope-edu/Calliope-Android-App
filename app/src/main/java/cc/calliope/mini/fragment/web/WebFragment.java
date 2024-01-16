@@ -7,13 +7,11 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
 
-import cc.calliope.mini.activity.FlashingActivity;
+import cc.calliope.mini.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.StaticExtra;
-import cc.calliope.mini.ExtendedBluetoothDevice;
 import cc.calliope.mini.utils.FileUtils;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.utils.Version;
@@ -314,9 +312,13 @@ public class WebFragment extends Fragment implements DownloadListener {
             return;
         }
 
-        final Intent intent = new Intent(getActivity(), FlashingActivity.class);
-        intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
-        startActivity(intent);
+        //final Intent intent = new Intent(getActivity(), FlashingActivity.class);
+        //intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
+        //startActivity(intent);
+
+        Intent serviceIntent = new Intent(getActivity(), FlashingService.class);
+        serviceIntent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
+        getActivity().startService(serviceIntent);
     }
 
     @Override

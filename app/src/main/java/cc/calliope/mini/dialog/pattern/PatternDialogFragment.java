@@ -32,6 +32,7 @@ import androidx.lifecycle.ViewModelProvider;
 import cc.calliope.mini.MyDeviceKt;
 import cc.calliope.mini.PatternMatrixView;
 import cc.calliope.mini.ScanViewModelKt;
+import cc.calliope.mini.utils.StaticExtra;
 import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.DialogPatternBinding;
@@ -204,14 +205,14 @@ public class PatternDialogFragment extends DialogFragment {
 
     public void saveCurrentDevice() {
         SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(context).edit();
-        editor.putString("DEVICE_ADDRESS", currentAddress);
-        editor.putString("DEVICE_PATTERN", currentPattern);
+        editor.putString(StaticExtra.DEVICE_ADDRESS, currentAddress);
+        editor.putString(StaticExtra.DEVICE_PATTERN, currentPattern);
         editor.apply();
     }
 
     public void loadCurrentDevice() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        currentAddress = preferences.getString("DEVICE_ADDRESS", "");
-        currentPattern = preferences.getString("DEVICE_PATTERN", "ZUZUZ");
+        currentAddress = preferences.getString(StaticExtra.DEVICE_ADDRESS, "");
+        currentPattern = preferences.getString(StaticExtra.DEVICE_PATTERN, "ZUZUZ");
     }
 }

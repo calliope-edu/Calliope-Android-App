@@ -40,17 +40,15 @@ import androidx.appcompat.widget.PopupMenu;
 import androidx.core.content.FileProvider;
 import androidx.documentfile.provider.DocumentFile;
 import androidx.fragment.app.FragmentActivity;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import cc.calliope.mini.activity.FlashingActivity;
+import cc.calliope.mini.FlashingService;
 import cc.calliope.mini.FileWrapper;
 import cc.calliope.mini.R;
 import cc.calliope.mini.dialog.DialogUtils;
 import cc.calliope.mini.utils.StaticExtra;
-import cc.calliope.mini.ExtendedBluetoothDevice;
 import cc.calliope.mini.databinding.FragmentScriptsBinding;
 import cc.calliope.mini.fragment.editors.Editor;
 import cc.calliope.mini.utils.Utils;
@@ -155,9 +153,13 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     }
 
     private void openDfuActivity(FileWrapper file) {
-        final Intent intent = new Intent(activity, FlashingActivity.class);
-        intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
-        startActivity(intent);
+//        final Intent intent = new Intent(activity, FlashingActivity.class);
+//        intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
+//        startActivity(intent);
+
+        Intent serviceIntent = new Intent(activity, FlashingService.class);
+        serviceIntent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
+        activity.startService(serviceIntent);
     }
 
     private void openPopupMenu(View view, FileWrapper file) {

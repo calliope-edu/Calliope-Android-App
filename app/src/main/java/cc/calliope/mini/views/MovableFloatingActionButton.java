@@ -2,7 +2,6 @@ package cc.calliope.mini.views;
 
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
-import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -19,9 +18,7 @@ import androidx.annotation.NonNull;
 
 import cc.calliope.mini.ProgressCollector;
 import cc.calliope.mini.ProgressListener;
-import cc.calliope.mini.R;
 import cc.calliope.mini.utils.Utils;
-import cc.calliope.mini.utils.Version;
 
 public class MovableFloatingActionButton extends FloatingActionButton implements View.OnTouchListener, ProgressListener {
     private final static float CLICK_DRAG_TOLERANCE = 10; // Often, there will be a slight, unintentional, drag when the user taps the FAB, so we need to account for this.
@@ -54,7 +51,7 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
     private void init(Context context) {
         this.context = context;
         progressCollector = new ProgressCollector(context);
-        progressCollector.registerOnProgressListener(this);
+        progressCollector.registerProgressListener(this);
         setOnTouchListener(this);
         paint = new Paint();
         rectF = new RectF();
@@ -198,22 +195,18 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
 
     public void setProgress(int percent) {
         this.progress = Math.max(percent, 0);
-        boolean flashing = percent > -5;
-        if (flashing) {
-            setColor(R.color.green);
-        }
         invalidate();
     }
 
-    public void setColor(int resId) {
-        int color;
-        if (Version.VERSION_M_AND_NEWER) {
-            color = context.getColor(resId);
-        } else {
-            color = getResources().getColor(resId);
-        }
-        setBackgroundTintList(ColorStateList.valueOf(color));
-    }
+//    public void setColor(int resId) {
+//        int color;
+//        if (Version.VERSION_M_AND_NEWER) {
+//            color = context.getColor(resId);
+//        } else {
+//            color = getResources().getColor(resId);
+//        }
+//        setBackgroundTintList(ColorStateList.valueOf(color));
+//    }
 
     @Override
     protected void onDraw(Canvas canvas) {

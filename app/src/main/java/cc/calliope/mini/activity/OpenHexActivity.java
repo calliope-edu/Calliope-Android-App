@@ -21,6 +21,7 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import cc.calliope.mini.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityHexBinding;
 import cc.calliope.mini.fragment.editors.Editor;
@@ -133,8 +134,12 @@ public class OpenHexActivity extends ScannerActivity {
     }
 
     private void startDFUActivity(File file) {
-        final Intent intent = new Intent(this, FlashingActivity.class);
-        intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
-        startActivity(intent);
+        //final Intent intent = new Intent(this, FlashingActivity.class);
+        //intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
+        //startActivity(intent);
+
+        Intent serviceIntent = new Intent(this, FlashingService.class);
+        serviceIntent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
+        startService(serviceIntent);
     }
 }
