@@ -18,7 +18,7 @@ class DeviceKt(bleScanResults: BleScanResults) {
         return serverDevice.address
     }
 
-    fun getName(): String {
+    fun getName(): String? {
         return serverDevice.name
     }
 
@@ -28,7 +28,8 @@ class DeviceKt(bleScanResults: BleScanResults) {
 
     fun getPattern(): String {
         val pattern = "[a-zA-Z :]+\\[([A-Z]{5})]".toRegex()
-        return pattern.find(serverDevice.name.uppercase())?.groupValues?.get(1) ?: ""
+        val name = serverDevice.name ?: return ""
+        return pattern.find(name.uppercase())?.groupValues?.get(1) ?: ""
     }
 
     fun isActual(): Boolean {
