@@ -22,6 +22,7 @@ import android.view.Window;
 import android.view.WindowManager;
 
 import java.util.List;
+import java.util.Objects;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -47,9 +48,11 @@ public class PatternDialogFragment extends DialogFragment {
     private static final String FOB_PARAMS_PARCELABLE = "fob_params_parcelable";
     private static final String TAG = "PatternDialogFragment";
     private DialogPatternBinding binding;
+    private String paintedPattern;
     private String currentPattern;
     private String currentAddress;
     private Context context;
+
     private record Position(int x, int y) {
     }
 
@@ -87,29 +90,28 @@ public class PatternDialogFragment extends DialogFragment {
 
         PatternMatrixView patternView = binding.patternView;
 
+        paintedPattern = currentPattern;
         patternView.setPattern(currentPattern);
         patternView.setOnPatternChangeListener(pattern -> {
             binding.buttonAction.setBackgroundResource(R.drawable.btn_connect_aqua);
-            currentPattern = pattern;
+            paintedPattern = pattern;
         });
 
         ScanViewModelKt scanViewModelKt = new ViewModelProvider(this).get(ScanViewModelKt.class);
-        scanViewModelKt.getDevices().observe(this, new Observer<List<BleScanResults>>() {
-            @Override
-            public void onChanged(List<BleScanResults> scanResults) {
-                for (BleScanResults results : scanResults) {
-                    DeviceKt device = new DeviceKt(results);
+        scanViewModelKt.getDevices().observe(this, scanResults -> {
+            for (BleScanResults results : scanResults) {
+                DeviceKt device = new DeviceKt(results);
 
-                    if (!device.getPattern().isEmpty() && device.getPattern().equals(currentPattern)) {
-                        currentAddress = device.getAddress();
-                        binding.buttonAction.setBackgroundResource(device.isActual() ? R.drawable.btn_connect_green : R.drawable.btn_connect_aqua);
+                if ((!device.getPattern().isEmpty() && device.getPattern().equals(paintedPattern)) ||
+                        (Objects.equals(currentPattern, paintedPattern) && Objects.equals(currentAddress, device.getAddress()))) {
+                    currentAddress = device.getAddress();
+                    binding.buttonAction.setBackgroundResource(device.isActual() ? R.drawable.btn_connect_green : R.drawable.btn_connect_aqua);
 
-                        Utils.log(Log.DEBUG, TAG,
-                                "address: " + device.getAddress() + ", " +
-                                        "pattern: " + device.getPattern() + ", " +
-                                        "bonded: " + device.isBonded() + ", " +
-                                        "actual: " + device.isActual());
-                    }
+                    Utils.log(Log.DEBUG, TAG,
+                            "address: " + device.getAddress() + ", " +
+                                    "pattern: " + device.getPattern() + ", " +
+                                    "bonded: " + device.isBonded() + ", " +
+                                    "actual: " + device.isActual());
                 }
             }
         });
