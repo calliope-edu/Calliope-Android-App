@@ -7,14 +7,17 @@ import android.os.IBinder;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.lifecycle.LifecycleService;
 
-public class FlashingBaseService extends Service implements ProgressListener{
+public class FlashingBaseService extends LifecycleService implements ProgressListener{
     private ProgressCollector progressCollector;
 
     @Override
     public void onCreate() {
         super.onCreate();
         progressCollector = new ProgressCollector(this);
+        getLifecycle().addObserver(progressCollector);
+
         progressCollector.registerReceivers();
     }
 
@@ -24,64 +27,28 @@ public class FlashingBaseService extends Service implements ProgressListener{
         progressCollector.unregisterReceivers();
     }
 
-    @Nullable
     @Override
-    public IBinder onBind(Intent intent) {
-        return null;
-    }
-
-    @Override
-    public void onDeviceConnecting() {
+    public void onDfuAttempt() {
 
     }
 
     @Override
-    public void onProcessStarting() {
+    public void onConnectionFailed(){
 
     }
 
     @Override
-    public void onAttemptDfuMode() {
+    public void onHardwareVersionReceived(int hardwareVersion) {
 
     }
 
     @Override
-    public void onEnablingDfuMode() {
+    public void onProgressUpdate(int percent) {
 
     }
 
     @Override
-    public void onFirmwareValidating() {
-
-    }
-
-    @Override
-    public void onDeviceDisconnecting() {
-
-    }
-
-    @Override
-    public void onCompleted() {
-
-    }
-
-    @Override
-    public void onAborted() {
-
-    }
-
-    @Override
-    public void onStartDfuService(int hardwareVersion) {
-
-    }
-
-    @Override
-    public void onProgressChanged(int percent) {
-
-    }
-
-    @Override
-    public void onBonding(@NonNull BluetoothDevice device, int bondState, int previousBondState) {
+    public void onBluetoothBondingStateChanged(@NonNull BluetoothDevice device, int bondState, int previousBondState) {
 
     }
 

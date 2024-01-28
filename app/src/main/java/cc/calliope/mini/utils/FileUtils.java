@@ -24,7 +24,7 @@ public class FileUtils {
 
         File file = new File(dir.getAbsolutePath() + File.separator + filename + FILE_EXTENSION);
 
-        if (!Preference.isRenameFiles(context) && file.exists()) {
+        if (!Settings.isRenameFiles(context) && file.exists()) {
             file.delete();
         } else {
             int i = 1;

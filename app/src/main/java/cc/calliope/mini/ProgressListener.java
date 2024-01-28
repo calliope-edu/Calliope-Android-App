@@ -20,16 +20,10 @@ public interface ProgressListener {
     @interface BondState {
     }
 
-    void onDeviceConnecting();
-    void onProcessStarting();
-    void onAttemptDfuMode();
-    void onEnablingDfuMode();
-    void onFirmwareValidating();
-    void onDeviceDisconnecting();
-    void onCompleted();
-    void onAborted();
-    void onStartDfuService(@HardwareVersion final int hardwareVersion);
-    void onProgressChanged(int percent);
-    void onBonding(@NonNull BluetoothDevice device, @BondState int bondState, @BondState int previousBondState);
+    void onDfuAttempt();
+    void onHardwareVersionReceived(@HardwareVersion final int hardwareVersion);
+    void onProgressUpdate(int progress);
+    void onBluetoothBondingStateChanged(@NonNull BluetoothDevice device, @BondState int bondState, @BondState int previousBondState);
+    void onConnectionFailed();
     void onError(int code, String message);
 }

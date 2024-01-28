@@ -26,7 +26,7 @@ import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityHexBinding;
 import cc.calliope.mini.fragment.editors.Editor;
 import cc.calliope.mini.utils.FileUtils;
-import cc.calliope.mini.utils.StaticExtra;
+import cc.calliope.mini.utils.StaticExtras;
 import cc.calliope.mini.utils.Version;
 
 
@@ -134,12 +134,12 @@ public class OpenHexActivity extends ScannerActivity {
     }
 
     private void startDFUActivity(File file) {
-        //final Intent intent = new Intent(this, FlashingActivity.class);
+        final Intent intent = new Intent(this, FlashingActivity.class);
         //intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
-        //startActivity(intent);
+        startActivity(intent);
 
         Intent serviceIntent = new Intent(this, FlashingService.class);
-        serviceIntent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
+        serviceIntent.putExtra(StaticExtras.EXTRA_FILE_PATH, file.getAbsolutePath());
         startService(serviceIntent);
     }
 }

@@ -62,8 +62,8 @@ public class PopupAdapter extends ArrayAdapter<PopupItem> {
             holder = (ViewHolder) view.getTag();
         }
 
-        holder.title.setText(popupItems.get(position).getTitleId());
-        holder.icon.setImageResource(popupItems.get(position).getIconId());
+        holder.title.setText(popupItems.get(position).titleId());
+        holder.icon.setImageResource(popupItems.get(position).iconId());
         return view;
     }
 }

@@ -13,11 +13,13 @@ public class NotificationActivity extends AppCompatActivity {
 //        GoogleAnalyticsManager.getInstance().sendViewEventStats(NotificationActivity.class.getSimpleName());
 
         // If this activity is the root activity of the task, the app is not running
-        if(isTaskRoot()) {
+        if (isTaskRoot()) {
             // Start the app before finishing
             final Intent intent = new Intent(this, FlashingActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.putExtras(getIntent().getExtras()); // copy all extras
+            if (getIntent().getExtras() != null){
+                intent.putExtras(getIntent().getExtras()); // copy all extras
+            }
             startActivity(intent);
         }
         // Now finish, which will drop you to the activity at which you were at the top of the task stack

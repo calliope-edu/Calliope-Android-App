@@ -2,20 +2,29 @@ package cc.calliope.mini.utils;
 
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
+import android.graphics.Point;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.text.format.DateFormat;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.snackbar.Snackbar;
 
 import java.io.IOException;
 import java.util.Date;
+
+import cc.calliope.mini.R;
 
 public class Utils {
     private static final String TAG = "UTILS";
@@ -117,7 +126,11 @@ public class Utils {
         Log.println(priority, TAG, "### " + android.os.Process.myTid() + " # " + message);
     }
 
+    public static void log(int priority, String TAG, String message, Exception e) {
+        log(priority, TAG, message + " " + e.getMessage());
+    }
+
     public static void log(String TAG, String message) {
-        log(Log.VERBOSE, TAG, message);
+        log(Log.INFO, TAG, message);
     }
 }

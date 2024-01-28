@@ -15,6 +15,7 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
 import cc.calliope.mini.service.DfuControlService;
 import cc.calliope.mini.service.DfuService;
 import cc.calliope.mini.utils.Utils;
@@ -24,10 +25,14 @@ import no.nordicsemi.android.error.GattError;
 import static android.bluetooth.BluetoothDevice.ACTION_BOND_STATE_CHANGED;
 import static android.bluetooth.BluetoothDevice.ERROR;
 import static android.bluetooth.BluetoothDevice.EXTRA_BOND_STATE;
+
 import static cc.calliope.mini.service.DfuControlService.UNIDENTIFIED;
 import static cc.calliope.mini.service.DfuControlService.EXTRA_BOARD_VERSION;
 import static cc.calliope.mini.service.DfuControlService.EXTRA_ERROR_CODE;
 import static cc.calliope.mini.service.DfuControlService.EXTRA_ERROR_MESSAGE;
+
+import static no.nordicsemi.android.dfu.DfuBaseService.EXTRA_DATA;
+
 
 public class ProgressCollector extends ContextWrapper implements DefaultLifecycleObserver {
     private static final String TAG = "ProgressCollector";
@@ -51,7 +56,7 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
             if (action.equals(ACTION_BOND_STATE_CHANGED)) {
                 final int bondState = intent.getIntExtra(EXTRA_BOND_STATE, ERROR);
                 final int previousBondState = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, ERROR);
-                listener.onBonding(device, bondState, previousBondState);
+                listener.onBluetoothBondingStateChanged(device, bondState, previousBondState);
             }
         }
     };
@@ -66,20 +71,11 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
 
             switch (action) {
                 case DfuService.BROADCAST_PROGRESS -> {
-                    int extra = intent.getIntExtra(DfuService.EXTRA_DATA, 0);
-                    switch (extra) {
-                        case DfuService.PROGRESS_CONNECTING -> listener.onDeviceConnecting();
-                        case DfuService.PROGRESS_STARTING -> listener.onProcessStarting();
-                        case DfuService.PROGRESS_ENABLING_DFU_MODE -> listener.onEnablingDfuMode();
-                        case DfuService.PROGRESS_VALIDATING -> listener.onFirmwareValidating();
-                        case DfuService.PROGRESS_DISCONNECTING -> listener.onDeviceDisconnecting();
-                        case DfuService.PROGRESS_COMPLETED -> listener.onCompleted();
-                        case DfuService.PROGRESS_ABORTED -> listener.onAborted();
-                        default -> listener.onProgressChanged(extra);
-                    }
+                    int extra = intent.getIntExtra(EXTRA_DATA, 0);
+                    listener.onProgressUpdate(extra);
                 }
                 case DfuService.BROADCAST_ERROR -> {
-                    int code = intent.getIntExtra(DfuBaseService.EXTRA_DATA, 0);
+                    int code = intent.getIntExtra(EXTRA_DATA, 0);
                     int type = intent.getIntExtra(DfuBaseService.EXTRA_ERROR_TYPE, 0);
                     String message = switch (type) {
                         case DfuBaseService.ERROR_TYPE_COMMUNICATION_STATE ->
@@ -103,12 +99,13 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
             }
 
             switch (action) {
-                case DfuControlService.BROADCAST_START -> listener.onEnablingDfuMode();
+                case DfuControlService.BROADCAST_START ->
+                        listener.onProgressUpdate(DfuService.PROGRESS_CONNECTING);
                 case DfuControlService.BROADCAST_COMPLETED -> {
                     int boardVersion = intent.getIntExtra(EXTRA_BOARD_VERSION, UNIDENTIFIED);
-                    listener.onStartDfuService(boardVersion);
+                    listener.onHardwareVersionReceived(boardVersion);
                 }
-                case DfuControlService.BROADCAST_FAILED -> listener.onDeviceDisconnecting();
+                case DfuControlService.BROADCAST_CONNECTION_FAILED -> listener.onConnectionFailed();
                 case DfuControlService.BROADCAST_ERROR -> {
                     int code = intent.getIntExtra(EXTRA_ERROR_CODE, -1);
                     String message = intent.getStringExtra(EXTRA_ERROR_MESSAGE);
@@ -129,19 +126,15 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
             switch (action) {
                 case PartialFlashingBaseService.BROADCAST_PROGRESS -> {
                     int percent = intent.getIntExtra(PartialFlashingBaseService.EXTRA_PROGRESS, 0);
-                    listener.onProgressChanged(percent);
+                    listener.onProgressUpdate(percent);
                 }
-                case PartialFlashingBaseService.BROADCAST_START -> listener.onProcessStarting();
-                case PartialFlashingBaseService.BROADCAST_COMPLETE -> {
-                    listener.onCompleted();
-                    listener.onDeviceDisconnecting();
-                }
-                case PartialFlashingBaseService.BROADCAST_PF_FAILED -> {
-                    listener.onError(-1, "Partial Flashing FAILED");
-                }
-                case PartialFlashingBaseService.BROADCAST_PF_ATTEMPT_DFU -> {
-                    listener.onAttemptDfuMode();
-                }
+                case PartialFlashingBaseService.BROADCAST_START ->
+                        listener.onProgressUpdate(DfuService.PROGRESS_STARTING);
+                case PartialFlashingBaseService.BROADCAST_COMPLETE ->
+                        listener.onProgressUpdate(DfuService.PROGRESS_COMPLETED);
+                case PartialFlashingBaseService.BROADCAST_PF_FAILED ->
+                        listener.onError(-1, "Partial Flashing FAILED");
+                case PartialFlashingBaseService.BROADCAST_PF_ATTEMPT_DFU -> listener.onDfuAttempt();
             }
         }
     };
@@ -160,42 +153,43 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
 
     @Override
     public void onCreate(@NonNull LifecycleOwner owner) {
-        DefaultLifecycleObserver.super.onCreate(owner);
-        Utils.log(TAG, "onCreate");
+        if (owner instanceof FlashingService)
+            Utils.log(TAG, "onCreate: " + owner);
     }
 
     @Override
     public void onStart(@NonNull LifecycleOwner owner) {
-        DefaultLifecycleObserver.super.onStart(owner);
-        Utils.log(TAG, "onStart");
+        if (owner instanceof FlashingService)
+            Utils.log(TAG, "onStart: " + owner);
     }
 
     @Override
     public void onResume(@NonNull LifecycleOwner owner) {
-        DefaultLifecycleObserver.super.onResume(owner);
-        Utils.log(TAG, "onResume");
+        registerReceivers();
+        if (owner instanceof FlashingService)
+            Utils.log(TAG, "onResume: " + owner);
     }
 
     @Override
     public void onPause(@NonNull LifecycleOwner owner) {
-        DefaultLifecycleObserver.super.onPause(owner);
-        Utils.log(TAG, "onPause");
+        unregisterReceivers();
+        if (owner instanceof FlashingService)
+            Utils.log(TAG, "onPause: " + owner);
     }
 
     @Override
     public void onStop(@NonNull LifecycleOwner owner) {
-        DefaultLifecycleObserver.super.onStop(owner);
-        Utils.log(TAG, "onStop");
+        if (owner instanceof FlashingService)
+            Utils.log(TAG, "onStop: " + owner);
     }
 
     @Override
     public void onDestroy(@NonNull LifecycleOwner owner) {
-        DefaultLifecycleObserver.super.onDestroy(owner);
-        Utils.log(TAG, "onDestroy");
+        if (owner instanceof FlashingService)
+            Utils.log(TAG, "onDestroy: " + owner);
     }
 
     public void registerReceivers() {
-        Utils.log(Log.WARN, TAG, "registerReceivers() listener: " + listener);
         if (listener == null) {
             return;
         }
@@ -214,7 +208,7 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
         IntentFilter dfuControlServiceFilter = new IntentFilter();
         dfuControlServiceFilter.addAction(DfuControlService.BROADCAST_START);
         dfuControlServiceFilter.addAction(DfuControlService.BROADCAST_COMPLETED);
-        dfuControlServiceFilter.addAction(DfuControlService.BROADCAST_FAILED);
+        dfuControlServiceFilter.addAction(DfuControlService.BROADCAST_CONNECTION_FAILED);
         dfuControlServiceFilter.addAction(DfuControlService.BROADCAST_ERROR);
         LocalBroadcastManager.getInstance(context).registerReceiver(dfuControlServiceReceiver, dfuControlServiceFilter);
 
@@ -230,7 +224,6 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
     }
 
     public void unregisterReceivers() {
-        Utils.log(Log.WARN, TAG, "unregisterReceivers()");
         unregisterReceiver(bondStateReceiver);
         LocalBroadcastManager.getInstance(context).unregisterReceiver(dfuServiceReceiver);
         LocalBroadcastManager.getInstance(context).unregisterReceiver(dfuControlServiceReceiver);

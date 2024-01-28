@@ -22,6 +22,7 @@ class ScanViewModelKt(application: Application) : AndroidViewModel(application) 
     private val _devices = MutableLiveData<List<BleScanResults>>()
     val devices: LiveData<List<BleScanResults>> get() = _devices
 
+    @SuppressWarnings("MissingPermission")
     fun startScan() {
         val context = getApplication<Application>().applicationContext
         val settings = BleScannerSettings(

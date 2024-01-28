@@ -47,8 +47,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import cc.calliope.mini.FlashingService;
 import cc.calliope.mini.FileWrapper;
 import cc.calliope.mini.R;
+import cc.calliope.mini.activity.FlashingActivity;
 import cc.calliope.mini.dialog.DialogUtils;
-import cc.calliope.mini.utils.StaticExtra;
+import cc.calliope.mini.utils.StaticExtras;
 import cc.calliope.mini.databinding.FragmentScriptsBinding;
 import cc.calliope.mini.fragment.editors.Editor;
 import cc.calliope.mini.utils.Utils;
@@ -153,12 +154,12 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     }
 
     private void openDfuActivity(FileWrapper file) {
-//        final Intent intent = new Intent(activity, FlashingActivity.class);
+        final Intent intent = new Intent(activity, FlashingActivity.class);
 //        intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
-//        startActivity(intent);
+        startActivity(intent);
 
         Intent serviceIntent = new Intent(activity, FlashingService.class);
-        serviceIntent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
+        serviceIntent.putExtra(StaticExtras.EXTRA_FILE_PATH, file.getAbsolutePath());
         activity.startService(serviceIntent);
     }
 
@@ -194,9 +195,9 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
         DialogUtils.showEditDialog(activity, title, input, output -> {
             File dir = new File(FilenameUtils.getFullPath(file.getAbsolutePath()));
             if (dir.exists()) {
-                FileWrapper dest = new FileWrapper(new File(dir, output + FILE_EXTENSION), file.getEditor());
+                FileWrapper dest = new FileWrapper(new File(dir, output + FILE_EXTENSION), file.editor());
                 if (file.exists()) {
-                    if (!dest.exists() && file.renameTo(dest.getFile())) {
+                    if (!dest.exists() && file.renameTo(dest.file())) {
                         scriptsRecyclerAdapter.change(file, dest);
                     } else {
                         Utils.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_name_exists)).show();
@@ -219,7 +220,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
 
     private void shareFile(FileWrapper file) {
         if (file.exists()) {
-            Uri uri = FileProvider.getUriForFile(activity, "cc.calliope.file_provider", file.getFile());
+            Uri uri = FileProvider.getUriForFile(activity, "cc.calliope.file_provider", file.file());
             Intent intent = new Intent(Intent.ACTION_SEND);
 
             intent.setType("text/plain");

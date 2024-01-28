@@ -25,8 +25,8 @@ import java.util.UUID;
 import androidx.annotation.IntDef;
 import androidx.core.app.ActivityCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import cc.calliope.mini.App;
-import cc.calliope.mini.utils.StaticExtra;
+
+import cc.calliope.mini.utils.StaticExtras;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.utils.Version;
 
@@ -49,7 +49,7 @@ public class DfuControlService extends Service {
     private static final int DELAY_TO_CLEAR_CACHE = 2000;
     public static final String BROADCAST_START = "cc.calliope.mini.DFUControlService.BROADCAST_START";
     public static final String BROADCAST_COMPLETED = "cc.calliope.mini.DFUControlService.BROADCAST_COMPLETE";
-    public static final String BROADCAST_FAILED = "cc.calliope.mini.DFUControlService.BROADCAST_FAILED";
+    public static final String BROADCAST_CONNECTION_FAILED = "cc.calliope.mini.DFUControlService.BROADCAST_FAILED";
     public static final String BROADCAST_ERROR = "cc.calliope.mini.DFUControlService.BROADCAST_ERROR";
     public static final String EXTRA_BOARD_VERSION = "cc.calliope.mini.DFUControlService.EXTRA_BOARD_VERSION";
     public static final String EXTRA_ERROR_CODE = "cc.calliope.mini.DFUControlService.EXTRA_ERROR_CODE";
@@ -79,9 +79,8 @@ public class DfuControlService extends Service {
     @Retention(RetentionPolicy.SOURCE)
     public @interface HardwareVersion {
     }
-
     private int boardVersion = UNIDENTIFIED;
-    private App app;
+    private record IntExtra(String name, int value){}
 
     private final BroadcastReceiver bondStateReceiver = new BroadcastReceiver() {
         @Override
@@ -144,7 +143,9 @@ public class DfuControlService extends Service {
             } else {
                 String message = getStringFromResource(GattStatus.get(status).getMessage());
                 gatt.disconnect();
-                sendError(status, message);
+                Utils.log(Log.ERROR, TAG, "Error: " + status + " " + message);
+                sendBroadcast(BROADCAST_CONNECTION_FAILED);
+//                sendError(status, message);
                 //stopService(gatt);
             }
         }
@@ -209,15 +210,10 @@ public class DfuControlService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Utils.log(Log.DEBUG, TAG, "Сервіс запущений.");
-
         registerReceiver(bondStateReceiver, new IntentFilter(ACTION_BOND_STATE_CHANGED));
 
-        deviceAddress = intent.getStringExtra(StaticExtra.DEVICE_ADDRESS);
+        deviceAddress = intent.getStringExtra(StaticExtras.DEVICE_ADDRESS);
         maxRetries = intent.getIntExtra(EXTRA_MAX_RETRIES_NUMBER, 2);
-
-        app = (App) getApplication();
-        app.setAppState(App.APP_STATE_CONNECTING);
 
         connect();
 
@@ -229,12 +225,7 @@ public class DfuControlService extends Service {
         super.onDestroy();
         unregisterReceiver(bondStateReceiver);
 
-        final Intent broadcast = new Intent(isComplete ? BROADCAST_COMPLETED : BROADCAST_FAILED);
-        broadcast.putExtra(EXTRA_BOARD_VERSION, boardVersion);
-        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(broadcast);
-
-        app.setAppState(App.APP_STATE_STANDBY);
-        Utils.log(Log.DEBUG, TAG, "Сервіс зупинений.");
+        sendBroadcast(isComplete ? BROADCAST_COMPLETED : BROADCAST_CONNECTION_FAILED, new IntExtra(EXTRA_BOARD_VERSION, boardVersion));
     }
 
     private void connect() {
@@ -245,12 +236,11 @@ public class DfuControlService extends Service {
         }
         Utils.log(Log.DEBUG, TAG, "Connecting to the device...");
 
-        final Intent broadcast = new Intent(BROADCAST_START);
-        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(broadcast);
+        sendBroadcast(BROADCAST_START);
 
         BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
 
-        if(!adapter.isEnabled()){
+        if (!adapter.isEnabled()) {
             return;
         }
 
@@ -363,6 +353,20 @@ public class DfuControlService extends Service {
         broadcast.putExtra(EXTRA_ERROR_MESSAGE, message);
         LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(broadcast);
         Utils.log(Log.ERROR, TAG, message);
+    }
+
+    private void sendBroadcast(String action) {
+        sendBroadcast(action, null);
+    }
+
+    private void sendBroadcast(String action, IntExtra... extras) {
+        final Intent broadcast = new Intent(action);
+        if(extras != null){
+            for(IntExtra extra : extras){
+                broadcast.putExtra(extra.name, extra.value);
+            }
+        }
+        LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(broadcast);
     }
 
     private String getStringFromResource(int resId) {

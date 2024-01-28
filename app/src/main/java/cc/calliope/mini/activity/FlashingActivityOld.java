@@ -41,8 +41,8 @@ import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityDfuBinding;
 import cc.calliope.mini.service.DfuService;
 import cc.calliope.mini.utils.FileUtils;
-import cc.calliope.mini.utils.Preference;
-import cc.calliope.mini.utils.StaticExtra;
+import cc.calliope.mini.utils.Settings;
+import cc.calliope.mini.utils.StaticExtras;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.utils.Version;
 import cc.calliope.mini.views.BoardProgressBar;
@@ -89,7 +89,7 @@ public class FlashingActivityOld extends AppCompatActivity implements ProgressLi
         setContentView(binding.getRoot());
 
         status = binding.statusTextView;
-        progress = binding.progressTextView;
+        progress = binding.titleTextView;
         progressBar = binding.progressBar;
 
         binding.retryButton.setOnClickListener(this::onRetryClicked);
@@ -108,58 +108,63 @@ public class FlashingActivityOld extends AppCompatActivity implements ProgressLi
         progressCollector.unregisterReceivers();
     }
 
-    @Override
-    public void onDeviceConnecting() {
-        status.setText(R.string.flashing_device_connecting);
-        Utils.log(Log.WARN, TAG, "onDeviceConnecting");
-    }
+//    @Override
+//    public void onDeviceConnecting() {
+//        status.setText(R.string.flashing_device_connecting);
+//        Utils.log(Log.WARN, TAG, "onDeviceConnecting");
+//    }
+
+//    @Override
+//    public void onProcessStarting() {
+//        status.setText(R.string.flashing_process_starting);
+//        Utils.log(Log.WARN, TAG, "onProcessStarting");
+//    }
 
     @Override
-    public void onProcessStarting() {
-        status.setText(R.string.flashing_process_starting);
-        Utils.log(Log.WARN, TAG, "onProcessStarting");
-    }
-
-    @Override
-    public void onAttemptDfuMode() {
+    public void onDfuAttempt() {
         startDfuControlService();
     }
 
+//    @Override
+//    public void onEnablingDfuMode() {
+//        status.setText(R.string.flashing_enabling_dfu_mode);
+//        Utils.log(Log.WARN, TAG, "onEnablingDfuMode");
+//    }
+
+//    @Override
+//    public void onFirmwareValidating() {
+//        status.setText(R.string.flashing_firmware_validating);
+//        Utils.log(Log.WARN, TAG, "onFirmwareValidating");
+//    }
+//
+//    @Override
+//    public void onDeviceDisconnecting() {
+//        status.setText(R.string.flashing_device_disconnecting);
+//        finishActivity();
+//        Utils.log(Log.WARN, TAG, "onDeviceDisconnecting");
+//    }
+//
+//    @Override
+//    public void onCompleted() {
+//        progress.setText(String.format(getString(R.string.flashing_percent), 100));
+//        status.setText(R.string.flashing_completed);
+//        progressBar.setProgress(DfuService.PROGRESS_COMPLETED);
+//        Utils.log(Log.WARN, TAG, "onCompleted");
+//    }
+//
+//    @Override
+//    public void onAborted() {
+//        status.setText(R.string.flashing_aborted);
+//        Utils.log(Log.WARN, TAG, "onAborted");
+//    }
+
     @Override
-    public void onEnablingDfuMode() {
-        status.setText(R.string.flashing_enabling_dfu_mode);
-        Utils.log(Log.WARN, TAG, "onEnablingDfuMode");
+    public void onConnectionFailed(){
+
     }
 
     @Override
-    public void onFirmwareValidating() {
-        status.setText(R.string.flashing_firmware_validating);
-        Utils.log(Log.WARN, TAG, "onFirmwareValidating");
-    }
-
-    @Override
-    public void onDeviceDisconnecting() {
-        status.setText(R.string.flashing_device_disconnecting);
-        finishActivity();
-        Utils.log(Log.WARN, TAG, "onDeviceDisconnecting");
-    }
-
-    @Override
-    public void onCompleted() {
-        progress.setText(String.format(getString(R.string.flashing_percent), 100));
-        status.setText(R.string.flashing_completed);
-        progressBar.setProgress(DfuService.PROGRESS_COMPLETED);
-        Utils.log(Log.WARN, TAG, "onCompleted");
-    }
-
-    @Override
-    public void onAborted() {
-        status.setText(R.string.flashing_aborted);
-        Utils.log(Log.WARN, TAG, "onAborted");
-    }
-
-    @Override
-    public void onProgressChanged(int percent) {
+    public void onProgressUpdate(int percent) {
         if (percent >= 0 && percent <= 100) {
             progress.setText(String.format(getString(R.string.flashing_percent), percent));
             status.setText(R.string.flashing_uploading);
@@ -168,7 +173,7 @@ public class FlashingActivityOld extends AppCompatActivity implements ProgressLi
     }
 
     @Override
-    public void onStartDfuService(int hardwareVersion) {
+    public void onHardwareVersionReceived(int hardwareVersion) {
         Utils.log(Log.ASSERT, "DeviceInformation", "Board version: " + hardwareVersion);
 
         startFlashing(hardwareVersion);
@@ -176,7 +181,7 @@ public class FlashingActivityOld extends AppCompatActivity implements ProgressLi
     }
 
     @Override
-    public void onBonding(@NonNull BluetoothDevice device, int bondState, int previousBondState) {
+    public void onBluetoothBondingStateChanged(@NonNull BluetoothDevice device, int bondState, int previousBondState) {
         if (!currentDevice.getAddress().equals(device.getAddress())) {
             return;
         }
@@ -219,11 +224,11 @@ public class FlashingActivityOld extends AppCompatActivity implements ProgressLi
 
     private void getExtras() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        currentAddress = preferences.getString(StaticExtra.DEVICE_ADDRESS, "");
-        currentPattern = preferences.getString(StaticExtra.DEVICE_PATTERN, "ZUZUZ");
+        currentAddress = preferences.getString(StaticExtras.DEVICE_ADDRESS, "");
+        currentPattern = preferences.getString(StaticExtras.DEVICE_PATTERN, "ZUZUZ");
 
         Intent intent = getIntent();
-        currentPath = intent.getStringExtra(StaticExtra.EXTRA_FILE_PATH);
+        currentPath = intent.getStringExtra(StaticExtras.EXTRA_FILE_PATH);
 
         Utils.log(Log.INFO, TAG, "Device: " + currentAddress + " " + currentPattern);
         Utils.log(Log.INFO, TAG, "File path: " + currentPath);
@@ -239,7 +244,7 @@ public class FlashingActivityOld extends AppCompatActivity implements ProgressLi
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (bluetoothAdapter.isEnabled()) {
             currentDevice = bluetoothAdapter.getRemoteDevice(currentAddress);
-            if (Preference.isPartialFlashingEnable(this)) {
+            if (Settings.isPartialFlashingEnable(this)) {
                 startPartialFlashing();
             } else {
                 startDfuControlService();
@@ -254,7 +259,7 @@ public class FlashingActivityOld extends AppCompatActivity implements ProgressLi
 
         Intent service = new Intent(this, PartialFlashingService.class);
         service.putExtra(PartialFlashingService.EXTRA_DEVICE_ADDRESS, currentDevice.getAddress());
-        service.putExtra(StaticExtra.EXTRA_FILE_PATH, currentPath); // a path or URI must be provided.
+        service.putExtra(StaticExtras.EXTRA_FILE_PATH, currentPath); // a path or URI must be provided.
         startService(service);
     }
 
@@ -262,7 +267,7 @@ public class FlashingActivityOld extends AppCompatActivity implements ProgressLi
         Utils.log(TAG, "Starting DfuControl Service...");
 
         Intent service = new Intent(this, DfuControlService.class);
-        service.putExtra(StaticExtra.DEVICE_ADDRESS, currentDevice.getAddress());
+        service.putExtra(StaticExtras.DEVICE_ADDRESS, currentDevice.getAddress());
         startService(service);
     }
 

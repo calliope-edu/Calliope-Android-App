@@ -6,7 +6,7 @@ import android.content.Intent;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
-import cc.calliope.mini.App;
+
 import cc.calliope.mini.BuildConfig;
 import cc.calliope.mini.activity.NotificationActivity;
 import cc.calliope.mini.utils.Version;
@@ -14,8 +14,6 @@ import no.nordicsemi.android.dfu.DfuBaseService;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
 
 public class DfuService extends DfuBaseService{
-    private App app;
-
     @Override
     protected Class<? extends Activity> getNotificationTarget() {
         return NotificationActivity.class;
@@ -28,14 +26,11 @@ public class DfuService extends DfuBaseService{
             DfuServiceInitiator.createDfuNotificationChannel(getApplicationContext());
         }
         super.onCreate();
-        app = (App) getApplication();
-        app.setAppState(App.APP_STATE_FLASHING);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        app.setAppState(App.APP_STATE_STANDBY);
     }
 
     @Override

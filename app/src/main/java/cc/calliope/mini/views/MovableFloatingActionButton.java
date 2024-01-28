@@ -1,6 +1,5 @@
 package cc.calliope.mini.views;
 
-import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -14,13 +13,10 @@ import android.view.ViewGroup;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import androidx.annotation.NonNull;
 
-import cc.calliope.mini.ProgressCollector;
-import cc.calliope.mini.ProgressListener;
 import cc.calliope.mini.utils.Utils;
 
-public class MovableFloatingActionButton extends FloatingActionButton implements View.OnTouchListener, ProgressListener {
+public class MovableFloatingActionButton extends FloatingActionButton implements View.OnTouchListener{
     private final static float CLICK_DRAG_TOLERANCE = 10; // Often, there will be a slight, unintentional, drag when the user taps the FAB, so we need to account for this.
     private float downRawX, downRawY;
     private float dX, dY;
@@ -29,29 +25,24 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
 
     private int actionBarSize;
     private int progress = 0;
-    private Context context;
-    private ProgressCollector progressCollector;
-//    private boolean flashing;
 
     public MovableFloatingActionButton(Context context) {
         super(context);
-        init(context);
+        init();
     }
 
     public MovableFloatingActionButton(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init(context);
+        init();
     }
 
     public MovableFloatingActionButton(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init(context);
+        init();
     }
 
-    private void init(Context context) {
-        this.context = context;
-        progressCollector = new ProgressCollector(context);
-        progressCollector.registerProgressListener(this);
+    private void init() {
+
         setOnTouchListener(this);
         paint = new Paint();
         rectF = new RectF();
@@ -68,13 +59,11 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
 //        setProgress(0);
-        progressCollector.registerReceivers();
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        progressCollector.unregisterReceivers();
     }
 
     @Override
@@ -136,62 +125,7 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
 
     }
 
-    @Override
-    public void onDeviceConnecting() {
-        setProgress(0);
-    }
 
-    @Override
-    public void onProcessStarting() {
-        setProgress(0);
-    }
-
-    @Override
-    public void onEnablingDfuMode() {
-        setProgress(0);
-    }
-
-    @Override
-    public void onFirmwareValidating() {
-        setProgress(0);
-    }
-
-    @Override
-    public void onDeviceDisconnecting() {
-        setProgress(0);
-    }
-
-    @Override
-    public void onCompleted() {
-        setProgress(0);
-    }
-
-    @Override
-    public void onAborted() {
-        setProgress(0);
-    }
-
-    @Override
-    public void onProgressChanged(int percent) {
-        setProgress(percent);
-    }
-
-    @Override
-    public void onBonding(@NonNull BluetoothDevice device, int bondState, int previousBondState) {
-    }
-
-    @Override
-    public void onAttemptDfuMode() {
-    }
-
-    @Override
-    public void onStartDfuService(int hardwareVersion) {
-    }
-
-    @Override
-    public void onError(int code, String message) {
-        setProgress(0);
-    }
 
     public void setProgress(int percent) {
         this.progress = Math.max(percent, 0);

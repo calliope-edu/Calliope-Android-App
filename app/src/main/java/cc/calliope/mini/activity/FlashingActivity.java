@@ -23,6 +23,7 @@ import androidx.core.app.ActivityCompat;
 
 import com.google.android.material.snackbar.Snackbar;
 
+import cc.calliope.mini.FlashingService;
 import cc.calliope.mini.ProgressCollector;
 import cc.calliope.mini.ProgressListener;
 import cc.calliope.mini.R;
@@ -37,7 +38,7 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
     private static final int SNACKBAR_DURATION = 10000; // how long to display the snackbar message.
     private static final int DELAY_TO_FINISH_ACTIVITY = 5000; // delay to finish activity after flashing
     private ActivityDfuBinding binding;
-    private TextView progress;
+    private TextView title;
     private TextView status;
     private BoardProgressBar progressBar;
     private ProgressCollector progressCollector;
@@ -46,7 +47,8 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
 
     ActivityResultLauncher<Intent> bluetoothEnableResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
-                //initFlashing();
+                Intent serviceIntent = new Intent(this, FlashingService.class);
+                startService(serviceIntent);
             }
     );
 
@@ -54,97 +56,80 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        //Utils.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_no_connected)).show();
+        if(!Utils.isBluetoothEnabled()){
+            showBluetoothDisabledWarning();
+        }
 
         binding = ActivityDfuBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
         status = binding.statusTextView;
-        progress = binding.progressTextView;
+        title = binding.titleTextView;
         progressBar = binding.progressBar;
 
         binding.retryButton.setOnClickListener(this::onRetryClicked);
 
         progressCollector = new ProgressCollector(this);
         getLifecycle().addObserver(progressCollector);
-        progressCollector.registerReceivers();
     }
 
     @Override
     protected void onDestroy() {
-        binding = null;
         super.onDestroy();
-        progressCollector.unregisterReceivers();
+        binding = null;
     }
 
     @Override
-    public void onDeviceConnecting() {
-        status.setText(R.string.flashing_device_connecting);
-        Utils.log(Log.WARN, TAG, "onDeviceConnecting");
+    public void onDfuAttempt() {
     }
 
     @Override
-    public void onProcessStarting() {
-        status.setText(R.string.flashing_process_starting);
-        Utils.log(Log.WARN, TAG, "onProcessStarting");
+    public void onConnectionFailed() {
+        binding.retryButton.setVisibility(View.VISIBLE);
+        status.setText(R.string.error_snackbar_no_connected);
+        Utils.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_no_connected)).show();
     }
 
     @Override
-    public void onAttemptDfuMode() {
-    }
-
-    @Override
-    public void onEnablingDfuMode() {
-        status.setText(R.string.flashing_enabling_dfu_mode);
-        Utils.log(Log.WARN, TAG, "onEnablingDfuMode");
-    }
-
-    @Override
-    public void onFirmwareValidating() {
-        status.setText(R.string.flashing_firmware_validating);
-        Utils.log(Log.WARN, TAG, "onFirmwareValidating");
-    }
-
-    @Override
-    public void onDeviceDisconnecting() {
-        status.setText(R.string.flashing_device_disconnecting);
-        finishActivity();
-        Utils.log(Log.WARN, TAG, "onDeviceDisconnecting");
-    }
-
-    @Override
-    public void onCompleted() {
-        progress.setText(String.format(getString(R.string.flashing_percent), 100));
-        status.setText(R.string.flashing_completed);
-        progressBar.setProgress(DfuService.PROGRESS_COMPLETED);
-        Utils.log(Log.WARN, TAG, "onCompleted");
-    }
-
-    @Override
-    public void onAborted() {
-        status.setText(R.string.flashing_aborted);
-        Utils.log(Log.WARN, TAG, "onAborted");
-    }
-
-    @Override
-    public void onProgressChanged(int percent) {
-        if (percent >= 0 && percent <= 100) {
-            progress.setText(String.format(getString(R.string.flashing_percent), percent));
-            status.setText(R.string.flashing_uploading);
-            progressBar.setProgress(percent);
+    public void onProgressUpdate(int progress) {
+        switch (progress) {
+            case DfuService.PROGRESS_CONNECTING ->
+                    status.setText(R.string.flashing_device_connecting);
+            case DfuService.PROGRESS_STARTING ->
+                    status.setText(R.string.flashing_process_starting);
+            case DfuService.PROGRESS_ENABLING_DFU_MODE ->
+                    status.setText(R.string.flashing_enabling_dfu_mode);
+            case DfuService.PROGRESS_VALIDATING ->
+                    status.setText(R.string.flashing_firmware_validating);
+            case DfuService.PROGRESS_DISCONNECTING ->
+                    status.setText(R.string.flashing_device_disconnecting);
+            case DfuService.PROGRESS_ABORTED ->
+                    status.setText(R.string.flashing_aborted);
+            case DfuService.PROGRESS_COMPLETED -> {
+                title.setText(String.format(getString(R.string.flashing_percent), 100));
+                status.setText(R.string.flashing_completed);
+                progressBar.setProgress(progress);
+                finishActivity();
+            }
+            default -> {
+                title.setText(String.format(getString(R.string.flashing_percent), progress));
+                status.setText(R.string.flashing_uploading);
+                progressBar.setProgress(progress);
+            }
         }
     }
 
     @Override
-    public void onStartDfuService(int hardwareVersion) {
+    public void onHardwareVersionReceived(int hardwareVersion) {
+
     }
 
     @Override
-    public void onBonding(@NonNull BluetoothDevice device, int bondState, int previousBondState) {
+    public void onBluetoothBondingStateChanged(@NonNull BluetoothDevice device, int bondState, int previousBondState) {
         //if (!currentDevice.getAddress().equals(device.getAddress())) {
         //    return;
         //}
-        progress.setText("");
+        title.setText("");
 
         switch (bondState) {
             case BOND_BONDING -> status.setText(R.string.bonding_started);
@@ -174,6 +159,9 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
 
     private void onRetryClicked(View view) {
         view.setVisibility(View.INVISIBLE);
+        Intent serviceIntent = new Intent(this, FlashingService.class);
+//        serviceIntent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
+        startService(serviceIntent);
         //initFlashing();
     }
 

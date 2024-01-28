@@ -10,8 +10,9 @@ import androidx.fragment.app.Fragment;
 
 import cc.calliope.mini.FlashingService;
 import cc.calliope.mini.R;
-import cc.calliope.mini.utils.Preference;
-import cc.calliope.mini.utils.StaticExtra;
+import cc.calliope.mini.activity.FlashingActivity;
+import cc.calliope.mini.utils.Settings;
+import cc.calliope.mini.utils.StaticExtras;
 import cc.calliope.mini.utils.FileUtils;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.utils.Version;
@@ -307,17 +308,17 @@ public class WebFragment extends Fragment implements DownloadListener {
     }
 
     private void startDfuActivity(File file) {
-        boolean autoFlashing = Preference.isAutoFlashingEnable(getContext());
+        boolean autoFlashing = Settings.isAutoFlashingEnable(getContext());
         if (!autoFlashing) {
             return;
         }
 
-        //final Intent intent = new Intent(getActivity(), FlashingActivity.class);
+        final Intent intent = new Intent(getActivity(), FlashingActivity.class);
         //intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
-        //startActivity(intent);
+        startActivity(intent);
 
         Intent serviceIntent = new Intent(getActivity(), FlashingService.class);
-        serviceIntent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
+        serviceIntent.putExtra(StaticExtras.EXTRA_FILE_PATH, file.getAbsolutePath());
         getActivity().startService(serviceIntent);
     }
 

@@ -1,10 +1,12 @@
 package cc.calliope.mini.activity;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
@@ -29,7 +31,8 @@ import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
-import cc.calliope.mini.App;
+import cc.calliope.mini.ProgressCollector;
+import cc.calliope.mini.ProgressListener;
 import cc.calliope.mini.popup.PopupAdapter;
 import cc.calliope.mini.popup.PopupItem;
 import cc.calliope.mini.R;
@@ -40,17 +43,18 @@ import cc.calliope.mini.utils.Version;
 import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.views.MovableFloatingActionButton;
 
-public abstract class ScannerActivity extends AppCompatActivity implements DialogInterface.OnDismissListener {
+public abstract class ScannerActivity extends AppCompatActivity implements DialogInterface.OnDismissListener, ProgressListener {
     private static final int SNACKBAR_DURATION = 10000; // how long to display the snackbar message.
     private static boolean requestWasSent = false;
     private MovableFloatingActionButton patternFab;
     private ConstraintLayout rootView;
     private int screenWidth;
     private int screenHeight;
-    private App app;
     private PopupWindow popupWindow;
     private int popupMenuWidth;
     private int popupMenuHeight;
+    private ProgressCollector progressCollector;
+    private int progress;
 
     ActivityResultLauncher<Intent> bluetoothEnableResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -61,7 +65,8 @@ public abstract class ScannerActivity extends AppCompatActivity implements Dialo
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        app = (App) getApplication();
+        progressCollector = new ProgressCollector(this);
+        getLifecycle().addObserver(progressCollector);
 
 //        scannerViewModel = new ViewModelProvider(this).get(ScannerViewModel.class);
 //        scannerViewModel.getScannerState().observe(this, this::scanResults);
@@ -77,8 +82,10 @@ public abstract class ScannerActivity extends AppCompatActivity implements Dialo
     public void onResume() {
         super.onResume();
         requestWasSent = false;
+        progress = -10;
         checkPermission();
         readDisplayMetrics();
+        patternFab.setProgress(progress);
     }
 
     @Override
@@ -91,6 +98,36 @@ public abstract class ScannerActivity extends AppCompatActivity implements Dialo
     public void onDismiss(final DialogInterface dialog) {
         //Fragment dialog had been dismissed
 //        fab.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onConnectionFailed(){
+        patternFab.setProgress(-10);
+        Utils.errorSnackbar(rootView, getString(R.string.error_snackbar_no_connected)).show();
+    }
+    @Override
+    public void onProgressUpdate(int percent) {
+        progress = percent;
+        patternFab.setProgress(percent);
+    }
+
+    @Override
+    public void onBluetoothBondingStateChanged(@NonNull BluetoothDevice device, int bondState, int previousBondState) {
+    }
+
+    @Override
+    public void onDfuAttempt() {
+    }
+
+    @Override
+    public void onHardwareVersionReceived(int hardwareVersion) {
+    }
+
+    @Override
+    public void onError(int code, String message) {
+        patternFab.setProgress(-10);
+        String error = String.format(getString(R.string.flashing_error), code, message);
+        Utils.errorSnackbar(rootView, error).show();
     }
 
     private void readDisplayMetrics() {
@@ -205,7 +242,7 @@ public abstract class ScannerActivity extends AppCompatActivity implements Dialo
         Utils.log(Log.ASSERT, "SA", "position: " + position);
         popupWindow.dismiss();
         if (position == 0) {
-            if (app.getAppState() == App.APP_STATE_STANDBY) {
+            if (progress < 0) {
                 showPatternDialog(new FobParams(
                         patternFab.getWidth(),
                         patternFab.getHeight(),
@@ -219,8 +256,8 @@ public abstract class ScannerActivity extends AppCompatActivity implements Dialo
     }
 
     private void showPopupMenu(View view) {
-        Offset offset = getOffset(view);
-        popupWindow.showAsDropDown(view, offset.getX(), offset.getY());
+        Point point = getOffset(view);
+        popupWindow.showAsDropDown(view, point.x, point.y);
         dimBackground(0.5f);  // затемнюємо фон до 50%
         ViewCompat.animate(view)
                 .rotation(45.0F)
@@ -245,34 +282,7 @@ public abstract class ScannerActivity extends AppCompatActivity implements Dialo
         window.setAttributes(layoutParams);
     }
 
-    private class Offset {
-        private final int x;
-        private final int y;
-
-        public Offset(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
-
-        public int getX() {
-            return x;
-        }
-
-        public int getY() {
-            return y;
-        }
-
-        @NonNull
-        @Override
-        public String toString() {
-            return "Offset{" +
-                    "x=" + x +
-                    ", y=" + y +
-                    '}';
-        }
-    }
-
-    private Offset getOffset(View view) {
+    private Point getOffset(View view) {
         int x;
         int y;
 
@@ -288,7 +298,7 @@ public abstract class ScannerActivity extends AppCompatActivity implements Dialo
             y = (Utils.convertDpToPixel(this, 4) + view.getHeight() + popupMenuHeight) * -1;
         }
 
-        return new Offset(x, y);
+        return new Point(x, y);
     }
 
     private void startFlashingActivity() {

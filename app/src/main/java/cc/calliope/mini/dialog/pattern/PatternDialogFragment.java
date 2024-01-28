@@ -29,10 +29,10 @@ import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
-import cc.calliope.mini.MyDeviceKt;
+import cc.calliope.mini.DeviceKt;
 import cc.calliope.mini.PatternMatrixView;
 import cc.calliope.mini.ScanViewModelKt;
-import cc.calliope.mini.utils.StaticExtra;
+import cc.calliope.mini.utils.StaticExtras;
 import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.DialogPatternBinding;
@@ -45,6 +45,7 @@ public class PatternDialogFragment extends DialogFragment {
     private final static int DIALOG_WIDTH = 220; //dp
     private final static int DIALOG_HEIGHT = 240; //dp
     private static final String FOB_PARAMS_PARCELABLE = "fob_params_parcelable";
+    private static final String TAG = "PatternDialogFragment";
     private DialogPatternBinding binding;
     private String currentPattern;
     private String currentAddress;
@@ -97,13 +98,13 @@ public class PatternDialogFragment extends DialogFragment {
             @Override
             public void onChanged(List<BleScanResults> scanResults) {
                 for (BleScanResults results : scanResults) {
-                    MyDeviceKt device = new MyDeviceKt(results);
+                    DeviceKt device = new DeviceKt(results);
 
                     if (!device.getPattern().isEmpty() && device.getPattern().equals(currentPattern)) {
                         currentAddress = device.getAddress();
                         binding.buttonAction.setBackgroundResource(device.isActual() ? R.drawable.btn_connect_green : R.drawable.btn_connect_aqua);
 
-                        Log.println(Log.DEBUG, "DIALOG",
+                        Utils.log(Log.DEBUG, TAG,
                                 "address: " + device.getAddress() + ", " +
                                         "pattern: " + device.getPattern() + ", " +
                                         "bonded: " + device.isBonded() + ", " +
@@ -142,7 +143,7 @@ public class PatternDialogFragment extends DialogFragment {
             @Override
             public void onGlobalLayout() {
                 view.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                Log.v("DIALOG", String.format("Window size: width %d; height %d", view.getWidth(), view.getHeight()));
+                Utils.log(Log.DEBUG, TAG, String.format("Window size: width %d; height %d", view.getWidth(), view.getHeight()));
             }
         });
     }
@@ -205,14 +206,14 @@ public class PatternDialogFragment extends DialogFragment {
 
     public void saveCurrentDevice() {
         SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(context).edit();
-        editor.putString(StaticExtra.DEVICE_ADDRESS, currentAddress);
-        editor.putString(StaticExtra.DEVICE_PATTERN, currentPattern);
+        editor.putString(StaticExtras.DEVICE_ADDRESS, currentAddress);
+        editor.putString(StaticExtras.DEVICE_PATTERN, currentPattern);
         editor.apply();
     }
 
     public void loadCurrentDevice() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        currentAddress = preferences.getString(StaticExtra.DEVICE_ADDRESS, "");
-        currentPattern = preferences.getString(StaticExtra.DEVICE_PATTERN, "ZUZUZ");
+        currentAddress = preferences.getString(StaticExtras.DEVICE_ADDRESS, "");
+        currentPattern = preferences.getString(StaticExtras.DEVICE_PATTERN, "ZUZUZ");
     }
 }

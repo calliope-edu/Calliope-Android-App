@@ -16,6 +16,7 @@ import androidx.navigation.Navigation;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.FragmentItemBinding;
 import cc.calliope.mini.utils.Preference;
+import cc.calliope.mini.utils.Settings;
 import cc.calliope.mini.utils.Utils;
 
 public class EditorsItemFragment extends Fragment {
@@ -108,7 +109,7 @@ public class EditorsItemFragment extends Fragment {
         if (Utils.isNetworkConnected(activity)) {
             String url = editor.getUrl();
             if (editor == Editor.CUSTOM) {
-                url = Preference.getCustomLink(getContext());
+                url = Settings.getCustomLink(getContext());
             }
             showWebFragment(url, editor.toString());
         } else {
