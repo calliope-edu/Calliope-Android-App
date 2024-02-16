@@ -86,10 +86,9 @@ public class PatternDialogFragment extends DialogFragment {
         super.onViewCreated(view, savedInstanceState);
         customizeDialog(view);
 
-        loadCurrentDevice();
-
         PatternMatrixView patternView = binding.patternView;
 
+        loadCurrentDevice();
         paintedPattern = currentPattern;
         patternView.setPattern(currentPattern);
         patternView.setOnPatternChangeListener(pattern -> {
@@ -209,7 +208,7 @@ public class PatternDialogFragment extends DialogFragment {
     public void saveCurrentDevice() {
         SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(context).edit();
         editor.putString(StaticExtras.DEVICE_ADDRESS, currentAddress);
-        editor.putString(StaticExtras.DEVICE_PATTERN, currentPattern);
+        editor.putString(StaticExtras.DEVICE_PATTERN, paintedPattern);
         editor.apply();
     }
 
