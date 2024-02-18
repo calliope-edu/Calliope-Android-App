@@ -11,6 +11,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
@@ -21,13 +22,9 @@ import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 
-import java.util.List;
-import java.util.Objects;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
-import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
 import cc.calliope.mini.DeviceKt;
@@ -38,11 +35,18 @@ import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.DialogPatternBinding;
 import cc.calliope.mini.utils.Utils;
+import no.nordicsemi.android.kotlin.ble.core.ServerDevice;
+import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResultData;
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResults;
 
 import androidx.preference.PreferenceManager;
 
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class PatternDialogFragment extends DialogFragment {
+    private static final int RELEVANT_LIMIT = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O ? 5 : 10;
     private final static int DIALOG_WIDTH = 220; //dp
     private final static int DIALOG_HEIGHT = 240; //dp
     private static final String FOB_PARAMS_PARCELABLE = "fob_params_parcelable";
@@ -51,6 +55,10 @@ public class PatternDialogFragment extends DialogFragment {
     private String paintedPattern;
     private String currentPattern;
     private String currentAddress;
+    //private String devicePattern;
+    //private String deviceAddress;
+    private boolean isDeviceActual;
+    private boolean isDeviceAvailable;
     private Context context;
 
     private record Position(int x, int y) {
@@ -89,7 +97,6 @@ public class PatternDialogFragment extends DialogFragment {
         PatternMatrixView patternView = binding.patternView;
 
         loadCurrentDevice();
-        paintedPattern = currentPattern;
         patternView.setPattern(currentPattern);
         patternView.setOnPatternChangeListener(pattern -> {
             binding.buttonAction.setBackgroundResource(R.drawable.btn_connect_aqua);
@@ -97,26 +104,42 @@ public class PatternDialogFragment extends DialogFragment {
         });
 
         ScanViewModelKt scanViewModelKt = new ViewModelProvider(this).get(ScanViewModelKt.class);
-        scanViewModelKt.getDevices().observe(this, scanResults -> {
-            for (BleScanResults results : scanResults) {
-                DeviceKt device = new DeviceKt(results);
+        scanViewModelKt.getDevices().observe(this, devices -> {
+            for (DeviceKt device : devices) {
+                if(device.getAddress().equals("D8:0F:45:61:FE:65")){
+                    Utils.log(Log.DEBUG, TAG, "\npaintedPattern: " + paintedPattern + "\ndeviceName: " + device.getName() +
+                            "\ndevicePattern: " + device.getPattern() + "\ndeviceAddress: " + device.getAddress());
+                }
 
-                if ((!device.getPattern().isEmpty() && device.getPattern().equals(paintedPattern)) ||
-                        (Objects.equals(currentPattern, paintedPattern) && Objects.equals(currentAddress, device.getAddress()))) {
+//                String deviceAddress = device.getAddress();
+//                String devicePattern = getPattern(device);
+
+                isDeviceAvailable = false;
+
+                if(paintedPattern != null){
+                    if(paintedPattern.equals(device.getPattern())){
+                        currentAddress = device.getAddress();
+                        currentPattern = device.getPattern();
+                        setBackGroundResource(device);
+                    } else if(currentPattern.equals(paintedPattern) && currentAddress.equals(device.getAddress())){
+                        setBackGroundResource(device);
+                    }
+                }else if(currentAddress.equals(device.getAddress())){
+                    setBackGroundResource(device);
+                }else if(currentPattern.equals(device.getPattern())){
                     currentAddress = device.getAddress();
-                    binding.buttonAction.setBackgroundResource(device.isActual() ? R.drawable.btn_connect_green : R.drawable.btn_connect_aqua);
-
-                    Utils.log(Log.DEBUG, TAG,
-                            "address: " + device.getAddress() + ", " +
-                                    "pattern: " + device.getPattern() + ", " +
-                                    "bonded: " + device.isBonded() + ", " +
-                                    "actual: " + device.isActual());
+                    setBackGroundResource(device);
                 }
             }
         });
         scanViewModelKt.startScan();
 
         binding.buttonAction.setOnClickListener(this::onConnectClick);
+    }
+
+    private void setBackGroundResource(DeviceKt device) {
+        isDeviceActual = device.isActual();
+        binding.buttonAction.setBackgroundResource(isDeviceActual ? R.drawable.btn_connect_green : R.drawable.btn_connect_aqua);
     }
 
     private void customizeDialog(View view) {
@@ -185,7 +208,9 @@ public class PatternDialogFragment extends DialogFragment {
     }
 
     public void onConnectClick(View view) {
-        saveCurrentDevice();
+        if(isDeviceActual){
+            saveCurrentDevice();
+        }
         dismiss();
     }
 
@@ -205,10 +230,42 @@ public class PatternDialogFragment extends DialogFragment {
         }
     };
 
+    private String getPattern(ServerDevice device) {
+        String address = device.getAddress();
+        String name = device.getName();
+        if (name == null) {
+            return "";
+        }
+        String pattern = "[a-zA-Z :]+\\[([A-Z]{5})]";
+        name = name.toUpperCase();
+        Pattern compiledPattern = Pattern.compile(pattern);
+        Matcher matcher = compiledPattern.matcher(name);
+        if (matcher.find()) {
+            return matcher.group(1);
+//        } else if (currentAddress.equals(address)) {
+//            return currentPattern;
+        } else {
+            return "";
+        }
+    }
+
+    public boolean isDeviceActual(BleScanResultData bleScanResultData){
+        if (bleScanResultData != null) {
+            long timeSinceBoot = nanosecondsToSeconds(SystemClock.elapsedRealtimeNanos());
+            long timeSinceScan = nanosecondsToSeconds(bleScanResultData.getTimestampNanos());
+            return timeSinceBoot - timeSinceScan < RELEVANT_LIMIT;
+        }
+        return false;
+    }
+
+    private long nanosecondsToSeconds(long nanoseconds) {
+        return TimeUnit.NANOSECONDS.toSeconds(nanoseconds);
+    }
+
     public void saveCurrentDevice() {
         SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(context).edit();
         editor.putString(StaticExtras.DEVICE_ADDRESS, currentAddress);
-        editor.putString(StaticExtras.DEVICE_PATTERN, paintedPattern);
+        editor.putString(StaticExtras.DEVICE_PATTERN, currentPattern);
         editor.apply();
     }
 

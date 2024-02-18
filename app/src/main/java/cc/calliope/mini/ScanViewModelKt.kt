@@ -1,11 +1,13 @@
 package cc.calliope.mini
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -21,8 +23,8 @@ import no.nordicsemi.android.kotlin.ble.scanner.BleScanner
 
 class ScanViewModelKt(application: Application) : AndroidViewModel(application) {
 
-    private val _devices = MutableLiveData<List<BleScanResults>>()
-    val devices: LiveData<List<BleScanResults>> get() = _devices
+    private val _devices = MutableLiveData<List<DeviceKt>>()
+    val devices: LiveData<List<DeviceKt>> get() = _devices
 
     @SuppressWarnings("MissingPermission")
     fun startScan() {
@@ -31,7 +33,7 @@ class ScanViewModelKt(application: Application) : AndroidViewModel(application) 
         val settings = BleScannerSettings(
             BleScanMode.SCAN_MODE_BALANCED,
             0L,
-            true,
+            false,
             BleScannerCallbackType.CALLBACK_TYPE_ALL_MATCHES,
             BleNumOfMatches.MATCH_NUM_MAX_ADVERTISEMENT,
             BleScannerMatchMode.MATCH_MODE_AGGRESSIVE,
@@ -41,10 +43,12 @@ class ScanViewModelKt(application: Application) : AndroidViewModel(application) 
 
         //Create aggregator which will concat scan records with a device
         val aggregator = Aggregator()
-
         BleScanner(context).scan(filters, settings)
-            .map { aggregator.aggregate(it) }// Add new device and return an aggregated list
+            .map { aggregator.aggregateDevices(it) }// Add new device and return an aggregated list
             .onEach { _devices.value = it } // Propagated state to UI
+            .catch { exception ->
+                Log.e("BleScan", "Error during BLE scan or data aggregation", exception)
+            }
             .launchIn(viewModelScope) // Scanning will stop after we leave the screen
     }
 

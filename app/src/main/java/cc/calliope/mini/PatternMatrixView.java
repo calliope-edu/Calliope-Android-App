@@ -147,7 +147,7 @@ public class PatternMatrixView extends View {
     }
 
     public void setPattern(String pattern) {
-        if (pattern.length() != SIZE) {
+        if (pattern == null || pattern.length() != SIZE) {
             throw new IllegalArgumentException("The string must contain " + SIZE + " letters.");
         }
 
