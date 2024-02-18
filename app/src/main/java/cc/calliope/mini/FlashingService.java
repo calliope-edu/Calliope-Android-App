@@ -11,11 +11,13 @@ import android.util.Log;
 
 import androidx.preference.PreferenceManager;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -99,7 +101,6 @@ public class FlashingService extends FlashingBaseService {
     public void onError(int code, String message) {
         Utils.log(Log.ASSERT, TAG, "ERROR: " + code + " " + message);
         if (code == 4110) {
-            String msg = "Device not bound. Please bind the mini and try again.";
             BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
             if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
                 Utils.log(Log.ERROR, TAG, "Bluetooth not enabled");

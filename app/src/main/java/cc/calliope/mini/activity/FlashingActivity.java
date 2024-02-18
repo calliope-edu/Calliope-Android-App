@@ -140,14 +140,6 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
 
     @Override
     public void onError(int code, String message) {
-        if (code == 4110) {
-            if ((Version.VERSION_S_AND_NEWER && ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED)
-                    && ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED) {
-                Utils.log(Log.ERROR, TAG, "BLUETOOTH permission no granted");
-                return;
-            }
-//            currentDevice.createBond();
-        }
         progressBar.setProgress(0);
         binding.retryButton.setVisibility(View.VISIBLE);
         String error = String.format(getString(R.string.flashing_error), code, message);

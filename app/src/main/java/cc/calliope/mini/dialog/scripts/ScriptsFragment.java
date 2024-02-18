@@ -184,7 +184,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
             return false;
 
         });
-        popup.inflate(R.menu.scripts_popup_menu);
+        popup.inflate(isMiniConnected() ? R.menu.scripts_popup_menu_ex : R.menu.scripts_popup_menu);
         popup.show();
     }
 
