@@ -106,14 +106,6 @@ public class PatternDialogFragment extends DialogFragment {
         ScanViewModelKt scanViewModelKt = new ViewModelProvider(this).get(ScanViewModelKt.class);
         scanViewModelKt.getDevices().observe(this, devices -> {
             for (DeviceKt device : devices) {
-                if(device.getAddress().equals("D8:0F:45:61:FE:65")){
-                    Utils.log(Log.DEBUG, TAG, "\npaintedPattern: " + paintedPattern + "\ndeviceName: " + device.getName() +
-                            "\ndevicePattern: " + device.getPattern() + "\ndeviceAddress: " + device.getAddress());
-                }
-
-//                String deviceAddress = device.getAddress();
-//                String devicePattern = getPattern(device);
-
                 isDeviceAvailable = false;
 
                 if(paintedPattern != null){
