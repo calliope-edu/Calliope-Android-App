@@ -1,17 +1,14 @@
 package cc.calliope.mini.utils;
 
 import android.content.Context;
-import android.content.SharedPreferences;
-
 import androidx.preference.PreferenceManager;
 
 public class Preference {
-
     public static String getString(Context context, String key, String defValue) {
         return PreferenceManager.getDefaultSharedPreferences(context).getString(key, defValue);
     }
 
-    public void putString(Context context, String key, String value) {
+    public static void putString(Context context, String key, String value) {
         PreferenceManager.getDefaultSharedPreferences(context).edit().putString(key, value).apply();
     }
 
