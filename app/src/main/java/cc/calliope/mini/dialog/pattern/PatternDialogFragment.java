@@ -11,7 +11,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
-import android.os.SystemClock;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
@@ -35,16 +34,8 @@ import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.DialogPatternBinding;
 import cc.calliope.mini.utils.Utils;
-import no.nordicsemi.android.kotlin.ble.core.ServerDevice;
-import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResultData;
-import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResults;
 
 import androidx.preference.PreferenceManager;
-
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 public class PatternDialogFragment extends DialogFragment {
     private static final int RELEVANT_LIMIT = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O ? 5 : 10;
     private final static int DIALOG_WIDTH = 220; //dp
@@ -55,10 +46,7 @@ public class PatternDialogFragment extends DialogFragment {
     private String paintedPattern;
     private String currentPattern;
     private String currentAddress;
-    //private String devicePattern;
-    //private String deviceAddress;
     private boolean isDeviceActual;
-    private boolean isDeviceAvailable;
     private Context context;
 
     private record Position(int x, int y) {
@@ -106,20 +94,22 @@ public class PatternDialogFragment extends DialogFragment {
         ScanViewModelKt scanViewModelKt = new ViewModelProvider(this).get(ScanViewModelKt.class);
         scanViewModelKt.getDevices().observe(this, devices -> {
             for (DeviceKt device : devices) {
-                isDeviceAvailable = false;
+                boolean shouldUpdateBackground = false;
 
-                if(paintedPattern != null){
-                    if(paintedPattern.equals(device.getPattern())){
+                if (paintedPattern != null) {
+                    if (paintedPattern.equals(device.getPattern())) {
                         currentAddress = device.getAddress();
                         currentPattern = device.getPattern();
-                        setBackGroundResource(device);
-                    } else if(currentPattern.equals(paintedPattern) && currentAddress.equals(device.getAddress())){
-                        setBackGroundResource(device);
+                        shouldUpdateBackground = true;
+                    } else if (currentPattern.equals(paintedPattern) && currentAddress.equals(device.getAddress())) {
+                        shouldUpdateBackground = true;
                     }
-                }else if(currentAddress.equals(device.getAddress())){
-                    setBackGroundResource(device);
-                }else if(currentPattern.equals(device.getPattern())){
-                    currentAddress = device.getAddress();
+                } else if (currentAddress.equals(device.getAddress()) || currentPattern.equals(device.getPattern())) {
+                    //currentAddress = device.getAddress();
+                    shouldUpdateBackground = true;
+                }
+
+                if (shouldUpdateBackground) {
                     setBackGroundResource(device);
                 }
             }
@@ -221,38 +211,6 @@ public class PatternDialogFragment extends DialogFragment {
             }
         }
     };
-
-    private String getPattern(ServerDevice device) {
-        String address = device.getAddress();
-        String name = device.getName();
-        if (name == null) {
-            return "";
-        }
-        String pattern = "[a-zA-Z :]+\\[([A-Z]{5})]";
-        name = name.toUpperCase();
-        Pattern compiledPattern = Pattern.compile(pattern);
-        Matcher matcher = compiledPattern.matcher(name);
-        if (matcher.find()) {
-            return matcher.group(1);
-//        } else if (currentAddress.equals(address)) {
-//            return currentPattern;
-        } else {
-            return "";
-        }
-    }
-
-    public boolean isDeviceActual(BleScanResultData bleScanResultData){
-        if (bleScanResultData != null) {
-            long timeSinceBoot = nanosecondsToSeconds(SystemClock.elapsedRealtimeNanos());
-            long timeSinceScan = nanosecondsToSeconds(bleScanResultData.getTimestampNanos());
-            return timeSinceBoot - timeSinceScan < RELEVANT_LIMIT;
-        }
-        return false;
-    }
-
-    private long nanosecondsToSeconds(long nanoseconds) {
-        return TimeUnit.NANOSECONDS.toSeconds(nanoseconds);
-    }
 
     public void saveCurrentDevice() {
         SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(context).edit();
