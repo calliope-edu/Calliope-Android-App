@@ -40,4 +40,14 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/ic_editors_library" />
+
+    <TextView
+        android:id="@+id/hex_file_version_text_view"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/version_background"
+        android:text="v2"
+        android:textSize="10sp"
+        app:layout_constraintStart_toStartOf="@+id/hex_file_icon"
+        app:layout_constraintTop_toTopOf="@+id/hex_file_icon" />
 </androidx.constraintlayout.widget.ConstraintLayout>

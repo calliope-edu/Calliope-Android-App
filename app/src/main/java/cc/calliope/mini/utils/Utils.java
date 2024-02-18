@@ -134,9 +134,9 @@ public class Utils {
         }
 
         if (firstLine != null) {
-            if (firstLine.startsWith(":0200")) {
+            if (firstLine.startsWith(":020000040000FA")) {
                 return 1; // Версія 1
-            } else if (firstLine.startsWith(":1000")) {
+            } else if (firstLine.startsWith(":1000000000040020810A000015070000610A0000BA")) {
                 return 2; // Версія 2
             }
         }

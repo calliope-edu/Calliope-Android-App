@@ -115,6 +115,7 @@ public class ScriptsRecyclerAdapter extends RecyclerView.Adapter<ScriptsRecycler
     static class ViewHolder extends RecyclerView.ViewHolder{
         private final TextView name;
         private final TextView date;
+        private final TextView version;
         private final ImageView icon;
 
         private ViewHolder(View view) {
@@ -122,15 +123,18 @@ public class ScriptsRecyclerAdapter extends RecyclerView.Adapter<ScriptsRecycler
 
             name = view.findViewById(R.id.hex_file_name_text_view);
             date = view.findViewById(R.id.hex_file_date_text_view);
+            version = view.findViewById(R.id.hex_file_version_text_view);
             icon = view.findViewById(R.id.hex_file_icon);
         }
 
         void setItem(FileWrapper file) {
             String name = FilenameUtils.removeExtension(file.getName());
-            String date = "v" + Utils.getFileVersion(file.getAbsolutePath()) + " " + Utils.dateFormat(file.lastModified());
+            String date = Utils.dateFormat(file.lastModified());
+            String version = "v" + Utils.getFileVersion(file.getAbsolutePath());
 
             this.name.setText(name);
             this.date.setText(date);
+            this.version.setText(version);
             this.icon.setImageResource(file.editor().getIconResId());
         }
     }
