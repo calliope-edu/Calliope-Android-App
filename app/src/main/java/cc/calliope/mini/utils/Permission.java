@@ -43,6 +43,6 @@ public class Permission {
     }
 
     public static void markPermissionRequested(Activity activity, String... permissions) {
-        Preference.setBoolean(activity, permissions[0], true);
+        Preference.putBoolean(activity, permissions[0], true);
     }
 }
