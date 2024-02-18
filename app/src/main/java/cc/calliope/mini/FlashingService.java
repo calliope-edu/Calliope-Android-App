@@ -168,6 +168,14 @@ public class FlashingService extends FlashingBaseService {
             return;
         }
 
+        int fv = Utils.getFileVersion(currentPath);
+        if (fv == -1 || fv == 0){
+            Utils.log(Log.ERROR, TAG, "File not found or unknown version");
+            return;
+        } else {
+            Utils.log(Log.INFO, TAG, "File version: " + fv);
+        }
+
         HexToDfu hexToDFU = universalHexToDFU(currentPath, hardwareVersion);
         String hexPath = hexToDFU.path;
         int hexSize = hexToDFU.size;

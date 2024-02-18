@@ -124,6 +124,25 @@ public class Utils {
         return DateFormat.format(OUTPUT_DATE_FORMAT, date.getTime()).toString();
     }
 
+    public static int getFileVersion(String filePath) {
+        String firstLine;
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            firstLine = br.readLine(); // Читаємо перший рядок файлу
+        } catch (IOException e) {
+            e.printStackTrace();
+            return -1; // Повертаємо -1 у разі помилки читання файлу
+        }
+
+        if (firstLine != null) {
+            if (firstLine.startsWith(":0200")) {
+                return 1; // Версія 1
+            } else if (firstLine.startsWith(":1000")) {
+                return 2; // Версія 2
+            }
+        }
+        return 0; // Невизначена версія, якщо не збігається з жодними критеріями
+    }
+
     public static void log(int priority, String TAG, String message) {
         Log.println(priority, TAG, "### " + android.os.Process.myTid() + " # " + message);
     }

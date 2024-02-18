@@ -126,8 +126,11 @@ public class ScriptsRecyclerAdapter extends RecyclerView.Adapter<ScriptsRecycler
         }
 
         void setItem(FileWrapper file) {
-            this.name.setText(FilenameUtils.removeExtension(file.getName()));
-            this.date.setText(Utils.dateFormat(file.lastModified()));
+            String name = FilenameUtils.removeExtension(file.getName());
+            String date = "v" + Utils.getFileVersion(file.getAbsolutePath()) + " " + Utils.dateFormat(file.lastModified());
+
+            this.name.setText(name);
+            this.date.setText(date);
             this.icon.setImageResource(file.editor().getIconResId());
         }
     }
