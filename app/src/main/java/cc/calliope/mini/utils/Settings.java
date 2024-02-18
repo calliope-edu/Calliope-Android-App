@@ -11,7 +11,7 @@ public class Settings extends Preference{
     private static final String PREF_KEY_CUSTOM_LINK = "pref_key_custom_link";
 
     public static boolean isAutoFlashingEnable(Context context){
-        return getBoolean(context, PREF_KEY_ENABLE_AUTO_FLASHING, false);
+        return getBoolean(context, PREF_KEY_ENABLE_AUTO_FLASHING, true);
     }
 
     public static boolean isPartialFlashingEnable(Context context){
