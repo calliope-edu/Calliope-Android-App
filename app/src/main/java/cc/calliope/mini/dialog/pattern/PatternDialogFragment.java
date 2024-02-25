@@ -214,14 +214,14 @@ public class PatternDialogFragment extends DialogFragment {
 
     public void saveCurrentDevice() {
         SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(context).edit();
-        editor.putString(StaticExtras.DEVICE_ADDRESS, currentAddress);
-        editor.putString(StaticExtras.DEVICE_PATTERN, currentPattern);
+        editor.putString(StaticExtras.CURRENT_DEVICE_ADDRESS, currentAddress);
+        editor.putString(StaticExtras.CURRENT_DEVICE_PATTERN, currentPattern);
         editor.apply();
     }
 
     public void loadCurrentDevice() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        currentAddress = preferences.getString(StaticExtras.DEVICE_ADDRESS, "");
-        currentPattern = preferences.getString(StaticExtras.DEVICE_PATTERN, "ZUZUZ");
+        currentAddress = preferences.getString(StaticExtras.CURRENT_DEVICE_ADDRESS, "");
+        currentPattern = preferences.getString(StaticExtras.CURRENT_DEVICE_PATTERN, "ZUZUZ");
     }
 }

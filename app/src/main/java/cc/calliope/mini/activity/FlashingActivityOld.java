@@ -224,8 +224,8 @@ public class FlashingActivityOld extends AppCompatActivity implements ProgressLi
 
     private void getExtras() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        currentAddress = preferences.getString(StaticExtras.DEVICE_ADDRESS, "");
-        currentPattern = preferences.getString(StaticExtras.DEVICE_PATTERN, "ZUZUZ");
+        currentAddress = preferences.getString(StaticExtras.CURRENT_DEVICE_ADDRESS, "");
+        currentPattern = preferences.getString(StaticExtras.CURRENT_DEVICE_PATTERN, "ZUZUZ");
 
         Intent intent = getIntent();
         currentPath = intent.getStringExtra(StaticExtras.EXTRA_FILE_PATH);
@@ -267,7 +267,7 @@ public class FlashingActivityOld extends AppCompatActivity implements ProgressLi
         Utils.log(TAG, "Starting DfuControl Service...");
 
         Intent service = new Intent(this, DfuControlService.class);
-        service.putExtra(StaticExtras.DEVICE_ADDRESS, currentDevice.getAddress());
+        service.putExtra(StaticExtras.CURRENT_DEVICE_ADDRESS, currentDevice.getAddress());
         startService(service);
     }
 

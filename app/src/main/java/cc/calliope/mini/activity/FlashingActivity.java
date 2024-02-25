@@ -4,11 +4,9 @@ import static android.bluetooth.BluetoothDevice.BOND_BONDED;
 import static android.bluetooth.BluetoothDevice.BOND_BONDING;
 import static android.bluetooth.BluetoothDevice.BOND_NONE;
 
-import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -19,7 +17,6 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 
 import com.google.android.material.snackbar.Snackbar;
 
@@ -29,8 +26,9 @@ import cc.calliope.mini.ProgressListener;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityDfuBinding;
 import cc.calliope.mini.service.DfuService;
+import cc.calliope.mini.utils.Preference;
+import cc.calliope.mini.utils.StaticExtras;
 import cc.calliope.mini.utils.Utils;
-import cc.calliope.mini.utils.Version;
 import cc.calliope.mini.views.BoardProgressBar;
 
 public class FlashingActivity extends AppCompatActivity implements ProgressListener {
@@ -140,11 +138,13 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
 
     @Override
     public void onError(int code, String message) {
+        if (code == 4110) {
+            return;
+        }
         progressBar.setProgress(0);
         binding.retryButton.setVisibility(View.VISIBLE);
         String error = String.format(getString(R.string.flashing_error), code, message);
         Utils.errorSnackbar(binding.getRoot(), error).show();
-//        progress.setText(String.format(getString(R.string.flashing_error), code));
         status.setText(error);
         Utils.log(Log.ERROR, TAG, "ERROR " + code + ", " + message);
     }
@@ -152,9 +152,8 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
     private void onRetryClicked(View view) {
         view.setVisibility(View.INVISIBLE);
         Intent serviceIntent = new Intent(this, FlashingService.class);
-//        serviceIntent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
+        serviceIntent.putExtra(StaticExtras.EXTRA_FILE_PATH, Preference.getString(this, StaticExtras.CURRENT_FILE_PATH, ""));
         startService(serviceIntent);
-        //initFlashing();
     }
 
     private void showBluetoothDisabledWarning() {

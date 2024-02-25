@@ -122,6 +122,9 @@
         <service
             android:name=".FlashingService"
             android:enabled="true" />
+        <service
+            android:name=".MyService"
+            android:enabled="true" />
 
     </application>
 </manifest>

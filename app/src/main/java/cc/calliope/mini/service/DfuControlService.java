@@ -145,6 +145,7 @@ public class DfuControlService extends Service {
                 gatt.disconnect();
                 Utils.log(Log.ERROR, TAG, "Error: " + status + " " + message);
                 sendBroadcast(BROADCAST_CONNECTION_FAILED);
+                stopSelf();
 //                sendError(status, message);
                 //stopService(gatt);
             }
@@ -210,9 +211,10 @@ public class DfuControlService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Utils.log (Log.DEBUG, TAG, "DFUControlService onStartCommand");
         registerReceiver(bondStateReceiver, new IntentFilter(ACTION_BOND_STATE_CHANGED));
 
-        deviceAddress = intent.getStringExtra(StaticExtras.DEVICE_ADDRESS);
+        deviceAddress = intent.getStringExtra(StaticExtras.CURRENT_DEVICE_ADDRESS);
         maxRetries = intent.getIntExtra(EXTRA_MAX_RETRIES_NUMBER, 2);
 
         connect();
@@ -222,6 +224,7 @@ public class DfuControlService extends Service {
 
     @Override
     public void onDestroy() {
+        Utils.log(Log.DEBUG, TAG, "DFUControlService onDestroy()");
         super.onDestroy();
         unregisterReceiver(bondStateReceiver);
 
@@ -333,6 +336,7 @@ public class DfuControlService extends Service {
             }
         } catch (final InterruptedException e) {
             Utils.log(Log.ERROR, TAG, "Sleeping interrupted, " + e);
+            stopSelf();
         }
     }
 
@@ -343,6 +347,7 @@ public class DfuControlService extends Service {
                 mLock.wait(millis);
             } catch (final InterruptedException e) {
                 Utils.log(Log.ERROR, TAG, "Sleeping interrupted, " + e);
+                stopSelf();
             }
         }
     }
@@ -353,6 +358,7 @@ public class DfuControlService extends Service {
         broadcast.putExtra(EXTRA_ERROR_MESSAGE, message);
         LocalBroadcastManager.getInstance(getApplicationContext()).sendBroadcast(broadcast);
         Utils.log(Log.ERROR, TAG, message);
+        stopSelf();
     }
 
     private void sendBroadcast(String action) {

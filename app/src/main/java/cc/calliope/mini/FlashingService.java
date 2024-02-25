@@ -3,21 +3,21 @@ package cc.calliope.mini;
 import static cc.calliope.mini.service.DfuControlService.MINI_V1;
 import static cc.calliope.mini.service.DfuControlService.UNIDENTIFIED;
 
+import android.app.ActivityManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
 
 import androidx.preference.PreferenceManager;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -28,6 +28,7 @@ import cc.calliope.mini.service.DfuControlService;
 import cc.calliope.mini.service.DfuService;
 import cc.calliope.mini.service.PartialFlashingService;
 import cc.calliope.mini.utils.FileUtils;
+import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Settings;
 import cc.calliope.mini.utils.StaticExtras;
 import cc.calliope.mini.utils.Utils;
@@ -38,6 +39,7 @@ import cc.calliope.mini.utils.irmHexUtils;
 
 public class FlashingService extends FlashingBaseService {
     private static final String TAG = "FlashingService";
+    private static boolean isThisServiceRunning = false;
     private static final int NUMBER_OF_RETRIES = 3;
     private static final int REBOOT_TIME = 2000; // time required by the device to reboot, ms
     private String currentAddress;
@@ -51,38 +53,33 @@ public class FlashingService extends FlashingBaseService {
     @Override
     public void onCreate() {
         super.onCreate();
-        Utils.log(Log.ASSERT, TAG, "onCreate");
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Utils.log(Log.ASSERT, TAG, "onDestroy");
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-        Utils.log(Log.ASSERT, TAG, "onStartCommand");
+        Utils.log(Log.DEBUG, TAG, "FlashingService started");
 
-        if (Utils.isBluetoothEnabled() && progress < 0) {
-            String path = intent.getStringExtra(StaticExtras.EXTRA_FILE_PATH);
-            if(path != null && !path.isEmpty()) {
-                currentPath = path;
-            }
-            Utils.log(Log.INFO, TAG, "File path: " + currentPath);
-
-            getDevice();
-            if (isValidBluetoothMAC(currentAddress)) {
-                if (Settings.isPartialFlashingEnable(this)) {
-                    startPartialFlashing();
-                } else {
-                    startDfuControlService();
-                }
-            } else {
-                Utils.log(Log.WARN, TAG, "Bluetooth MAC incorrect");
-            }
+        if (isThisServiceRunning) {
+            Utils.log(Log.INFO, TAG, "Service is already running.");
+        //    return START_STICKY;
         }
+
+        if (isServiceRunning()) {
+        //    stopSelf(); // Stop the service if it's already running
+            return START_NOT_STICKY; // Service will not be restarted
+        }
+
+        if(getPath(intent) && getDevice()) {
+            initFlashing();
+        }
+
+        isThisServiceRunning = true;
         return START_STICKY;
     }
 
@@ -94,7 +91,16 @@ public class FlashingService extends FlashingBaseService {
 
     @Override
     public void onDfuAttempt() {
+        Utils.log(Log.ASSERT, TAG, "DFU attempt");
         startDfuControlService();
+    }
+
+    @Override
+    public void onBluetoothBondingStateChanged(BluetoothDevice device, int bondState, int previousBondState) {
+        if (!currentAddress.equals(device.getAddress())) {
+            return;
+        }
+        Utils.log(Log.ASSERT, TAG, "Bond state: " + bondState + " previous: " + previousBondState);
     }
 
     @Override
@@ -114,15 +120,72 @@ public class FlashingService extends FlashingBaseService {
     @Override
     public void onProgressUpdate(int percent){
         progress = percent;
+        if(percent < 0){
+            Utils.log(Log.ASSERT, TAG, "Progress: " + percent);
+        }
+        if(progress == DfuService.PROGRESS_DISCONNECTING){
+           stopSelf();
+        }
     }
 
-    private void getDevice() {
+    // Check if the service is already running
+    private boolean isServiceRunning() {
+        ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo service : activityManager.getRunningServices(Integer.MAX_VALUE)) {
+            if (DfuControlService.class.getName().equals(service.service.getClassName()) ||
+                    DfuService.class.getName().equals(service.service.getClassName()) ||
+                    PartialFlashingService.class.getName().equals(service.service.getClassName())) {
+                Utils.log(Log.ERROR, TAG, service.service.getClassName() + " is already running.");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean getPath(Intent intent) {
+        String path = intent.getStringExtra(StaticExtras.EXTRA_FILE_PATH);
+        if(path != null && !path.isEmpty()){
+            currentPath = path;
+        }
+        if (currentPath == null || currentPath.isEmpty()) {
+            Utils.log(Log.ERROR, TAG, "File path is empty or null. Service will stop.");
+            stopSelf();
+            return false;
+        }
+
+        // Save the path to preferences
+        Preference.putString(getApplicationContext(), StaticExtras.CURRENT_FILE_PATH, currentPath);
+        return true;
+    }
+
+    private boolean getDevice() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        currentAddress = preferences.getString(StaticExtras.DEVICE_ADDRESS, "");
-        currentPattern = preferences.getString(StaticExtras.DEVICE_PATTERN, "ZUZUZ");
+        currentAddress = preferences.getString(StaticExtras.CURRENT_DEVICE_ADDRESS, "");
+        currentPattern = preferences.getString(StaticExtras.CURRENT_DEVICE_PATTERN, "ZUZUZ");
 
-        Utils.log(Log.INFO, TAG, "Device: " + currentAddress + " " + currentPattern);
+        if (!isValidBluetoothMAC(currentAddress)) {
+            Utils.log(Log.ERROR, TAG, "Device address is incorrect. Service will stop.");
+            stopSelf();
+            return false;
+        }
+
+        return true;
     }
+
+    private void initFlashing(){
+        if (!Utils.isBluetoothEnabled() || progress >= 0) {
+            Utils.log(Log.WARN, TAG, "Bluetooth not enabled or flashing already in progress. Service will stop.");
+            return;
+        }
+
+        if (Settings.isPartialFlashingEnable(this)) {
+            startPartialFlashing();
+        } else {
+            startDfuControlService();
+        }
+    }
+
+
 
     private void startPartialFlashing() {
         Utils.log(TAG, "Starting PartialFlashing Service...");
@@ -137,7 +200,7 @@ public class FlashingService extends FlashingBaseService {
         Utils.log(TAG, "Starting DfuControl Service...");
 
         Intent service = new Intent(this, DfuControlService.class);
-        service.putExtra(StaticExtras.DEVICE_ADDRESS, currentAddress);
+        service.putExtra(StaticExtras.CURRENT_DEVICE_ADDRESS, currentAddress);
         startService(service);
     }
 
