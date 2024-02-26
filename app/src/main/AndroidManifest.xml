@@ -123,7 +123,7 @@
             android:name=".FlashingService"
             android:enabled="true" />
         <service
-            android:name=".MyService"
+            android:name=".BondingService"
             android:enabled="true" />
 
     </application>

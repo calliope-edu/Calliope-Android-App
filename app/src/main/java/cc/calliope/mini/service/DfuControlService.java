@@ -126,16 +126,12 @@ public class DfuControlService extends Service {
 
             if (status == GATT_SUCCESS || status == GATT_DISCONNECTED_BY_DEVICE) {
                 if (newState == STATE_CONNECTED) {
-                    if (bondState == BOND_NONE || bondState == BOND_BONDED) {
-                        if (bondState == BOND_BONDED && Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
-                            waitFor(1600);
-                        }
-                        boolean result = gatt.discoverServices();
-                        if (!result) {
-                            Utils.log(Log.ERROR, TAG, "discoverServices failed to start");
-                        }
-                    } else if (bondState == BOND_BONDING) {
-                        Utils.log(Log.WARN, TAG, "waiting for bonding to complete");
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N && gatt.getDevice().getBondState() == BOND_BONDED) {
+                        waitFor(1600);
+                    }
+                    boolean result = gatt.discoverServices();
+                    if (!result) {
+                        Utils.log(Log.ERROR, TAG, "discoverServices failed to start");
                     }
                 } else if (newState == STATE_DISCONNECTED) {
                     stopService(gatt);
@@ -145,7 +141,6 @@ public class DfuControlService extends Service {
                 gatt.disconnect();
                 Utils.log(Log.ERROR, TAG, "Error: " + status + " " + message);
                 sendBroadcast(BROADCAST_CONNECTION_FAILED);
-                stopSelf();
 //                sendError(status, message);
                 //stopService(gatt);
             }
@@ -268,9 +263,6 @@ public class DfuControlService extends Service {
 
     @SuppressWarnings({"MissingPermission"})
     private void stopService(BluetoothGatt gatt) {
-        if (bondState == BOND_BONDING) {
-            waitUntilBonded();
-        }
         clearServicesCache(gatt);
         gatt.close();
         stopSelf();
@@ -326,18 +318,6 @@ public class DfuControlService extends Service {
             Utils.log(Log.ERROR, TAG, "An exception occurred while refreshing device. " + e);
         }
         waitFor(DELAY_TO_CLEAR_CACHE);
-    }
-
-    protected void waitUntilBonded() {
-        try {
-            synchronized (mLock) {
-                while (bondState == BOND_BONDING)
-                    mLock.wait();
-            }
-        } catch (final InterruptedException e) {
-            Utils.log(Log.ERROR, TAG, "Sleeping interrupted, " + e);
-            stopSelf();
-        }
     }
 
     protected void waitFor(final long millis) {

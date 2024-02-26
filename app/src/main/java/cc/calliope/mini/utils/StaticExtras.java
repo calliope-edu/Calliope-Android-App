@@ -6,5 +6,5 @@ public class StaticExtras {
     public static final String CURRENT_FILE_PATH = "cc.calliope.mini.CURRENT_FILE_PATH";
     public static final String CURRENT_DEVICE_ADDRESS = "cc.calliope.mini.CURRENT_DEVICE_ADDRESS";
     public static final String CURRENT_DEVICE_PATTERN = "cc.calliope.mini.CURRENT_DEVICE_PATTERN";
-
+    public static final String CURRENT_DEVICE_VERSION = "cc.calliope.mini.CURRENT_DEVICE_VERSION";
 }

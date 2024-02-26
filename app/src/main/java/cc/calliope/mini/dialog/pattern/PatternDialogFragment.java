@@ -1,5 +1,7 @@
 package cc.calliope.mini.dialog.pattern;
 
+import static cc.calliope.mini.BondingService.EXTRA_DEVICE_ADDRESS;
+
 import android.app.Activity;
 import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
@@ -27,6 +29,7 @@ import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import cc.calliope.mini.DeviceKt;
+import cc.calliope.mini.BondingService;
 import cc.calliope.mini.PatternMatrixView;
 import cc.calliope.mini.ScanViewModelKt;
 import cc.calliope.mini.utils.StaticExtras;
@@ -37,7 +40,6 @@ import cc.calliope.mini.utils.Utils;
 
 import androidx.preference.PreferenceManager;
 public class PatternDialogFragment extends DialogFragment {
-    private static final int RELEVANT_LIMIT = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O ? 5 : 10;
     private final static int DIALOG_WIDTH = 220; //dp
     private final static int DIALOG_HEIGHT = 240; //dp
     private static final String FOB_PARAMS_PARCELABLE = "fob_params_parcelable";
@@ -192,6 +194,9 @@ public class PatternDialogFragment extends DialogFragment {
     public void onConnectClick(View view) {
         if(isDeviceActual){
             saveCurrentDevice();
+            Intent service = new Intent(context, BondingService.class);
+            service.putExtra(EXTRA_DEVICE_ADDRESS, currentAddress);
+            getActivity().startService(service);
         }
         dismiss();
     }
