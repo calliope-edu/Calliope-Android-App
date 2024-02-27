@@ -98,6 +98,7 @@
     <string name="button_rename">Rename</string>
     <string name="button_continue">Continue</string>
     <string name="button_enable">Enable</string>
+    <string name="button_remove">Remove</string>
 
     <string name="info_dialog_delete">You will permanently delete \"%s\".</string>
     <string name="subject_dialog_share">Sharing File…</string>
@@ -140,6 +141,7 @@
     <string name="title_auto_flashing">Automatic flashing</string>
     <string name="title_rename_files">Rename files</string>
     <string name="title_settings">Settings</string>
+    <string name="title_pattern_connected">%s connected</string>
     <string name="bonding_started">Bonding started</string>
     <string name="bonding_succeeded">Bonding succeeded</string>
     <string name="bonding_not_succeeded">Bonding not succeeded</string>
@@ -185,6 +187,4 @@
     <string name="gatt_failure" translatable="false">GATT FAILURE</string>
     <string name="gatt_unidentified" translatable="false">GATT UNIDENTIFIED</string>
     <string name="title_copy">Copy</string>
-    <string name="remove">Remove</string>
-    <string name="cancel">Cancel</string>
 </resources>

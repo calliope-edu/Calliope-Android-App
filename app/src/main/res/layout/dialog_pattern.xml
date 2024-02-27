@@ -55,7 +55,7 @@
             android:layout_width="wrap_content"
             android:layout_height="40dp"
             android:layout_marginHorizontal="4dp"
-            android:text="@string/remove"
+            android:text="@string/button_remove"
             android:textColor="@color/white"
             android:background="@drawable/btn_grey"
             android:visibility="gone"
@@ -67,7 +67,7 @@
             android:layout_width="match_parent"
             android:layout_height="40dp"
             android:layout_marginHorizontal="4dp"
-            android:text="@string/cancel"
+            android:text="@string/button_cancel"
             android:textColor="@color/white"
             android:background="@drawable/btn_aqua"
             app:backgroundTint="@null"/>

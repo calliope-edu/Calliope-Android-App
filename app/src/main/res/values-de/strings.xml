@@ -124,4 +124,6 @@
     <string name="title_auto_flashing">Automatisches Flashen</string>
     <string name="button_ok">Ja</string>
     <string name="summary_rename_files">angehängtes (n), wenn Datei vorhanden ist</string>
+    <string name="button_remove">Entfernen</string>
+    <string name="title_pattern_connected">%s angeschlossen</string>
 </resources>

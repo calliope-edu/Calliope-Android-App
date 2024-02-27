@@ -14,7 +14,6 @@ import android.content.SharedPreferences;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -47,12 +46,10 @@ public class PatternDialogFragment extends DialogFragment {
     private final static int DIALOG_WIDTH = 220; //dp
     private final static int DIALOG_HEIGHT = 300; //dp
     private static final String FOB_PARAMS_PARCELABLE = "fob_params_parcelable";
-    private static final String TAG = "PatternDialogFragment";
     private DialogPatternBinding binding;
     private DeviceKt currentDevice;
     private String currentAddress;
     private String currentPattern;
-    private String paintedPattern;
     private Context context;
     private record Position(int x, int y) {
     }
@@ -161,7 +158,6 @@ public class PatternDialogFragment extends DialogFragment {
             @Override
             public void onGlobalLayout() {
                 view.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                Utils.log(Log.DEBUG, TAG, String.format("Window size: width %d; height %d", view.getWidth(), view.getHeight()));
             }
         });
     }
@@ -237,13 +233,12 @@ public class PatternDialogFragment extends DialogFragment {
         }
 
         if (currentDevice != null) {
-            Utils.log(Log.DEBUG, "DEVICES", "Device: " +
-                    currentDevice.getAddress() + " " +
-                    currentDevice.getName() + " " +
-                    currentDevice.isBonded() + " " +
-                    currentDevice.isActual());
             setupButtons(currentDevice.isBonded(), currentDevice.isActual());
-            binding.textTitle.setText(currentDevice.getPattern() + (currentDevice.isBonded() ? " connected" : ""));
+            String titleText = currentDevice.getPattern();
+            if (currentDevice.isBonded()) {
+                titleText = getString(R.string.title_pattern_connected, titleText);
+            }
+            binding.textTitle.setText(titleText);
         } else {
             setupButtons(false, false);
             binding.textTitle.setText(currentPattern);
@@ -251,8 +246,9 @@ public class PatternDialogFragment extends DialogFragment {
     }
 
     private void setupButtons(boolean isBonded, boolean isActual){
+        String buttonText = getString(isBonded ? R.string.button_ok : R.string.button_cancel);
         binding.buttonRemove.setVisibility(isBonded ? View.VISIBLE : View.GONE);
         binding.buttonAction.setBackgroundResource(!isBonded && isActual ? R.drawable.btn_connect_green : R.drawable.btn_aqua);
-        binding.buttonAction.setText(!isBonded && isActual ? "" : "Cancel");
+        binding.buttonAction.setText(!isBonded && isActual ? "" : buttonText);
     }
 }
