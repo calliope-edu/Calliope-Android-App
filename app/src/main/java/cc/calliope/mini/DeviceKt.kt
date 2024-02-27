@@ -19,7 +19,7 @@ class DeviceKt(bleScanResults: BleScanResults) {
     }
 
     fun getName(): String? {
-        return serverDevice.name
+        return bleScanResultData?.scanRecord?.deviceName
     }
 
     fun isBonded(): Boolean {
@@ -28,7 +28,7 @@ class DeviceKt(bleScanResults: BleScanResults) {
 
     fun getPattern(): String {
         val pattern = "[a-zA-Z :]+\\[([A-Z]{5})]".toRegex()
-        val name = serverDevice.name ?: return ""
+        val name = getName() ?: return ""
         return pattern.find(name.uppercase())?.groupValues?.get(1) ?: ""
     }
 

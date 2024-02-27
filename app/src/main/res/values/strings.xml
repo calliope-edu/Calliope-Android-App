@@ -185,4 +185,6 @@
     <string name="gatt_failure" translatable="false">GATT FAILURE</string>
     <string name="gatt_unidentified" translatable="false">GATT UNIDENTIFIED</string>
     <string name="title_copy">Copy</string>
+    <string name="remove">Remove</string>
+    <string name="cancel">Cancel</string>
 </resources>

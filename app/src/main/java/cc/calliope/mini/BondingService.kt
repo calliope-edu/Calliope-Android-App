@@ -7,11 +7,10 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.IBinder
@@ -19,8 +18,7 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import cc.calliope.mini.service.DfuControlService
 import cc.calliope.mini.service.GattStatus
-import cc.calliope.mini.utils.Preference
-import cc.calliope.mini.utils.StaticExtras
+import cc.calliope.mini.utils.BluetoothUtils
 import cc.calliope.mini.utils.Utils
 import cc.calliope.mini.utils.Version
 import kotlinx.coroutines.CoroutineScope
@@ -42,29 +40,8 @@ open class BondingService : Service() {
     }
 
     private var deviceAddress: String? = null
-
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
-
-    private val bondStateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val device = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
-            if (device?.address != deviceAddress) return
-
-            val action = intent.action ?: return
-
-            if (action == BluetoothDevice.ACTION_BOND_STATE_CHANGED) {
-                when (intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR)) {
-                    BluetoothDevice.BOND_BONDING -> Utils.log(Log.WARN, TAG, "Start pairing...")
-                    BluetoothDevice.BOND_BONDED -> Utils.log(Log.WARN, TAG, "Paired")
-                    BluetoothDevice.BOND_NONE -> {
-                        Utils.log(Log.WARN, TAG, "Unpaired")
-                        connect(device)
-                    }
-                }
-            }
-        }
-    }
 
     @SuppressWarnings("MissingPermission")
     private val gattCallback = object : BluetoothGattCallback() {
@@ -111,7 +88,6 @@ open class BondingService : Service() {
     override fun onCreate() {
         super.onCreate()
         Utils.log(TAG, "Service created")
-        registerReceiver(bondStateReceiver, IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED))
     }
 
     override fun onBind(intent: Intent): IBinder? {
@@ -132,18 +108,16 @@ open class BondingService : Service() {
             return START_NOT_STICKY
         }
 
-        val adapter = BluetoothAdapter.getDefaultAdapter()
-        if (!adapter.isEnabled || !isValidBluetoothMAC(deviceAddress)){
+        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        val adapter: BluetoothAdapter? = bluetoothManager.adapter
+
+        if (adapter == null || !adapter.isEnabled || !BluetoothUtils.isValidBluetoothMAC(deviceAddress)) {
             stopSelf()
             return START_NOT_STICKY
         }
 
         val device = adapter.getRemoteDevice(deviceAddress)
-        if (device.bondState == BluetoothDevice.BOND_BONDED) {
-            removeBond(device)
-        } else {
-            connect(device)
-        }
+        connect(device)
 
         return START_NOT_STICKY
     }
@@ -151,21 +125,7 @@ open class BondingService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         Utils.log(TAG, "Service destroyed")
-        unregisterReceiver(bondStateReceiver)
         serviceJob.cancel()
-    }
-
-    private fun removeBond(device: BluetoothDevice): Boolean {
-        Utils.log(Log.WARN, TAG, "Unpairing device...")
-        return try {
-            val removeBondMethod = device.javaClass.getMethod("removeBond")
-            val result = removeBondMethod.invoke(device) as Boolean
-            Log.d("removeBond", "Unpairing successful: $result")
-            result
-        } catch (e: Exception) {
-            Log.e("removeBond", "Exception occurred during unpairing", e)
-            false
-        }
     }
 
     @SuppressWarnings("MissingPermission")
@@ -232,36 +192,10 @@ open class BondingService : Service() {
         gatt.readCharacteristic(dfuControlCharacteristic)
     }
 
-    private fun isValidBluetoothMAC(macAddress: String?): Boolean {
-        if (macAddress == null) {
-            Utils.log(Log.ERROR, TAG, "MAC address is null")
-            return false
-        }
-
-        val regex = "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$"
-        return if (macAddress.matches(regex.toRegex())) {
-            Utils.log(Log.INFO, TAG, "Valid Bluetooth MAC address: $macAddress")
-            true
-        } else {
-            Utils.log(Log.INFO, TAG, "Invalid Bluetooth MAC address: $macAddress")
-            false
-        }
-    }
-
     @SuppressWarnings("MissingPermission")
     private fun stopService(gatt: BluetoothGatt) {
-        clearServicesCache(gatt)
+        BluetoothUtils.clearServicesCache(gatt)
         gatt.close()
         stopSelf()
-    }
-
-    private fun clearServicesCache(gatt: BluetoothGatt) {
-        try {
-            val refresh = gatt.javaClass.getMethod("refresh")
-            val success = refresh.invoke(gatt) as Boolean
-            Utils.log(Log.DEBUG, TAG, "Refreshing result: $success")
-        } catch (e: Exception) {
-            Utils.log(Log.ERROR, TAG, "An exception occurred while refreshing device. $e")
-        }
     }
 }

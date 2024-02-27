@@ -14,11 +14,11 @@ import kotlinx.coroutines.flow.onEach
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleNumOfMatches
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanFilter
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanMode
-import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResults
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScannerCallbackType
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScannerMatchMode
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScannerSettings
 import no.nordicsemi.android.kotlin.ble.scanner.BleScanner
+import no.nordicsemi.android.kotlin.ble.scanner.aggregator.BleScanResultAggregator
 
 
 class ScanViewModelKt(application: Application) : AndroidViewModel(application) {
@@ -43,6 +43,7 @@ class ScanViewModelKt(application: Application) : AndroidViewModel(application) 
 
         //Create aggregator which will concat scan records with a device
         val aggregator = Aggregator()
+
         BleScanner(context).scan(filters, settings)
             .map { aggregator.aggregateDevices(it) }// Add new device and return an aggregated list
             .onEach { _devices.value = it } // Propagated state to UI

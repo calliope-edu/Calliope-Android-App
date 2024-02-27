@@ -32,6 +32,7 @@ import cc.calliope.mini.DeviceKt;
 import cc.calliope.mini.BondingService;
 import cc.calliope.mini.PatternMatrixView;
 import cc.calliope.mini.ScanViewModelKt;
+import cc.calliope.mini.utils.BluetoothUtils;
 import cc.calliope.mini.utils.StaticExtras;
 import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.R;
@@ -39,20 +40,38 @@ import cc.calliope.mini.databinding.DialogPatternBinding;
 import cc.calliope.mini.utils.Utils;
 
 import androidx.preference.PreferenceManager;
+
+import java.util.List;
+
 public class PatternDialogFragment extends DialogFragment {
     private final static int DIALOG_WIDTH = 220; //dp
-    private final static int DIALOG_HEIGHT = 240; //dp
+    private final static int DIALOG_HEIGHT = 300; //dp
     private static final String FOB_PARAMS_PARCELABLE = "fob_params_parcelable";
     private static final String TAG = "PatternDialogFragment";
     private DialogPatternBinding binding;
-    private String paintedPattern;
-    private String currentPattern;
+    private DeviceKt currentDevice;
     private String currentAddress;
-    private boolean isDeviceActual;
+    private String currentPattern;
+    private String paintedPattern;
     private Context context;
-
     private record Position(int x, int y) {
     }
+
+    private final BroadcastReceiver bluetoothStateBroadcastReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(final Context context, final Intent intent) {
+            final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.STATE_OFF);
+            final int previousState = intent.getIntExtra(BluetoothAdapter.EXTRA_PREVIOUS_STATE, BluetoothAdapter.STATE_OFF);
+
+            switch (state) {
+                case BluetoothAdapter.STATE_TURNING_OFF, BluetoothAdapter.STATE_OFF -> {
+                    if (previousState != BluetoothAdapter.STATE_TURNING_OFF && previousState != BluetoothAdapter.STATE_OFF) {
+                        dismiss();
+                    }
+                }
+            }
+        }
+    };
 
     public PatternDialogFragment() {
         // Empty constructor is required for DialogFragment
@@ -86,44 +105,35 @@ public class PatternDialogFragment extends DialogFragment {
 
         PatternMatrixView patternView = binding.patternView;
 
-        loadCurrentDevice();
+        restoreCurrentDevice();
+      //  onPatternChange(currentPattern);
         patternView.setPattern(currentPattern);
-        patternView.setOnPatternChangeListener(pattern -> {
-            binding.buttonAction.setBackgroundResource(R.drawable.btn_connect_aqua);
-            paintedPattern = pattern;
-        });
+        binding.textTitle.setText(currentPattern);
+        patternView.setOnPatternChangeListener(this::onPatternChange);
 
         ScanViewModelKt scanViewModelKt = new ViewModelProvider(this).get(ScanViewModelKt.class);
-        scanViewModelKt.getDevices().observe(this, devices -> {
-            for (DeviceKt device : devices) {
-                boolean shouldUpdateBackground = false;
-
-                if (paintedPattern != null) {
-                    if (paintedPattern.equals(device.getPattern())) {
-                        currentAddress = device.getAddress();
-                        currentPattern = device.getPattern();
-                        shouldUpdateBackground = true;
-                    } else if (currentPattern.equals(paintedPattern) && currentAddress.equals(device.getAddress())) {
-                        shouldUpdateBackground = true;
-                    }
-                } else if (currentAddress.equals(device.getAddress()) || currentPattern.equals(device.getPattern())) {
-                    //currentAddress = device.getAddress();
-                    shouldUpdateBackground = true;
-                }
-
-                if (shouldUpdateBackground) {
-                    setBackGroundResource(device);
-                }
-            }
-        });
+        scanViewModelKt.getDevices().observe(this, this::onDevicesDiscovered);
         scanViewModelKt.startScan();
 
-        binding.buttonAction.setOnClickListener(this::onConnectClick);
+        binding.buttonAction.setOnClickListener(this::onActionClick);
+        binding.buttonRemove.setOnClickListener(this::onRemoveClick);
     }
 
-    private void setBackGroundResource(DeviceKt device) {
-        isDeviceActual = device.isActual();
-        binding.buttonAction.setBackgroundResource(isDeviceActual ? R.drawable.btn_connect_green : R.drawable.btn_connect_aqua);
+    @Override
+    public void onDismiss(@NonNull final DialogInterface dialog) {
+        super.onDismiss(dialog);
+
+        final Activity activity = getActivity();
+        if (activity instanceof DialogInterface.OnDismissListener) {
+            ((DialogInterface.OnDismissListener) activity).onDismiss(dialog);
+        }
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        context.unregisterReceiver(bluetoothStateBroadcastReceiver);
+        binding = null;
     }
 
     private void customizeDialog(View view) {
@@ -174,59 +184,75 @@ public class PatternDialogFragment extends DialogFragment {
         return new Position(posX, posY);
     }
 
-    @Override
-    public void onDismiss(@NonNull final DialogInterface dialog) {
-        super.onDismiss(dialog);
-
-        final Activity activity = getActivity();
-        if (activity instanceof DialogInterface.OnDismissListener) {
-            ((DialogInterface.OnDismissListener) activity).onDismiss(dialog);
-        }
+    private void saveCurrentDevice() {
+        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(context).edit();
+        editor.putString(StaticExtras.CURRENT_DEVICE_ADDRESS, currentDevice.getAddress());
+        editor.putString(StaticExtras.CURRENT_DEVICE_PATTERN, currentDevice.getPattern());
+        editor.apply();
     }
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        context.unregisterReceiver(bluetoothStateBroadcastReceiver);
-        binding = null;
+    private void restoreCurrentDevice() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        currentAddress = preferences.getString(StaticExtras.CURRENT_DEVICE_ADDRESS, "");
+        currentPattern = preferences.getString(StaticExtras.CURRENT_DEVICE_PATTERN, "ZUZUZ");
     }
 
-    public void onConnectClick(View view) {
-        if(isDeviceActual){
+    private void onActionClick(View view){
+        if(currentDevice != null && currentDevice.isActual()){
             saveCurrentDevice();
-            Intent service = new Intent(context, BondingService.class);
-            service.putExtra(EXTRA_DEVICE_ADDRESS, currentAddress);
-            getActivity().startService(service);
+            if(!currentDevice.isBonded()) {
+                BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+                if (bluetoothAdapter == null) {
+                    return;
+                }
+
+                Intent service = new Intent(context, BondingService.class);
+                service.putExtra(EXTRA_DEVICE_ADDRESS, currentDevice.getAddress());
+                getActivity().startService(service);
+            }
         }
         dismiss();
     }
 
-    private final BroadcastReceiver bluetoothStateBroadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(final Context context, final Intent intent) {
-            final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.STATE_OFF);
-            final int previousState = intent.getIntExtra(BluetoothAdapter.EXTRA_PREVIOUS_STATE, BluetoothAdapter.STATE_OFF);
-
-            switch (state) {
-                case BluetoothAdapter.STATE_TURNING_OFF, BluetoothAdapter.STATE_OFF -> {
-                    if (previousState != BluetoothAdapter.STATE_TURNING_OFF && previousState != BluetoothAdapter.STATE_OFF) {
-                        dismiss();
-                    }
-                }
-            }
+    private void onRemoveClick(View view) {
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (bluetoothAdapter == null) {
+            return;
         }
-    };
-
-    public void saveCurrentDevice() {
-        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(context).edit();
-        editor.putString(StaticExtras.CURRENT_DEVICE_ADDRESS, currentAddress);
-        editor.putString(StaticExtras.CURRENT_DEVICE_PATTERN, currentPattern);
-        editor.apply();
+        String address = currentDevice == null ? currentAddress : currentDevice.getAddress();
+        BluetoothUtils.removeBond(bluetoothAdapter.getRemoteDevice(address));
     }
 
-    public void loadCurrentDevice() {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        currentAddress = preferences.getString(StaticExtras.CURRENT_DEVICE_ADDRESS, "");
-        currentPattern = preferences.getString(StaticExtras.CURRENT_DEVICE_PATTERN, "ZUZUZ");
+    private void onPatternChange(String pattern) {
+        binding.textTitle.setText(pattern);
+        currentPattern = pattern;
+    }
+
+    private void onDevicesDiscovered(List<DeviceKt> devices) {
+        currentDevice = null;
+        for (DeviceKt device : devices) {
+            if (currentPattern.equals(device.getPattern())) {
+                currentDevice = device;
+            }
+        }
+
+        if (currentDevice != null) {
+            Utils.log(Log.DEBUG, "DEVICES", "Device: " +
+                    currentDevice.getAddress() + " " +
+                    currentDevice.getName() + " " +
+                    currentDevice.isBonded() + " " +
+                    currentDevice.isActual());
+            setupButtons(currentDevice.isBonded(), currentDevice.isActual());
+            binding.textTitle.setText(currentDevice.getPattern() + (currentDevice.isBonded() ? " connected" : ""));
+        } else {
+            setupButtons(false, false);
+            binding.textTitle.setText(currentPattern);
+        }
+    }
+
+    private void setupButtons(boolean isBonded, boolean isActual){
+        binding.buttonRemove.setVisibility(isBonded ? View.VISIBLE : View.GONE);
+        binding.buttonAction.setBackgroundResource(!isBonded && isActual ? R.drawable.btn_connect_green : R.drawable.btn_aqua);
+        binding.buttonAction.setText(!isBonded && isActual ? "" : "Cancel");
     }
 }

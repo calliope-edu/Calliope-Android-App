@@ -4,21 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/layout_dialog_container"
     android:layout_width="220dp"
-    android:layout_height="260dp">
-
-    <Button
-        style="@style/Widget.AppCompat.Button"
-        android:id="@+id/button_action"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:layout_marginEnd="40dp"
-        android:layout_marginStart="40dp"
-        android:background="@drawable/btn_connect_aqua"
-        app:backgroundTint="@null"
-        app:layout_constraintBottom_toBottomOf="@id/layout_dialog"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/layout_dialog" />
+    android:layout_height="300dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/layout_dialog"
@@ -33,10 +19,58 @@
         android:layout_width="200dp"
         android:layout_height="200dp"
         android:layout_marginBottom="20dp"
+        android:layout_marginTop="30dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <TextView
+        android:id="@+id/text_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:text="Device connected"
+        android:textColor="@color/white"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/button_layout_dialog"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="@id/layout_dialog"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/layout_dialog">
+
+        <Button
+            style="@style/Widget.AppCompat.Button"
+            android:id="@+id/button_remove"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginHorizontal="4dp"
+            android:text="@string/remove"
+            android:textColor="@color/white"
+            android:background="@drawable/btn_grey"
+            android:visibility="gone"
+            app:backgroundTint="@null" />
+
+        <Button
+            style="@style/Widget.AppCompat.Button"
+            android:id="@+id/button_action"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_marginHorizontal="4dp"
+            android:text="@string/cancel"
+            android:textColor="@color/white"
+            android:background="@drawable/btn_aqua"
+            app:backgroundTint="@null"/>
+
+    </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

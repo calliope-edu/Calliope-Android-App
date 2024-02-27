@@ -65,9 +65,9 @@ public class DfuControlService extends Service {
     public static final int UNIDENTIFIED = 0;
     /**
      * Version 1.x, 2.0, 2,1
-     * https://calliope-mini.github.io/v10/
-     * https://calliope-mini.github.io/v20/
-     * https://calliope-mini.github.io/v21/
+     * <a href="https://calliope-mini.github.io/v10/">Version 1.x</a>
+     * <a href="https://calliope-mini.github.io/v20/">Version 2.0</a>
+     * <a href="https://calliope-mini.github.io/v21/">Version 2.1</a>
      */
     public static final int MINI_V1 = 1;
     /**
