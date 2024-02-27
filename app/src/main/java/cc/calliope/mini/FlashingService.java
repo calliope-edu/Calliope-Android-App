@@ -1,6 +1,7 @@
 package cc.calliope.mini;
 
 import static cc.calliope.mini.service.DfuControlService.MINI_V1;
+import static cc.calliope.mini.service.DfuControlService.MINI_V2;
 import static cc.calliope.mini.service.DfuControlService.UNIDENTIFIED;
 
 import android.app.ActivityManager;
@@ -44,6 +45,7 @@ public class FlashingService extends FlashingBaseService {
     private static final int REBOOT_TIME = 2000; // time required by the device to reboot, ms
     private String currentAddress;
     private String currentPattern;
+    private int currentVersion;
     private String currentPath;
     private int progress = -10;
 
@@ -85,7 +87,6 @@ public class FlashingService extends FlashingBaseService {
 
     @Override
     public void onHardwareVersionReceived(int hardwareVersion) {
-        Utils.log(Log.ASSERT, TAG, "Board version: " + hardwareVersion);
         startFlashing(hardwareVersion);
     }
 
@@ -162,6 +163,7 @@ public class FlashingService extends FlashingBaseService {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         currentAddress = preferences.getString(StaticExtras.CURRENT_DEVICE_ADDRESS, "");
         currentPattern = preferences.getString(StaticExtras.CURRENT_DEVICE_PATTERN, "ZUZUZ");
+        currentVersion = preferences.getInt(StaticExtras.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
 
         if (!isValidBluetoothMAC(currentAddress)) {
             Utils.log(Log.ERROR, TAG, "Device address is incorrect. Service will stop.");
@@ -181,11 +183,13 @@ public class FlashingService extends FlashingBaseService {
         if (Settings.isPartialFlashingEnable(this)) {
             startPartialFlashing();
         } else {
-            startDfuControlService();
+            if(currentVersion == MINI_V1) {
+                startDfuControlService();
+            } else {
+                startFlashing(currentVersion);
+            }
         }
     }
-
-
 
     private void startPartialFlashing() {
         Utils.log(TAG, "Starting PartialFlashing Service...");
@@ -199,7 +203,10 @@ public class FlashingService extends FlashingBaseService {
     private void startDfuControlService() {
         Utils.log(TAG, "Starting DfuControl Service...");
 
-        Intent service = new Intent(this, DfuControlService.class);
+//        Intent service = new Intent(this, DfuControlService.class);
+//        service.putExtra(StaticExtras.CURRENT_DEVICE_ADDRESS, currentAddress);
+//        startService(service);
+        Intent service = new Intent(this, LegacyDfuService.class);
         service.putExtra(StaticExtras.CURRENT_DEVICE_ADDRESS, currentAddress);
         startService(service);
     }

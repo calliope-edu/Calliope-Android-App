@@ -125,6 +125,9 @@
         <service
             android:name=".BondingService"
             android:enabled="true" />
+        <service
+            android:name=".LegacyDfuService"
+            android:enabled="true" />
 
     </application>
 </manifest>

@@ -9,6 +9,7 @@ import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
+import android.bluetooth.BluetoothStatusCodes
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -16,10 +17,10 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.ActivityCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import cc.calliope.mini.service.DfuControlService
 import cc.calliope.mini.service.GattStatus
 import cc.calliope.mini.utils.BluetoothUtils
-import cc.calliope.mini.utils.Preference
 import cc.calliope.mini.utils.StaticExtras
 import cc.calliope.mini.utils.Utils
 import cc.calliope.mini.utils.Version
@@ -30,24 +31,21 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-open class BondingService : Service() {
+open class LegacyDfuService : Service() {
     companion object {
-        const val TAG = "BondingService"
+        const val TAG = "LegacyDfuService"
         const val GATT_DISCONNECTED_BY_DEVICE = 19
         const val EXTRA_DEVICE_ADDRESS = StaticExtras.CURRENT_DEVICE_ADDRESS
-        const val EXTRA_DEVICE_VERSION = StaticExtras.CURRENT_DEVICE_VERSION
 
-        private val DFU_CONTROL_SERVICE_UUID =
+        private val DEVICE_FIRMWARE_UPDATE_CONTROL_SERVICE_UUID =
             UUID.fromString("E95D93B0-251D-470A-A062-FA1922DFA9A8")
-        private val DFU_CONTROL_CHARACTERISTIC_UUID =
+        private val DEVICE_FIRMWARE_UPDATE_CONTROL_CHARACTERISTIC_UUID =
             UUID.fromString("E95D93B1-251D-470A-A062-FA1922DFA9A8")
-        private val SECURE_DFU_SERVICE_UUID =
-            UUID.fromString("0000FE59-0000-1000-8000-00805F9B34FB")
     }
 
+    private var isComplete = false
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
-    private var deviceVersion: Int = DfuControlService.UNIDENTIFIED
 
     @SuppressWarnings("MissingPermission")
     private val gattCallback = object : BluetoothGattCallback() {
@@ -59,14 +57,16 @@ open class BondingService : Service() {
                     BluetoothProfile.STATE_CONNECTED -> handleConnectedState(gatt)
                     BluetoothProfile.STATE_DISCONNECTED -> stopService(gatt)
                 }
-            } else if (status == GATT_DISCONNECTED_BY_DEVICE){
-                Utils.log(Log.WARN, TAG, "Disconnected by device")
+            } else if (status == BondingService.GATT_DISCONNECTED_BY_DEVICE){
+                Utils.log(Log.WARN, BondingService.TAG, "Disconnected by device")
                 reConnect(gatt.device.address)
             } else {
                 val message: String = getString(GattStatus.get(status).message)
                 Utils.log(Log.ERROR, TAG, "Error: $status $message")
+                sendBroadcast(DfuControlService.BROADCAST_CONNECTION_FAILED)
                 stopService(gatt)
             }
+
         }
 
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
@@ -91,9 +91,21 @@ open class BondingService : Service() {
 
         override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                Utils.log(Log.DEBUG, TAG, "Characteristic read: ${characteristic.uuid} Value: ${value.let { it.contentToString() }}")
+                Utils.log(Log.DEBUG, BondingService.TAG, "Characteristic read: ${characteristic.uuid} Value: ${value.let { it.contentToString() }}")
+                writeCharacteristic(gatt, characteristic)
             } else {
-                Utils.log(Log.WARN, TAG, "Characteristic read failed: ${characteristic.uuid}")
+                Utils.log(Log.WARN, BondingService.TAG, "Characteristic read failed: ${characteristic.uuid}")
+            }
+        }
+
+        override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic?, status: Int) {
+            Utils.log(Log.DEBUG, TAG, "onCharacteristicWrite(status: $status)")
+
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                Utils.log(Log.DEBUG, TAG, "Flash command written successfully")
+                isComplete = true
+            } else {
+                Utils.log(Log.ERROR, TAG, "Error writing characteristic: $status")
             }
             gatt.disconnect()
         }
@@ -110,7 +122,7 @@ open class BondingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Utils.log(TAG, "Bonding Service started")
+        Utils.log(TAG, "Legacy DFU Service started")
 
         if (Version.VERSION_S_AND_NEWER
             && ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED
@@ -128,14 +140,18 @@ open class BondingService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Utils.log(TAG, "Bonding Service destroyed")
-        Preference.putInt(applicationContext, StaticExtras.CURRENT_DEVICE_VERSION, deviceVersion)
-        Utils.log(Log.DEBUG, TAG, "Device version: $deviceVersion")
+        Utils.log(TAG, "Legacy DFU Service destroyed")
         serviceJob.cancel()
+        sendBroadcast(
+            if (isComplete)
+                DfuControlService.BROADCAST_COMPLETED
+            else
+                DfuControlService.BROADCAST_CONNECTION_FAILED
+        )
     }
 
     private fun reConnect(address: String?) {
-        Utils.log(Log.DEBUG, TAG, "Reconnecting to the device...")
+        Utils.log(Log.DEBUG, BondingService.TAG, "Reconnecting to the device...")
         serviceScope.launch {
             delay(2000)
             connect(address)
@@ -150,6 +166,7 @@ open class BondingService : Service() {
         val adapter: BluetoothAdapter? = bluetoothManager.adapter
 
         if (adapter == null || !adapter.isEnabled || !BluetoothUtils.isValidBluetoothMAC(address)) {
+            sendError(133, "Bluetooth adapter is null or not enabled")
             stopSelf()
             return
         }
@@ -160,6 +177,8 @@ open class BondingService : Service() {
             stopSelf()
             return
         }
+
+        sendBroadcast(DfuControlService.BROADCAST_START)
 
         if (Version.VERSION_O_AND_NEWER) {
             device.connectGatt(this, false,
@@ -201,40 +220,71 @@ open class BondingService : Service() {
 
     @SuppressWarnings("MissingPermission")
     fun getDfuControlService(gatt: BluetoothGatt) {
-        val dfuControlService = gatt.getService(DFU_CONTROL_SERVICE_UUID)
+        val dfuControlService = gatt.getService(DEVICE_FIRMWARE_UPDATE_CONTROL_SERVICE_UUID)
         if (dfuControlService == null) {
             Utils.log(Log.WARN, TAG, "Cannot find DEVICE_FIRMWARE_UPDATE_CONTROL_SERVICE_UUID")
-            getSecureDfuService(gatt)
-            return
-        }
-
-        val dfuControlCharacteristic = dfuControlService.getCharacteristic(DFU_CONTROL_CHARACTERISTIC_UUID)
-        if (dfuControlCharacteristic == null) {
-            Utils.log(Log.WARN, TAG, "Cannot find DEVICE_FIRMWARE_UPDATE_CONTROL_CHARACTERISTIC_UUID")
+            sendError(133, "Cannot find DFU legacy service.")
             gatt.disconnect()
             return
         }
-        deviceVersion = DfuControlService.MINI_V1
+
+        val dfuControlCharacteristic = dfuControlService.getCharacteristic(DEVICE_FIRMWARE_UPDATE_CONTROL_CHARACTERISTIC_UUID)
+        if (dfuControlCharacteristic == null) {
+            Utils.log(Log.WARN, TAG, "Cannot find DEVICE_FIRMWARE_UPDATE_CONTROL_CHARACTERISTIC_UUID")
+            sendError(133, "Cannot find DFU legacy characteristic.")
+            gatt.disconnect()
+            return
+        }
+
         gatt.readCharacteristic(dfuControlCharacteristic)
     }
 
     @SuppressWarnings("MissingPermission")
-    fun getSecureDfuService(gatt: BluetoothGatt) {
-        val secureDfuService = gatt.getService(SECURE_DFU_SERVICE_UUID)
-        if (secureDfuService == null) {
-            Utils.log(Log.WARN, TAG, "Cannot find SECURE_DFU_SERVICE_UUID")
-            gatt.disconnect()
-            return
-        }
+    private fun writeCharacteristic(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+        if (Version.VERSION_TIRAMISU_AND_NEWER) {
+            val value = byteArrayOf(1)
+            val writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+            val res = gatt.writeCharacteristic(characteristic, value, writeType)
 
-        deviceVersion = DfuControlService.MINI_V2
-        gatt.disconnect()
+            if (res == BluetoothStatusCodes.SUCCESS) {
+                Utils.log(Log.DEBUG, TAG, "Writing Flash Command...")
+            } else {
+                Utils.log(Log.ERROR, TAG, "Error writing characteristic: $res")
+            }
+        } else {
+            characteristic.setValue(1, BluetoothGattCharacteristic.FORMAT_UINT8, 0)
+            try {
+                Utils.log(Log.DEBUG, TAG, "Writing Flash Command...")
+                gatt.writeCharacteristic(characteristic)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                gatt.disconnect()
+                Utils.log(Log.ERROR, TAG, "Error writing characteristic: ${e.message}")
+            }
+        }
     }
 
     @SuppressWarnings("MissingPermission")
     private fun stopService(gatt: BluetoothGatt) {
         BluetoothUtils.clearServicesCache(gatt)
-        gatt.close()
+        serviceScope.launch {
+            Utils.log(Log.DEBUG, TAG, "Wait for 2000 millis before closing the service...")
+            delay(2000)
+            gatt.close()
+            stopSelf()
+        }
+    }
+
+    private fun sendBroadcast(action: String) {
+        val broadcast = Intent(action)
+        LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(broadcast)
+    }
+    private fun sendError(code: Int, message: String) {
+        val broadcast = Intent(DfuControlService.BROADCAST_ERROR)
+        broadcast.putExtra(DfuControlService.EXTRA_ERROR_CODE, code)
+        broadcast.putExtra(DfuControlService.EXTRA_ERROR_MESSAGE, message)
+        LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(broadcast)
+        Utils.log(Log.ERROR, TAG, message)
         stopSelf()
     }
 }

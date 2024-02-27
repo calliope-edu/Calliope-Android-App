@@ -7,5 +7,4 @@ public class StaticExtras {
     public static final String CURRENT_DEVICE_ADDRESS = "cc.calliope.mini.CURRENT_DEVICE_ADDRESS";
     public static final String CURRENT_DEVICE_PATTERN = "cc.calliope.mini.CURRENT_DEVICE_PATTERN";
     public static final String CURRENT_DEVICE_VERSION = "cc.calliope.mini.CURRENT_DEVICE_VERSION";
-    public static final String SHOULD_USE_LEGACY_DFU = "cc.calliope.mini.SHOULD_USE_LEGACY_DFU";
 }

@@ -26,6 +26,7 @@ import static android.bluetooth.BluetoothDevice.ACTION_BOND_STATE_CHANGED;
 import static android.bluetooth.BluetoothDevice.ERROR;
 import static android.bluetooth.BluetoothDevice.EXTRA_BOND_STATE;
 
+import static cc.calliope.mini.service.DfuControlService.MINI_V1;
 import static cc.calliope.mini.service.DfuControlService.UNIDENTIFIED;
 import static cc.calliope.mini.service.DfuControlService.EXTRA_BOARD_VERSION;
 import static cc.calliope.mini.service.DfuControlService.EXTRA_ERROR_CODE;
@@ -102,7 +103,7 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
                 case DfuControlService.BROADCAST_START ->
                         listener.onProgressUpdate(DfuService.PROGRESS_CONNECTING);
                 case DfuControlService.BROADCAST_COMPLETED -> {
-                    int boardVersion = intent.getIntExtra(EXTRA_BOARD_VERSION, UNIDENTIFIED);
+                    int boardVersion = intent.getIntExtra(EXTRA_BOARD_VERSION, MINI_V1);
                     listener.onHardwareVersionReceived(boardVersion);
                 }
                 case DfuControlService.BROADCAST_CONNECTION_FAILED -> listener.onConnectionFailed();

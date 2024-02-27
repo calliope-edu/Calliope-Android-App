@@ -1,6 +1,8 @@
 package cc.calliope.mini.dialog.pattern;
 
 import static cc.calliope.mini.BondingService.EXTRA_DEVICE_ADDRESS;
+import static cc.calliope.mini.BondingService.EXTRA_DEVICE_VERSION;
+import static cc.calliope.mini.service.DfuControlService.UNIDENTIFIED;
 
 import android.app.Activity;
 import android.app.Dialog;
@@ -32,6 +34,7 @@ import cc.calliope.mini.BondingService;
 import cc.calliope.mini.PatternMatrixView;
 import cc.calliope.mini.ScanViewModelKt;
 import cc.calliope.mini.utils.BluetoothUtils;
+import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.StaticExtras;
 import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.R;
@@ -196,16 +199,20 @@ public class PatternDialogFragment extends DialogFragment {
     private void onActionClick(View view){
         if(currentDevice != null && currentDevice.isActual()){
             saveCurrentDevice();
-            if(!currentDevice.isBonded()) {
-                BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-                if (bluetoothAdapter == null) {
-                    return;
-                }
 
-                Intent service = new Intent(context, BondingService.class);
-                service.putExtra(EXTRA_DEVICE_ADDRESS, currentDevice.getAddress());
-                getActivity().startService(service);
+            if(!currentAddress.equals(currentDevice.getAddress())){
+                Preference.putInt(context, StaticExtras.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
             }
+
+            BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+            if (bluetoothAdapter == null) {
+                return;
+            }
+
+            Intent service = new Intent(context, BondingService.class);
+            service.putExtra(EXTRA_DEVICE_ADDRESS, currentDevice.getAddress());
+            service.putExtra(EXTRA_DEVICE_VERSION, UNIDENTIFIED);
+            getActivity().startService(service);
         }
         dismiss();
     }

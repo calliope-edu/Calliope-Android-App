@@ -198,6 +198,13 @@ public class DfuControlService extends Service {
         }
     };
 
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        Utils.log(Log.DEBUG, TAG, "DFUControlService onCreate()");
+        IntentFilter filter = new IntentFilter(ACTION_BOND_STATE_CHANGED);
+        registerReceiver(bondStateReceiver, filter);
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -207,7 +214,6 @@ public class DfuControlService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Utils.log (Log.DEBUG, TAG, "DFUControlService onStartCommand");
-        registerReceiver(bondStateReceiver, new IntentFilter(ACTION_BOND_STATE_CHANGED));
 
         deviceAddress = intent.getStringExtra(StaticExtras.CURRENT_DEVICE_ADDRESS);
         maxRetries = intent.getIntExtra(EXTRA_MAX_RETRIES_NUMBER, 2);
