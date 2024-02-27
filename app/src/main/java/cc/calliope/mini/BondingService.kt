@@ -30,8 +30,8 @@ import java.util.UUID
 
 open class BondingService : Service() {
     companion object {
-        const val TAG = "MyService"
-        const val EXTRA_DEVICE_ADDRESS = "my_service.device_address"
+        const val TAG = "BondingService"
+        const val EXTRA_DEVICE_ADDRESS = "bonding_service.device_address"
 
         private val DEVICE_FIRMWARE_UPDATE_CONTROL_SERVICE_UUID =
             UUID.fromString("E95D93B0-251D-470A-A062-FA1922DFA9A8")
@@ -75,9 +75,18 @@ open class BondingService : Service() {
             }
         }
 
+        @Suppress("DEPRECATION")
+        @Deprecated(
+            "Used natively in Android 12 and lower",
+            ReplaceWith("onCharacteristicRead(gatt, characteristic, characteristic.value, status)")
+        )
         override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
+            onCharacteristicRead(gatt, characteristic, characteristic.value, status)
+        }
+
+        override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray, status: Int) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                Utils.log(Log.DEBUG, TAG, "Characteristic read: ${characteristic.uuid}")
+                Utils.log(Log.DEBUG, TAG, "Characteristic read: ${characteristic.uuid} Value: ${value.let { it.contentToString() }}")
             } else {
                 Utils.log(Log.WARN, TAG, "Characteristic read failed: ${characteristic.uuid}")
             }
@@ -87,7 +96,7 @@ open class BondingService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        Utils.log(TAG, "Service created")
+        Utils.log(Log.DEBUG, TAG, "Service created")
     }
 
     override fun onBind(intent: Intent): IBinder? {
@@ -96,7 +105,7 @@ open class BondingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Utils.log(TAG, "Service started")
+        Utils.log(TAG, "Bonding Service started")
 
         deviceAddress = intent?.getStringExtra(EXTRA_DEVICE_ADDRESS)
 
@@ -124,7 +133,7 @@ open class BondingService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Utils.log(TAG, "Service destroyed")
+        Utils.log(TAG, "Bonding Service destroyed")
         serviceJob.cancel()
     }
 
@@ -153,7 +162,7 @@ open class BondingService : Service() {
     private fun handleConnectedState(gatt: BluetoothGatt) {
         val bondState = gatt.device.bondState
         if (bondState == BluetoothDevice.BOND_BONDING) {
-            Utils.log(Log.WARN, TAG, "waiting for bonding to complete")
+            Utils.log(Log.WARN, TAG, "Waiting for bonding to complete")
         } else {
             if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N && bondState == BluetoothDevice.BOND_BONDED) {
                 serviceScope.launch {
@@ -179,13 +188,13 @@ open class BondingService : Service() {
     fun getDfuControlService(gatt: BluetoothGatt) {
         val dfuControlService = gatt.getService(DEVICE_FIRMWARE_UPDATE_CONTROL_SERVICE_UUID)
         if (dfuControlService == null) {
-            Log.w(TAG, "Cannot find DEVICE_FIRMWARE_UPDATE_CONTROL_SERVICE_UUID")
+            Utils.log(Log.WARN, TAG, "Cannot find DEVICE_FIRMWARE_UPDATE_CONTROL_SERVICE_UUID")
             return
         }
 
         val dfuControlCharacteristic = dfuControlService.getCharacteristic(DEVICE_FIRMWARE_UPDATE_CONTROL_CHARACTERISTIC_UUID)
         if (dfuControlCharacteristic == null) {
-            Log.w(TAG, "Cannot find DEVICE_FIRMWARE_UPDATE_CONTROL_CHARACTERISTIC_UUID")
+            Utils.log(Log.WARN, TAG, "Cannot find DEVICE_FIRMWARE_UPDATE_CONTROL_CHARACTERISTIC_UUID")
             return
         }
 
