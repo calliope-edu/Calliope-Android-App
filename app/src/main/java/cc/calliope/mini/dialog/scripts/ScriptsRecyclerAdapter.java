@@ -127,14 +127,22 @@ public class ScriptsRecyclerAdapter extends RecyclerView.Adapter<ScriptsRecycler
             icon = view.findViewById(R.id.hex_file_icon);
         }
 
+        //TODO: Move to string resources
         void setItem(FileWrapper file) {
             String name = FilenameUtils.removeExtension(file.getName());
             String date = Utils.dateFormat(file.lastModified());
-            String version = "v" + Utils.getFileVersion(file.getAbsolutePath());
+            int version = Utils.getFileVersion(file.getAbsolutePath());
+
+            if(version == 1){
+                this.version.setText("v1,2");
+            }else if(version == 2) {
+                this.version.setText("v3");
+            }else {
+                this.version.setText("v1,2,3");
+            }
 
             this.name.setText(name);
             this.date.setText(date);
-            this.version.setText(version);
             this.icon.setImageResource(file.editor().getIconResId());
         }
     }

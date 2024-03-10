@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -26,11 +27,10 @@ import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityHexBinding;
 import cc.calliope.mini.fragment.editors.Editor;
 import cc.calliope.mini.utils.FileUtils;
-import cc.calliope.mini.utils.StaticExtras;
-import cc.calliope.mini.utils.Version;
+import cc.calliope.mini.utils.Constants;
 
 
-public class OpenHexActivity extends ScannerActivity {
+public class OpenHexActivity extends BaseActivity {
     private static final int REQUEST_CODE_PERMISSIONS = 123;
     private ActivityHexBinding binding;
     private boolean isStartFlashing;
@@ -110,9 +110,9 @@ public class OpenHexActivity extends ScannerActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        if (Version.VERSION_TIRAMISU_AND_NEWER || (requestCode == REQUEST_CODE_PERMISSIONS && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-            // Дозвіл на читання зовнішнього сховища отримано
-            Log.w("HexActivity", "Дозвіл на читання зовнішнього сховища отримано");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU || (requestCode == REQUEST_CODE_PERMISSIONS && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+            // Access to external storage is granted
+            Log.w("HexActivity", "Access to external storage is granted");
         } else {
             finish();
         }
@@ -139,7 +139,7 @@ public class OpenHexActivity extends ScannerActivity {
         startActivity(intent);
 
         Intent serviceIntent = new Intent(this, FlashingService.class);
-        serviceIntent.putExtra(StaticExtras.EXTRA_FILE_PATH, file.getAbsolutePath());
+        serviceIntent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
         startService(serviceIntent);
     }
 }

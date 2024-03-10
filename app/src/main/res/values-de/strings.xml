@@ -16,12 +16,12 @@
 
     <string name="title_library">Vorinstallierte Programme</string>
     <string name="title_custom">Eigener Editor</string>
-    <string name="title_scripts">Deine Skripte</string>
+    <string name="title_scripts">Deine Programme</string>
     <string name="info_make_code">MakeCode vermittelt allen Schülern Programmierung mit unterhaltsamen Projekten, sofortigen Ergebnissen mit Block- und Texteditoren für alle Kenntnisstufen.</string>
     <string name="info_roberta">Das Open Roberta Lab ist eine Cloud-basierte integrierte Programmierumgebung, die es Kindern und Jugendlichen ermöglicht, auf einfache Weise verschiedene Roboter/Mikrocontroller-Systeme zu programmieren.</string>
     <string name="info_library">Hier findest du die Originalprogramme, die verändert oder neu geladen werden können.</string>
     <string name="info_custom">Hier können Sie zum benutzerdefinierten Editor gehen.</string>
-    <string name="info_scripts">Hier sind deine Skripte.</string>
+    <string name="info_scripts">Hier sind deine Programme.</string>
 
     <string name="title_welcome">Los geht\'s</string>
     <string name="info_welcome">Auf dieser Seite erfährst du, wie du den Calliope mini in Betrieb nehmen kannst.</string>
@@ -107,7 +107,7 @@
     <string name="title_dialog_edit_link">Link bearbeiten</string>
     <string name="button_save">Speichern</string>
     <string name="menu_fab_connect">Verbindung</string>
-    <string name="menu_fab_scripts">Skripte</string>
+    <string name="menu_fab_scripts">Programme</string>
     <string name="menu_fab_full_screen">Vollbild</string>
     <string name="error_snackbar_save_file_error">Fehler beim Speichern der Datei</string>
     <string name="summary_custom">Link zum benutzerdefinierten Editor</string>

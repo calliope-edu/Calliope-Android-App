@@ -1,8 +1,9 @@
 package cc.calliope.mini;
 
-import static cc.calliope.mini.service.DfuControlService.MINI_V1;
-import static cc.calliope.mini.service.DfuControlService.MINI_V2;
-import static cc.calliope.mini.service.DfuControlService.UNIDENTIFIED;
+import static cc.calliope.mini.notification.Notification.TYPE_INFO;
+import static cc.calliope.mini.utils.Constants.MINI_V1;
+import static cc.calliope.mini.utils.Constants.MINI_V2;
+import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 
 import android.app.ActivityManager;
 import android.bluetooth.BluetoothAdapter;
@@ -12,6 +13,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
 
+import androidx.core.content.PermissionChecker;
+import androidx.lifecycle.LifecycleService;
 import androidx.preference.PreferenceManager;
 
 import java.io.ByteArrayOutputStream;
@@ -25,20 +28,20 @@ import java.nio.ByteOrder;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import cc.calliope.mini.service.DfuControlService;
+import cc.calliope.mini.notification.NotificationManager;
 import cc.calliope.mini.service.DfuService;
 import cc.calliope.mini.service.PartialFlashingService;
 import cc.calliope.mini.utils.FileUtils;
 import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Settings;
-import cc.calliope.mini.utils.StaticExtras;
+import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
 import no.nordicsemi.android.dfu.DfuBaseService;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
 
 import cc.calliope.mini.utils.irmHexUtils;
 
-public class FlashingService extends FlashingBaseService {
+public class FlashingService extends LifecycleService implements ProgressListener {
     private static final String TAG = "FlashingService";
     private static boolean isThisServiceRunning = false;
     private static final int NUMBER_OF_RETRIES = 3;
@@ -55,6 +58,9 @@ public class FlashingService extends FlashingBaseService {
     @Override
     public void onCreate() {
         super.onCreate();
+
+        ProgressCollector progressCollector = new ProgressCollector(this);
+        getLifecycle().addObserver(progressCollector);
     }
 
     @Override
@@ -66,6 +72,8 @@ public class FlashingService extends FlashingBaseService {
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
         Utils.log(Log.DEBUG, TAG, "FlashingService started");
+
+        NotificationManager.updateNotificationMessage(TYPE_INFO, "Flashing in progress. Please wait...");
 
         if (isThisServiceRunning) {
             Utils.log(Log.INFO, TAG, "Service is already running.");
@@ -86,8 +94,8 @@ public class FlashingService extends FlashingBaseService {
     }
 
     @Override
-    public void onHardwareVersionReceived(int hardwareVersion) {
-        startFlashing(hardwareVersion);
+    public void onDfuControlComplete() {
+        startFlashing();
     }
 
     @Override
@@ -103,6 +111,7 @@ public class FlashingService extends FlashingBaseService {
         }
         Utils.log(Log.ASSERT, TAG, "Bond state: " + bondState + " previous: " + previousBondState);
     }
+
 
     @Override
     public void onError(int code, String message) {
@@ -129,11 +138,16 @@ public class FlashingService extends FlashingBaseService {
         }
     }
 
+    @Override
+    public void onConnectionFailed(){
+        Utils.log(Log.ASSERT, TAG, "FlashingBaseService onConnectionFailed");
+    }
+
     // Check if the service is already running
     private boolean isServiceRunning() {
         ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : activityManager.getRunningServices(Integer.MAX_VALUE)) {
-            if (DfuControlService.class.getName().equals(service.service.getClassName()) ||
+            if (LegacyDfuService.class.getName().equals(service.service.getClassName()) ||
                     DfuService.class.getName().equals(service.service.getClassName()) ||
                     PartialFlashingService.class.getName().equals(service.service.getClassName())) {
                 Utils.log(Log.ERROR, TAG, service.service.getClassName() + " is already running.");
@@ -144,7 +158,7 @@ public class FlashingService extends FlashingBaseService {
     }
 
     private boolean getPath(Intent intent) {
-        String path = intent.getStringExtra(StaticExtras.EXTRA_FILE_PATH);
+        String path = intent.getStringExtra(Constants.EXTRA_FILE_PATH);
         if(path != null && !path.isEmpty()){
             currentPath = path;
         }
@@ -155,18 +169,24 @@ public class FlashingService extends FlashingBaseService {
         }
 
         // Save the path to preferences
-        Preference.putString(getApplicationContext(), StaticExtras.CURRENT_FILE_PATH, currentPath);
+        Preference.putString(getApplicationContext(), Constants.CURRENT_FILE_PATH, currentPath);
         return true;
     }
 
     private boolean getDevice() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        currentAddress = preferences.getString(StaticExtras.CURRENT_DEVICE_ADDRESS, "");
-        currentPattern = preferences.getString(StaticExtras.CURRENT_DEVICE_PATTERN, "ZUZUZ");
-        currentVersion = preferences.getInt(StaticExtras.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
+        currentAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
+        currentPattern = preferences.getString(Constants.CURRENT_DEVICE_PATTERN, "ZUZUZ");
+        currentVersion = preferences.getInt(Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
 
         if (!isValidBluetoothMAC(currentAddress)) {
             Utils.log(Log.ERROR, TAG, "Device address is incorrect. Service will stop.");
+            stopSelf();
+            return false;
+        }
+
+        if (currentVersion == UNIDENTIFIED) {
+            Utils.log(Log.ERROR, TAG, "Device version is incorrect. Service will stop.");
             stopSelf();
             return false;
         }
@@ -186,7 +206,7 @@ public class FlashingService extends FlashingBaseService {
             if(currentVersion == MINI_V1) {
                 startDfuControlService();
             } else {
-                startFlashing(currentVersion);
+                startFlashing();
             }
         }
     }
@@ -196,7 +216,7 @@ public class FlashingService extends FlashingBaseService {
 
         Intent service = new Intent(this, PartialFlashingService.class);
         service.putExtra(PartialFlashingService.EXTRA_DEVICE_ADDRESS, currentAddress);
-        service.putExtra(StaticExtras.EXTRA_FILE_PATH, currentPath); // a path or URI must be provided.
+        service.putExtra(Constants.EXTRA_FILE_PATH, currentPath); // a path or URI must be provided.
         startService(service);
     }
 
@@ -207,7 +227,7 @@ public class FlashingService extends FlashingBaseService {
 //        service.putExtra(StaticExtras.CURRENT_DEVICE_ADDRESS, currentAddress);
 //        startService(service);
         Intent service = new Intent(this, LegacyDfuService.class);
-        service.putExtra(StaticExtras.CURRENT_DEVICE_ADDRESS, currentAddress);
+        service.putExtra(Constants.CURRENT_DEVICE_ADDRESS, currentAddress);
         startService(service);
     }
 
@@ -230,23 +250,27 @@ public class FlashingService extends FlashingBaseService {
 
 
     @SuppressWarnings("deprecation")
-    private void startFlashing(@DfuControlService.HardwareVersion final int hardwareVersion) {
+    private void startFlashing() {
         Utils.log(Log.INFO, TAG, "Starting DFU Service...");
 
-        if (hardwareVersion == UNIDENTIFIED) {
-            Utils.log(Log.ERROR, TAG, "BOARD_UNIDENTIFIED");
-            return;
-        }
-
+        // TODO show error if file not correct
         int fv = Utils.getFileVersion(currentPath);
-        if (fv == -1 || fv == 0){
-            Utils.log(Log.ERROR, TAG, "File not found or unknown version");
+        Utils.log(Log.INFO, TAG, "File version: " + fv);
+        if(fv == 2 && currentVersion == MINI_V1){
+            Utils.log(Log.ERROR, TAG, "File version is 3, but device is Mini V1,2. Service will stop.");
+            stopSelf();
             return;
-        } else {
-            Utils.log(Log.INFO, TAG, "File version: " + fv);
+        } else if(fv == 1 && currentVersion == MINI_V2){
+            Utils.log(Log.ERROR, TAG, "File version is 1,2, but device is Mini V3. Service will stop.");
+            stopSelf();
+            return;
         }
 
-        HexToDfu hexToDFU = universalHexToDFU(currentPath, hardwareVersion);
+//        DialogUtils.showWarningDialog(, "tesst", "test", () -> {
+//            Utils.log(Log.INFO, TAG, "Starting DFU Service...");
+//        });
+
+        HexToDfu hexToDFU = universalHexToDFU(currentPath, currentVersion);
         String hexPath = hexToDFU.path;
         int hexSize = hexToDFU.size;
 
@@ -257,7 +281,7 @@ public class FlashingService extends FlashingBaseService {
             return;
         }
 
-        if (hardwareVersion == MINI_V1) {
+        if (currentVersion == MINI_V1) {
             new DfuServiceInitiator(currentAddress)
                     .setDeviceName(currentPattern)
                     .setPrepareDataObjectDelay(300L)

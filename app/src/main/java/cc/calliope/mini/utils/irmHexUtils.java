@@ -12,8 +12,6 @@ package cc.calliope.mini.utils;
 
 public class irmHexUtils {
     private final static String TAG = "irmHexUtils";
-    public final static int MINI_V1 = 1;
-    public final static int MINI_V2 = 2;
 
     // hex file data types for micro:bit v1.X
     public final static int irmHexBlock00 = 0x9900;

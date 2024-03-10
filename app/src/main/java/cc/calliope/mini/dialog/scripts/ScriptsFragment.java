@@ -47,14 +47,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import cc.calliope.mini.FlashingService;
 import cc.calliope.mini.FileWrapper;
 import cc.calliope.mini.R;
-import cc.calliope.mini.activity.FlashingActivity;
 import cc.calliope.mini.dialog.DialogUtils;
-import cc.calliope.mini.utils.StaticExtras;
+import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.databinding.FragmentScriptsBinding;
 import cc.calliope.mini.fragment.editors.Editor;
 import cc.calliope.mini.utils.Utils;
-import cc.calliope.mini.utils.Version;
-import cc.calliope.mini.views.SimpleDividerItemDecoration;
 
 import static android.app.Activity.RESULT_OK;
 
@@ -133,7 +130,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
             scriptsRecyclerAdapter.setOnItemClickListener(this::openDfuActivity);
             scriptsRecyclerAdapter.setOnItemLongClickListener(this::openPopupMenu);
             recyclerView.setAdapter(scriptsRecyclerAdapter);
-            recyclerView.addItemDecoration(new SimpleDividerItemDecoration(activity));
+            //recyclerView.addItemDecoration(new SimpleDividerItemDecoration(activity));
         }
     }
 
@@ -154,13 +151,15 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     }
 
     private void openDfuActivity(FileWrapper file) {
-        final Intent intent = new Intent(activity, FlashingActivity.class);
-//        intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
-        startActivity(intent);
+        //final Intent intent = new Intent(activity, FlashingActivity.class);
+        //intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
+        //startActivity(intent);
 
         Intent serviceIntent = new Intent(activity, FlashingService.class);
-        serviceIntent.putExtra(StaticExtras.EXTRA_FILE_PATH, file.getAbsolutePath());
+        serviceIntent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
         activity.startService(serviceIntent);
+
+        dismiss();
     }
 
     private void openPopupMenu(View view, FileWrapper file) {
@@ -240,7 +239,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
 
         sourceFilePath = file.getAbsolutePath();
 
-        if (Version.VERSION_Q_AND_NEWER) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             openDocumentTreeNewApi();
         } else {
             openDocumentTree();

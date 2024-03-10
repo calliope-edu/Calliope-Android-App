@@ -10,12 +10,10 @@ import androidx.fragment.app.Fragment;
 
 import cc.calliope.mini.FlashingService;
 import cc.calliope.mini.R;
-import cc.calliope.mini.activity.FlashingActivity;
 import cc.calliope.mini.utils.Settings;
-import cc.calliope.mini.utils.StaticExtras;
+import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.FileUtils;
 import cc.calliope.mini.utils.Utils;
-import cc.calliope.mini.utils.Version;
 
 import android.os.StrictMode;
 import android.util.Base64;
@@ -172,11 +170,7 @@ public class WebFragment extends Fragment implements DownloadListener {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (Version.VERSION_M_AND_NEWER) {
                     Utils.errorSnackbar(webView, "Oh no! " + error.getDescription()).show();
-                } else {
-                    Utils.errorSnackbar(webView, "Oh no! onReceivedError").show();
-                }
             }
         });
         webView.setDownloadListener(this);
@@ -313,12 +307,12 @@ public class WebFragment extends Fragment implements DownloadListener {
             return;
         }
 
-        final Intent intent = new Intent(getActivity(), FlashingActivity.class);
+        //final Intent intent = new Intent(getActivity(), FlashingActivity.class);
         //intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
-        startActivity(intent);
+        //startActivity(intent);
 
         Intent serviceIntent = new Intent(getActivity(), FlashingService.class);
-        serviceIntent.putExtra(StaticExtras.EXTRA_FILE_PATH, file.getAbsolutePath());
+        serviceIntent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
         getActivity().startService(serviceIntent);
     }
 

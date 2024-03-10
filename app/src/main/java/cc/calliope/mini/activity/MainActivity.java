@@ -27,9 +27,8 @@ import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityMainBinding;
 import cc.calliope.mini.dialog.scripts.ScriptsFragment;
 import cc.calliope.mini.utils.Utils;
-import cc.calliope.mini.utils.Version;
 
-public class MainActivity extends ScannerActivity {
+public class MainActivity extends BaseActivity {
     private static final String TAG = "MainActivity";
     private ActivityMainBinding binding;
     private boolean fullScreen = false;
@@ -77,7 +76,7 @@ public class MainActivity extends ScannerActivity {
         });
         NavigationUI.setupWithNavController(binding.bottomNavigation, navController);
 
-        if (Version.VERSION_TIRAMISU_AND_NEWER) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             requestPushNotificationPermission();
         }
 

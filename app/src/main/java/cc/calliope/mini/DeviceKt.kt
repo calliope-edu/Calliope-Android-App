@@ -1,14 +1,14 @@
 package cc.calliope.mini
 
+import android.os.Build
 import android.os.SystemClock
-import cc.calliope.mini.utils.Version
 import no.nordicsemi.android.kotlin.ble.core.ServerDevice
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResultData
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResults
 
 class DeviceKt(bleScanResults: BleScanResults) {
     companion object {
-        private val RELEVANT_LIMIT: Int = if (Version.VERSION_O_AND_NEWER) 5 else 10 // Секунди
+        private val RELEVANT_LIMIT: Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) 5 else 10 // Секунди
     }
 
     private var serverDevice: ServerDevice = bleScanResults.device

@@ -2,7 +2,7 @@ package cc.calliope.mini.dialog.pattern;
 
 import static cc.calliope.mini.BondingService.EXTRA_DEVICE_ADDRESS;
 import static cc.calliope.mini.BondingService.EXTRA_DEVICE_VERSION;
-import static cc.calliope.mini.service.DfuControlService.UNIDENTIFIED;
+import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 
 import android.app.Activity;
 import android.app.Dialog;
@@ -35,7 +35,7 @@ import cc.calliope.mini.PatternMatrixView;
 import cc.calliope.mini.ScanViewModelKt;
 import cc.calliope.mini.utils.BluetoothUtils;
 import cc.calliope.mini.utils.Preference;
-import cc.calliope.mini.utils.StaticExtras;
+import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.DialogPatternBinding;
@@ -185,15 +185,15 @@ public class PatternDialogFragment extends DialogFragment {
 
     private void saveCurrentDevice() {
         SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(context).edit();
-        editor.putString(StaticExtras.CURRENT_DEVICE_ADDRESS, currentDevice.getAddress());
-        editor.putString(StaticExtras.CURRENT_DEVICE_PATTERN, currentDevice.getPattern());
+        editor.putString(Constants.CURRENT_DEVICE_ADDRESS, currentDevice.getAddress());
+        editor.putString(Constants.CURRENT_DEVICE_PATTERN, currentDevice.getPattern());
         editor.apply();
     }
 
     private void restoreCurrentDevice() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        currentAddress = preferences.getString(StaticExtras.CURRENT_DEVICE_ADDRESS, "");
-        currentPattern = preferences.getString(StaticExtras.CURRENT_DEVICE_PATTERN, "ZUZUZ");
+        currentAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
+        currentPattern = preferences.getString(Constants.CURRENT_DEVICE_PATTERN, "ZUZUZ");
     }
 
     private void onActionClick(View view){
@@ -201,7 +201,7 @@ public class PatternDialogFragment extends DialogFragment {
             saveCurrentDevice();
 
             if(!currentAddress.equals(currentDevice.getAddress())){
-                Preference.putInt(context, StaticExtras.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
+                Preference.putInt(context, Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
             }
 
             BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();

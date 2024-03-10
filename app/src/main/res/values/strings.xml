@@ -21,12 +21,12 @@
     <string name="title_roberta" translatable="false">Open Roberta Lab</string>
     <string name="title_library">Preinstalled Programs</string>
     <string name="title_custom">Custom editor</string>
-    <string name="title_scripts">Your scripts</string>
+    <string name="title_scripts">Your programs</string>
     <string name="info_make_code">Microsoft MakeCode is a free, open source platform for creating engaging computer science learning experiences that support a progression path into real-world programming.</string>
     <string name="info_roberta">The Open Roberta Lab is a cloud-based integrated programming environment that enables children and adolescents to program easily different robot/microcontroller systems.</string>
     <string name="info_library">Here you find the original programs, to change or reload.</string>
     <string name="info_custom">Here you can enter to the custom editor.</string>
-    <string name="info_scripts">Your scripts will be here.</string>
+    <string name="info_scripts">Your programs will be here.</string>
 
     <string name="title_welcome">Let\'s Go</string>
     <string name="info_welcome">On this page you will learn how to get the Calliope mini up and running step by step. The first step shows you how to connect the Calliope mini correctly to the power supply.</string>
@@ -131,7 +131,7 @@
     <string name="points" translatable="false">…</string>
     <string name="title_web" translatable="false">WEB</string>
     <string name="menu_fab_connect">Connection</string>
-    <string name="menu_fab_scripts">Scripts</string>
+    <string name="menu_fab_scripts">Programs</string>
     <string name="menu_fab_full_screen">Full screen</string>
     <string name="summary_custom">Link to the custom editor</string>
     <string name="summary_auto_flashing">after downloading the .hex file</string>

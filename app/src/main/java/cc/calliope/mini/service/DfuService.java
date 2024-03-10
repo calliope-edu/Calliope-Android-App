@@ -2,6 +2,7 @@ package cc.calliope.mini.service;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -9,7 +10,6 @@ import androidx.core.app.NotificationCompat;
 
 import cc.calliope.mini.BuildConfig;
 import cc.calliope.mini.activity.NotificationActivity;
-import cc.calliope.mini.utils.Version;
 import no.nordicsemi.android.dfu.DfuBaseService;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
 
@@ -22,7 +22,7 @@ public class DfuService extends DfuBaseService{
     @Override
     public void onCreate() {
         // Enable Notification Channel for Android OREO
-        if (Version.VERSION_O_AND_NEWER) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             DfuServiceInitiator.createDfuNotificationChannel(getApplicationContext());
         }
         super.onCreate();

@@ -16,6 +16,7 @@
     <color name="green_dark">#FF00A235</color>
     <color name="red">#FFB00020</color>
     <color name="grey_transparent">#80C1C1C1</color>
+    <color name="grey_transparent_light">#60C1C1C1</color>
     <color name="grey_200">#FFC1C1C1</color>
     <color name="grey_500">#FF818181</color>
     <color name="grey_700">#FF585858</color>

@@ -24,7 +24,7 @@
     <!-- snackbar style in res/values -->
     <style name="SnackBarStyle" parent="Widget.MaterialComponents.Snackbar">
         <item name="actionTextColorAlpha">1</item>
-        <item name="android:backgroundTint">@color/red</item>
+        <item name="android:backgroundTint">@color/grey_500</item>
     </style>
 
     <style name="SnackbarButton" parent="Widget.MaterialComponents.Button.TextButton.Snackbar">

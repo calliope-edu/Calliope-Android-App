@@ -5,10 +5,10 @@ import androidx.core.app.ActivityCompat;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityNoPermissionBinding;
 import cc.calliope.mini.utils.Permission;
-import cc.calliope.mini.utils.Version;
 
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
@@ -32,21 +32,25 @@ public class NoPermissionActivity extends AppCompatActivity implements View.OnCl
     @Override
     public void onResume() {
         super.onResume();
+       checkPermissionsAndUpdateUI();
+    }
+
+    private void checkPermissionsAndUpdateUI() {
         if (!Permission.isAccessGranted(this, Permission.BLUETOOTH_PERMISSIONS)) {
-            deniedForever = Permission.isAccessDeniedForever(this, Permission.BLUETOOTH_PERMISSIONS);
-            content = NoPermissionContent.BLUETOOTH;
-            updateUi();
-        } else if (!Version.VERSION_S_AND_NEWER && !Permission.isAccessGranted(this, Permission.LOCATION_PERMISSIONS)) {
-            deniedForever = Permission.isAccessDeniedForever(this, Permission.LOCATION_PERMISSIONS);
-            content = NoPermissionContent.LOCATION;
-            updateUi();
-        } else if (Version.VERSION_TIRAMISU_AND_NEWER && !Permission.isAccessGranted(this, Permission.POST_NOTIFICATIONS)) {
-            deniedForever = Permission.isAccessDeniedForever(this, Permission.LOCATION_PERMISSIONS);
-            content = NoPermissionContent.NOTIFICATIONS;
-            updateUi();
+            prepareUIUpdate(Permission.BLUETOOTH_PERMISSIONS, NoPermissionContent.BLUETOOTH);
+        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && !Permission.isAccessGranted(this, Permission.LOCATION_PERMISSIONS)) {
+            prepareUIUpdate(Permission.LOCATION_PERMISSIONS, NoPermissionContent.LOCATION);
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !Permission.isAccessGranted(this, Permission.POST_NOTIFICATIONS)) {
+            prepareUIUpdate(Permission.POST_NOTIFICATIONS, NoPermissionContent.NOTIFICATIONS);
         } else {
             finish();
         }
+    }
+
+    private void prepareUIUpdate(String[] permissions, NoPermissionContent content) {
+        deniedForever = Permission.isAccessDeniedForever(this, permissions);
+        this.content = content;
+        updateUi();
     }
 
     @Override

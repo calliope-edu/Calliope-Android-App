@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -30,7 +31,10 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.Observer;
 
+import cc.calliope.mini.notification.Notification;
+import cc.calliope.mini.notification.NotificationManager;
 import cc.calliope.mini.ProgressCollector;
 import cc.calliope.mini.ProgressListener;
 import cc.calliope.mini.popup.PopupAdapter;
@@ -39,11 +43,10 @@ import cc.calliope.mini.R;
 import cc.calliope.mini.dialog.pattern.PatternDialogFragment;
 import cc.calliope.mini.utils.Permission;
 import cc.calliope.mini.utils.Utils;
-import cc.calliope.mini.utils.Version;
 import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.views.MovableFloatingActionButton;
 
-public abstract class ScannerActivity extends AppCompatActivity implements DialogInterface.OnDismissListener, ProgressListener {
+public abstract class BaseActivity extends AppCompatActivity implements DialogInterface.OnDismissListener, ProgressListener {
     private static final int SNACKBAR_DURATION = 10000; // how long to display the snackbar message.
     private static boolean requestWasSent = false;
     private MovableFloatingActionButton patternFab;
@@ -70,12 +73,29 @@ public abstract class ScannerActivity extends AppCompatActivity implements Dialo
 
 //        scannerViewModel = new ViewModelProvider(this).get(ScannerViewModel.class);
 //        scannerViewModel.getScannerState().observe(this, this::scanResults);
+        NotificationManager.getNotificationLiveData().observe(this, notificationObserver);
 
     }
+    private final Observer<Notification> notificationObserver = new Observer<>() {
+        @Override
+        public void onChanged(Notification notification) {
+            int type = notification.getType();
+            String message = notification.getMessage();
+            switch (type) {
+                case Notification.TYPE_INFO ->
+                        Utils.infoSnackbar(rootView, message).show();
+                case Notification.TYPE_WARNING ->
+                        Utils.warningSnackbar(rootView, message).show();
+                case Notification.TYPE_ERROR ->
+                        Utils.errorSnackbar(rootView, message).show();
+            }
+        }
+    };
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        NotificationManager.getNotificationLiveData().removeObserver(notificationObserver);
     }
 
     @Override
@@ -120,7 +140,7 @@ public abstract class ScannerActivity extends AppCompatActivity implements Dialo
     }
 
     @Override
-    public void onHardwareVersionReceived(int hardwareVersion) {
+    public void onDfuControlComplete() {
     }
 
     @Override
@@ -150,20 +170,25 @@ public abstract class ScannerActivity extends AppCompatActivity implements Dialo
 
     private void checkPermission() {
         boolean isBluetoothAccessGranted = Permission.isAccessGranted(this, Permission.BLUETOOTH_PERMISSIONS);
-        boolean isLocationAccessGranted = Version.VERSION_S_AND_NEWER || Permission.isAccessGranted(this, Permission.LOCATION_PERMISSIONS);
-        boolean isNotificationAccessGranted = !Version.VERSION_TIRAMISU_AND_NEWER || Permission.isAccessGranted(this, Permission.POST_NOTIFICATIONS) ||
-                Permission.isAccessDeniedForever(this, Permission.POST_NOTIFICATIONS);
+        boolean isLocationAccessGranted = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S || Permission.isAccessGranted(this, Permission.LOCATION_PERMISSIONS);
+        boolean isNotificationAccessGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || Permission.isAccessGranted(this, Permission.POST_NOTIFICATIONS);
 
-        if (isBluetoothAccessGranted && isLocationAccessGranted && isNotificationAccessGranted) {
-            if (!Utils.isBluetoothEnabled()) {
-                showBluetoothDisabledWarning();
-            } else if (!Version.VERSION_S_AND_NEWER && !Utils.isLocationEnabled(this)) {
-                showLocationDisabledWarning();
-            }
-        } else {
+        if (!isBluetoothAccessGranted || !isLocationAccessGranted || !isNotificationAccessGranted) {
             startNoPermissionActivity();
+            return;
+        }
+
+        checkServiceStatus();
+    }
+
+    private void checkServiceStatus() {
+        if (!Utils.isBluetoothEnabled()) {
+            showBluetoothDisabledWarning();
+        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && !Utils.isLocationEnabled(this)) {
+            showLocationDisabledWarning();
         }
     }
+
 
     private void showPatternDialog(FobParams params) {
         if(Utils.isBluetoothEnabled()){

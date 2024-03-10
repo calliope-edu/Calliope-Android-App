@@ -12,8 +12,6 @@ import static android.bluetooth.BluetoothDevice.BOND_BONDED;
 import static android.bluetooth.BluetoothDevice.BOND_BONDING;
 import static android.bluetooth.BluetoothDevice.BOND_NONE;
 
-import static cc.calliope.mini.service.DfuControlService.HardwareVersion;
-
 public interface ProgressListener {
     @IntDef({BOND_BONDING, BOND_BONDED, BOND_NONE})
     @Retention(RetentionPolicy.SOURCE)
@@ -21,7 +19,7 @@ public interface ProgressListener {
     }
 
     void onDfuAttempt();
-    void onHardwareVersionReceived(@HardwareVersion final int hardwareVersion);
+    void onDfuControlComplete();
     void onProgressUpdate(int progress);
     void onBluetoothBondingStateChanged(@NonNull BluetoothDevice device, @BondState int bondState, @BondState int previousBondState);
     void onConnectionFailed();

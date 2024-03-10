@@ -2,6 +2,7 @@ package cc.calliope.mini.utils;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.util.Log;
@@ -25,9 +26,9 @@ public class Permission {
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     public static final String[] POST_NOTIFICATIONS = {Manifest.permission.POST_NOTIFICATIONS};
 
-    public static boolean isAccessGranted(Activity activity, String... permissions) {
+    public static boolean isAccessGranted(Context context, String... permissions) {
         for (String permission : permissions) {
-            boolean granted = ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED;
+            boolean granted = ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED;
             Log.d("PERMISSION", permission + (granted ? " granted" : " denied"));
             if (!granted) {
                 return false;

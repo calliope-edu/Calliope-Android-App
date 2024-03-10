@@ -98,9 +98,6 @@
             android:name=".activity.NotificationActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.FlashingActivityOld"
-            android:exported="false" />
-        <activity
             android:name=".activity.FlashingActivity"
             android:exported="false" />
         <activity
@@ -115,9 +112,6 @@
             android:enabled="true" />
         <service
             android:name=".service.PartialFlashingService"
-            android:enabled="true" />
-        <service
-            android:name=".service.DfuControlService"
             android:enabled="true" />
         <service
             android:name=".FlashingService"

@@ -27,7 +27,7 @@ import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityDfuBinding;
 import cc.calliope.mini.service.DfuService;
 import cc.calliope.mini.utils.Preference;
-import cc.calliope.mini.utils.StaticExtras;
+import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.views.BoardProgressBar;
 
@@ -118,7 +118,7 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
     }
 
     @Override
-    public void onHardwareVersionReceived(int hardwareVersion) {
+    public void onDfuControlComplete() {
 
     }
 
@@ -152,7 +152,7 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
     private void onRetryClicked(View view) {
         view.setVisibility(View.INVISIBLE);
         Intent serviceIntent = new Intent(this, FlashingService.class);
-        serviceIntent.putExtra(StaticExtras.EXTRA_FILE_PATH, Preference.getString(this, StaticExtras.CURRENT_FILE_PATH, ""));
+        serviceIntent.putExtra(Constants.EXTRA_FILE_PATH, Preference.getString(this, Constants.CURRENT_FILE_PATH, ""));
         startService(serviceIntent);
     }
 
