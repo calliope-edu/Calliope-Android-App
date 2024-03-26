@@ -97,10 +97,13 @@
     <string name="open_hex_button">Прошити</string>
 
     <string name="flashing_device_connecting">Під\'єднання пристрою…</string>
+    <string name="flashing_device_connected">Пристрій під\'єднано</string>
     <string name="flashing_process_starting">Розпочинаємо процес…</string>
+    <string name="flashing_process_started">Процес розпочато</string>
     <string name="flashing_enabling_dfu_mode">Увімкнення режиму DFU…</string>
     <string name="flashing_firmware_validating">Перевірка прошивки…</string>
     <string name="flashing_device_disconnecting">Від\'єднання пристрою…</string>
+    <string name="flashing_device_disconnected">Пристрій від\'єднано</string>
     <string name="flashing_completed">Прошивку завершено</string>
     <string name="flashing_aborted">Прошивку скасовано</string>
     <string name="flashing_uploading">Завантаження…</string>
@@ -121,7 +124,9 @@
     <string name="button_retry">Повторити</string>
     <string name="title_copy">Копіювати</string>
     <string name="summary_auto_flashing">після завантаження .hex файлу.</string>
+    <string name="summary_background_flashing">увімкнути або вимкнути</string>
     <string name="title_partial_flashing">Часткове прошивання</string>
+    <string name="title_background_flashing">Фонове прошивання</string>
     <string name="title_auto_flashing">Автоматичне прошивання</string>
     <string name="button_ok">Так</string>
     <string name="summary_rename_files">додається (n), якщо файл існує</string>

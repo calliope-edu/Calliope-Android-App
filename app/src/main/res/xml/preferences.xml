@@ -13,16 +13,23 @@
             app:iconSpaceReserved="false"/>
 
         <CheckBoxPreference
-            android:key="pref_key_rename_files"
-            android:title="@string/title_rename_files"
-            android:summary="@string/summary_rename_files"
+            android:key="pref_key_enable_partial_flashing"
+            android:title="@string/title_partial_flashing"
+            android:summary="@string/summary_partial_flashing"
             android:defaultValue="false"
             app:iconSpaceReserved="false"/>
 
         <CheckBoxPreference
-            android:key="pref_key_enable_partial_flashing"
-            android:title="@string/title_partial_flashing"
-            android:summary="@string/summary_partial_flashing"
+            android:key="pref_key_enable_background_flashing"
+            android:title="@string/title_background_flashing"
+            android:summary="@string/summary_background_flashing"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
+
+        <CheckBoxPreference
+            android:key="pref_key_rename_files"
+            android:title="@string/title_rename_files"
+            android:summary="@string/summary_rename_files"
             android:defaultValue="false"
             app:iconSpaceReserved="false"/>
 

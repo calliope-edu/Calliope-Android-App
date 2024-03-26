@@ -1,5 +1,7 @@
 package cc.calliope.mini.fragment.web;
 
+import static cc.calliope.mini.notification.Notification.TYPE_ERROR;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
@@ -10,6 +12,8 @@ import androidx.fragment.app.Fragment;
 
 import cc.calliope.mini.FlashingService;
 import cc.calliope.mini.R;
+import cc.calliope.mini.activity.FlashingActivity;
+import cc.calliope.mini.notification.NotificationManager;
 import cc.calliope.mini.utils.Settings;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.FileUtils;
@@ -307,9 +311,16 @@ public class WebFragment extends Fragment implements DownloadListener {
             return;
         }
 
-        //final Intent intent = new Intent(getActivity(), FlashingActivity.class);
-        //intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
-        //startActivity(intent);
+        if(!Utils.isBluetoothEnabled()){
+            NotificationManager.updateNotificationMessage(TYPE_ERROR, getString(R.string.error_snackbar_bluetooth_disable));
+            return;
+        }
+
+        if(!Settings.isBackgroundFlashingEnable(getActivity())){
+            final Intent intent = new Intent(getActivity(), FlashingActivity.class);
+            intent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
+            startActivity(intent);
+        }
 
         Intent serviceIntent = new Intent(getActivity(), FlashingService.class);
         serviceIntent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());

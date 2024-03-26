@@ -1,6 +1,7 @@
 package cc.calliope.mini.views;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -22,26 +23,27 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
     private float dX, dY;
     private Paint paint;
     private RectF rectF;
-
+    private Context context;
     private int actionBarSize;
     private int progress = 0;
 
     public MovableFloatingActionButton(Context context) {
         super(context);
-        init();
+        init(context);
     }
 
     public MovableFloatingActionButton(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init();
+        init(context);
     }
 
     public MovableFloatingActionButton(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init();
+        init(context);
     }
 
-    private void init() {
+    private void init(Context context) {
+        this.context = context;
 
         setOnTouchListener(this);
         paint = new Paint();
@@ -125,22 +127,15 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
 
     }
 
-
-
     public void setProgress(int percent) {
         this.progress = Math.max(percent, 0);
         invalidate();
     }
 
-//    public void setColor(int resId) {
-//        int color;
-//        if (Version.VERSION_M_AND_NEWER) {
-//            color = context.getColor(resId);
-//        } else {
-//            color = getResources().getColor(resId);
-//        }
-//        setBackgroundTintList(ColorStateList.valueOf(color));
-//    }
+    public void setColor(int resId) {
+        int color = context.getColor(resId);
+        setBackgroundTintList(ColorStateList.valueOf(color));
+    }
 
     @Override
     protected void onDraw(Canvas canvas) {

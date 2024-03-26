@@ -94,10 +94,13 @@
     <string name="open_hex_button">Flashen</string>
 
     <string name="flashing_device_connecting">Gerät verbinden…</string>
+    <string name="flashing_device_connected">Gerät verbunden</string>
     <string name="flashing_process_starting">Prozessbeginn…</string>
+    <string name="flashing_process_started">Prozess gestartet</string>
     <string name="flashing_enabling_dfu_mode">Aktivieren des DFU-Modus…</string>
     <string name="flashing_firmware_validating">Validierung der Firmware…</string>
     <string name="flashing_device_disconnecting">Gerät trennt die Verbindung…</string>
+    <string name="flashing_device_disconnected">Gerät getrennt</string>
     <string name="flashing_completed">Flashen abgeschlossen</string>
     <string name="flashing_aborted">Flashen abgebrochen</string>
     <string name="flashing_uploading">Hochladen…</string>
@@ -112,6 +115,7 @@
     <string name="error_snackbar_save_file_error">Fehler beim Speichern der Datei</string>
     <string name="summary_custom">Link zum benutzerdefinierten Editor</string>
     <string name="summary_partial_flashing">aktivieren oder deaktivieren</string>
+    <string name="summary_background_flashing">aktivieren oder deaktivieren</string>
     <string name="title_rename_files">Dateien umbenennen</string>
     <string name="title_settings">Einstellungen</string>
     <string name="bonding_started">Bindung begonnen</string>
@@ -121,6 +125,7 @@
     <string name="title_copy">Kopieren</string>
     <string name="summary_auto_flashing">Aunach dem Herunterladen der .hex-Datei.</string>
     <string name="title_partial_flashing">Partielles Flashen</string>
+    <string name="title_background_flashing">Hintergrund Flashen</string>
     <string name="title_auto_flashing">Automatisches Flashen</string>
     <string name="button_ok">Ja</string>
     <string name="summary_rename_files">angehängtes (n), wenn Datei vorhanden ist</string>

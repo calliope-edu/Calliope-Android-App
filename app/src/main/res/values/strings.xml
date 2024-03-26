@@ -117,10 +117,13 @@
     <string name="open_hex_button">Flash</string>
 
     <string name="flashing_device_connecting">Device connecting…</string>
+    <string name="flashing_device_connected">Device connected</string>
     <string name="flashing_process_starting">Process starting…</string>
+    <string name="flashing_process_started">Process started</string>
     <string name="flashing_enabling_dfu_mode">Enabling DFU mode…</string>
     <string name="flashing_firmware_validating">Firmware validating…</string>
     <string name="flashing_device_disconnecting">Device disconnecting…</string>
+    <string name="flashing_device_disconnected">Device disconnected</string>
     <string name="flashing_completed">Flashing completed</string>
     <string name="flashing_aborted">Flashing aborted</string>
     <string name="flashing_uploading">Uploading…</string>
@@ -137,8 +140,10 @@
     <string name="summary_auto_flashing">after downloading the .hex file</string>
     <string name="summary_rename_files">appended (n) if file exists</string>
     <string name="summary_partial_flashing">enable or disable</string>
+    <string name="summary_background_flashing">enable or disable</string>
     <string name="title_partial_flashing">Partial flashing</string>
     <string name="title_auto_flashing">Automatic flashing</string>
+    <string name="title_background_flashing">Background flashing</string>
     <string name="title_rename_files">Rename files</string>
     <string name="title_settings">Settings</string>
     <string name="title_pattern_connected">%s connected</string>

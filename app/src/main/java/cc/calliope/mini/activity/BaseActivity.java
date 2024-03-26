@@ -1,7 +1,6 @@
 package cc.calliope.mini.activity;
 
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -35,8 +34,6 @@ import androidx.lifecycle.Observer;
 
 import cc.calliope.mini.notification.Notification;
 import cc.calliope.mini.notification.NotificationManager;
-import cc.calliope.mini.ProgressCollector;
-import cc.calliope.mini.ProgressListener;
 import cc.calliope.mini.popup.PopupAdapter;
 import cc.calliope.mini.popup.PopupItem;
 import cc.calliope.mini.R;
@@ -45,8 +42,11 @@ import cc.calliope.mini.utils.Permission;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.views.MovableFloatingActionButton;
+import no.nordicsemi.android.dfu.DfuProgressListener;
+import no.nordicsemi.android.dfu.DfuProgressListenerAdapter;
+import no.nordicsemi.android.dfu.DfuServiceListenerHelper;
 
-public abstract class BaseActivity extends AppCompatActivity implements DialogInterface.OnDismissListener, ProgressListener {
+public abstract class BaseActivity extends AppCompatActivity implements DialogInterface.OnDismissListener {
     private static final int SNACKBAR_DURATION = 10000; // how long to display the snackbar message.
     private static boolean requestWasSent = false;
     private MovableFloatingActionButton patternFab;
@@ -56,25 +56,82 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     private PopupWindow popupWindow;
     private int popupMenuWidth;
     private int popupMenuHeight;
-    private ProgressCollector progressCollector;
-    private int progress;
+    private boolean isFlashing;
 
     ActivityResultLauncher<Intent> bluetoothEnableResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
             }
     );
 
+    private final DfuProgressListener dfuProgressListener = new DfuProgressListenerAdapter() {
+        @Override
+        public void onDeviceConnecting(@NonNull String deviceAddress) {
+            super.onDeviceConnecting(deviceAddress);
+            patternFab.setColor(R.color.blue_light);
+            isFlashing = true;
+        }
+
+        @Override
+        public void onDeviceConnected(@NonNull String deviceAddress) {
+            super.onDeviceConnected(deviceAddress);
+            patternFab.setColor(R.color.blue_light);
+            isFlashing = true;
+        }
+
+        @Override
+        public void onProgressChanged(@NonNull String deviceAddress, int percent, float speed, float avgSpeed, int currentPart, int partsTotal) {
+            patternFab.setProgress(percent);
+            patternFab.setColor(R.color.blue_light);
+            isFlashing = true;
+        }
+
+        @Override
+        public void onDeviceDisconnecting(String deviceAddress) {
+            patternFab.setProgress(0);
+            patternFab.setColor(R.color.aqua_200);
+            isFlashing = false;
+        }
+
+        @Override
+        public void onDeviceDisconnected(@NonNull String deviceAddress) {
+            patternFab.setProgress(0);
+            patternFab.setColor(R.color.aqua_200);
+            isFlashing = false;
+        }
+
+        @Override
+        public void onDfuCompleted(@NonNull String deviceAddress) {
+            patternFab.setProgress(0);
+            patternFab.setColor(R.color.aqua_200);
+            Utils.infoSnackbar(rootView, getString(R.string.flashing_completed)).show();
+            isFlashing = false;
+        }
+
+        @Override
+        public void onDfuAborted(@NonNull String deviceAddress) {
+            patternFab.setProgress(0);
+            patternFab.setColor(R.color.aqua_200);
+            Utils.warningSnackbar(rootView, getString(R.string.flashing_aborted)).show();
+            isFlashing = false;
+        }
+
+        @Override
+        public void onError(@NonNull String deviceAddress, int error, int errorType, String message) {
+            if (error == 4110) {
+                return;
+            }
+            patternFab.setProgress(0);
+            patternFab.setColor(R.color.aqua_200);
+            Utils.errorSnackbar(rootView, String.format(getString(R.string.flashing_error), error, message)).show();
+            isFlashing = false;
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        progressCollector = new ProgressCollector(this);
-        getLifecycle().addObserver(progressCollector);
-
-//        scannerViewModel = new ViewModelProvider(this).get(ScannerViewModel.class);
-//        scannerViewModel.getScannerState().observe(this, this::scanResults);
         NotificationManager.getNotificationLiveData().observe(this, notificationObserver);
-
     }
     private final Observer<Notification> notificationObserver = new Observer<>() {
         @Override
@@ -95,6 +152,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        //
         NotificationManager.getNotificationLiveData().removeObserver(notificationObserver);
     }
 
@@ -102,52 +160,24 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     public void onResume() {
         super.onResume();
         requestWasSent = false;
-        progress = -10;
+        isFlashing = false;
         checkPermission();
         readDisplayMetrics();
-        patternFab.setProgress(progress);
+        patternFab.setProgress(0);
+        patternFab.setColor(R.color.aqua_200);
+        DfuServiceListenerHelper.registerProgressListener(this, dfuProgressListener);
     }
 
     @Override
     public void onPause() {
         super.onPause();
-//        scannerViewModel.stopScan();
+        DfuServiceListenerHelper.unregisterProgressListener(this, dfuProgressListener);
     }
 
     @Override
     public void onDismiss(final DialogInterface dialog) {
         //Fragment dialog had been dismissed
 //        fab.setVisibility(View.VISIBLE);
-    }
-
-    @Override
-    public void onConnectionFailed(){
-        patternFab.setProgress(-10);
-        Utils.errorSnackbar(rootView, getString(R.string.error_snackbar_no_connected)).show();
-    }
-    @Override
-    public void onProgressUpdate(int percent) {
-        progress = percent;
-        patternFab.setProgress(percent);
-    }
-
-    @Override
-    public void onBluetoothBondingStateChanged(@NonNull BluetoothDevice device, int bondState, int previousBondState) {
-    }
-
-    @Override
-    public void onDfuAttempt() {
-    }
-
-    @Override
-    public void onDfuControlComplete() {
-    }
-
-    @Override
-    public void onError(int code, String message) {
-        patternFab.setProgress(-10);
-        String error = String.format(getString(R.string.flashing_error), code, message);
-        Utils.errorSnackbar(rootView, error).show();
     }
 
     private void readDisplayMetrics() {
@@ -224,8 +254,12 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     }
 
     public void onFabClick(View view) {
-        createPopupMenu(view);
-        showPopupMenu(view);
+        if(isFlashing){
+            startFlashingActivity();
+        } else {
+            createPopupMenu(view);
+            showPopupMenu(view);
+        }
     }
 
     private void createPopupMenu(View view) {
@@ -267,16 +301,12 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         Utils.log(Log.ASSERT, "SA", "position: " + position);
         popupWindow.dismiss();
         if (position == 0) {
-            if (progress < 0) {
-                showPatternDialog(new FobParams(
-                        patternFab.getWidth(),
-                        patternFab.getHeight(),
-                        patternFab.getX(),
-                        patternFab.getY()
-                ));
-            } else {
-                startFlashingActivity();
-            }
+            showPatternDialog(new FobParams(
+                    patternFab.getWidth(),
+                    patternFab.getHeight(),
+                    patternFab.getX(),
+                    patternFab.getY()
+            ));
         }
     }
 
@@ -327,8 +357,12 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     }
 
     private void startFlashingActivity() {
-        final Intent intent = new Intent(this, FlashingActivity.class);
-        startActivity(intent);
+        if(Utils.isBluetoothEnabled()){
+            final Intent intent = new Intent(this, FlashingActivity.class);
+            startActivity(intent);
+        }else {
+            showBluetoothDisabledWarning();
+        }
     }
 
     private boolean hasOpenedPatternDialog() {

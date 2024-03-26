@@ -1,5 +1,7 @@
 package cc.calliope.mini.activity;
 
+import static cc.calliope.mini.notification.Notification.TYPE_ERROR;
+
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -26,8 +28,10 @@ import cc.calliope.mini.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityHexBinding;
 import cc.calliope.mini.fragment.editors.Editor;
+import cc.calliope.mini.notification.NotificationManager;
 import cc.calliope.mini.utils.FileUtils;
 import cc.calliope.mini.utils.Constants;
+import cc.calliope.mini.utils.Utils;
 
 
 public class OpenHexActivity extends BaseActivity {
@@ -134,8 +138,12 @@ public class OpenHexActivity extends BaseActivity {
     }
 
     private void startDFUActivity(File file) {
+        if(!Utils.isBluetoothEnabled()){
+            NotificationManager.updateNotificationMessage(TYPE_ERROR, getString(R.string.error_snackbar_bluetooth_disable));
+            return;
+        }
+
         final Intent intent = new Intent(this, FlashingActivity.class);
-        //intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
         startActivity(intent);
 
         Intent serviceIntent = new Intent(this, FlashingService.class);

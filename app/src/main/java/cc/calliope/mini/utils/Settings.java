@@ -9,6 +9,7 @@ public class Settings extends Preference{
     private static final String PREF_KEY_RENAME_FILES = "pref_key_rename_files";
     private static final String PREF_KEY_ENABLE_PARTIAL_FLASHING = "pref_key_enable_partial_flashing";
     private static final String PREF_KEY_CUSTOM_LINK = "pref_key_custom_link";
+    private static final String PREF_KEY_ENABLE_BACKGROUND_FLASHING = "pref_key_enable_background_flashing";
 
     public static boolean isAutoFlashingEnable(Context context){
         return getBoolean(context, PREF_KEY_ENABLE_AUTO_FLASHING, true);
@@ -16,6 +17,10 @@ public class Settings extends Preference{
 
     public static boolean isPartialFlashingEnable(Context context){
         return getBoolean(context, PREF_KEY_ENABLE_PARTIAL_FLASHING, false);
+    }
+
+    public static boolean isBackgroundFlashingEnable(Context context){
+        return getBoolean(context, PREF_KEY_ENABLE_BACKGROUND_FLASHING, true);
     }
 
     public static boolean isRenameFiles(Context context){

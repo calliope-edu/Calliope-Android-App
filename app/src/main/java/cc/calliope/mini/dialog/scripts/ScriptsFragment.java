@@ -47,13 +47,17 @@ import androidx.recyclerview.widget.RecyclerView;
 import cc.calliope.mini.FlashingService;
 import cc.calliope.mini.FileWrapper;
 import cc.calliope.mini.R;
+import cc.calliope.mini.activity.FlashingActivity;
 import cc.calliope.mini.dialog.DialogUtils;
+import cc.calliope.mini.notification.NotificationManager;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.databinding.FragmentScriptsBinding;
 import cc.calliope.mini.fragment.editors.Editor;
+import cc.calliope.mini.utils.Settings;
 import cc.calliope.mini.utils.Utils;
 
 import static android.app.Activity.RESULT_OK;
+import static cc.calliope.mini.notification.Notification.TYPE_ERROR;
 
 
 public class ScriptsFragment extends BottomSheetDialogFragment {
@@ -151,9 +155,17 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     }
 
     private void openDfuActivity(FileWrapper file) {
-        //final Intent intent = new Intent(activity, FlashingActivity.class);
-        //intent.putExtra(StaticExtra.EXTRA_FILE_PATH, file.getAbsolutePath());
-        //startActivity(intent);
+        if(!Utils.isBluetoothEnabled()){
+            NotificationManager.updateNotificationMessage(TYPE_ERROR, getString(R.string.error_snackbar_bluetooth_disable));
+            dismiss();
+            return;
+        }
+
+        if(!Settings.isBackgroundFlashingEnable(activity)){
+            final Intent intent = new Intent(activity, FlashingActivity.class);
+            intent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
+            startActivity(intent);
+        }
 
         Intent serviceIntent = new Intent(activity, FlashingService.class);
         serviceIntent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());

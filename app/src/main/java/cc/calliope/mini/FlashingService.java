@@ -90,7 +90,7 @@ public class FlashingService extends LifecycleService implements ProgressListene
         }
 
         isThisServiceRunning = true;
-        return START_STICKY;
+        return START_NOT_STICKY;
     }
 
     @Override
