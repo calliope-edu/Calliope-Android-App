@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="grey_transparent_light">#20C1C1C1</color>
+
+    <color name="ic_fill_primary">#FFFFFFFF</color>
+    <color name="ic_fill_secondary">#FF000000</color>
+    <color name="ic_fill_pattern">#FF1C1C1C</color>
+</resources>

@@ -1,0 +1,135 @@
+<resources>
+    <string name="title_home">Головна</string>
+    <string name="title_editors">Редактори</string>
+    <string name="title_help">Допомога</string>
+
+    <string name="title_location_permission">ПОТРІБЕН ДОЗВІЛ НА ВИКОРИСТАННЯ ГЕОЛОКАЦІЇ</string>
+    <string name="title_bluetooth_permission">ПОТРІБЕН ДОЗВІЛ НА ВИКОРИСТАННЯ BLUETOOTH</string>
+    <string name="title_notification_permission">ПОТРІБЕН ДОЗВІЛ НА НАДСИЛАННЯ СПОВІЩЕНЬ</string>
+    <string name="info_location_permission">Починаючи з Android 6.0 Marshmallow, для сканування Bluetooth-пристроїв програмі потрібен дозвіл на використання геолокації.
+        \n\nЦе пов\'язано з тим, що Bluetooth може використовуватися для визначення місцезнаходження телефону і користувача, <b>Calliope</b> не використовуватиме цю інформацію жодним чином.</string>
+    <string name="info_bluetooth_permission">Щоб використовувати функції Bluetooth для зв\'язку програми з вашим <b>Calliope mini</b>, вам потрібно надати кілька дозволів.</string>
+
+    <string name="info_notification_permission">Натисніть \"дозволити\" щоб аплікація могла надсилати вам сповіщення про стан прошивання.</string>
+    <string name="settings_btn_permission">Налаштування</string>
+    <string name="action_btn_permission">Надати дозвіл</string>
+
+    <string name="title_library">Передвстановлені програми</string>
+    <string name="title_custom">Кастомний редактор</string>
+    <string name="title_scripts">Ваші програми</string>
+    <string name="info_make_code">Microsoft MakeCode - це інтерактивна платформа для створення програм та проектів, зокрема, для програмування мікроконтролерів та розробки ігор. Вона надає зручне середовище розробки з використанням графічного програмування, що дає змогу створювати програми без необхідності вручну писати код.</string>
+    <string name="info_roberta">Open Roberta Lab - це хмарне інтегроване середовище програмування, яке дозволяє дітям та підліткам легко програмувати різні системи роботів/мікроконтролерів.</string>
+    <string name="info_library">Тут ви знайдете оригінальні програми, які можна змінити або перезавантажити.</string>
+    <string name="info_custom">Тут ви можете перейти до кастомного редактору.</string>
+    <string name="info_scripts">Тут будуть ваші програми.</string>
+
+    <string name="summary_custom">Посилання на кастомний редактор</string>
+    <string name="summary_partial_flashing">увімкнути або вимкнути</string>
+
+    <string name="title_welcome">Розпочнімо!</string>
+    <string name="info_welcome">На цій сторінці ви дізнаєтеся, як крок за кроком підготувати Calliope mini до роботи. У першому кроці показано, як правильно під\'єднати Calliope mini до джерела живлення.</string>
+
+    <string name="title_battery">Під\'єднання батарейок</string>
+    <string name="info_battery"><![CDATA[
+    Перед початком роботи Calliope mini необхідно увімкнути.
+    <br/>
+    <br/>1. встановіть у батарейний відсік дві батарейки типу <b>AAA</b>. Переконайтеся, що батарейки вставлено правильно.
+    <br/>
+    <br/>2. візьміть акумуляторний блок і обережно вставте маленький, <b>білий пластиковий роз\'єм (JST)</b> в роз\'єм акумулятора, що знаходиться на Calliope mini.
+    <br/>
+    <br/>Переконайтеся, що закрита сторона штекера знаходиться зверху, а напрямна посередині. Якщо роз\'єм кабелю легко вставляється в роз\'єм акумулятора на платі, ви під\'єднуєте правильно.
+    ]]></string>
+
+    <string name="title_demo">Демо-послідовність</string>
+    <string name="info_demo"><![CDATA[
+    Знайомтеся з Calliope mini. Calliope mini покаже вам на дисплеї, що саме ви маєте зробити.
+    <br/>
+    <br/>1. натисніть кнопку <b>A</b>.
+    <br/>2. натисніть кнопку <b>B</b>.
+    <br/>3. натисніть кнопки <b>A+B</b> одночасно.
+    <br/>4. струсіть Calliope mini.
+    <br/>5. готово!
+    ]]></string>
+
+    <string name="info_app"><![CDATA[
+    <b>Привіт і ласкаво просимо до Calliope mini додатку!</b>
+    <br/>
+    <br/>За допомогою цієї програми ви можете підключати, кодувати і прошивати програми до вашого <b>Calliope mini</b> через Bluetooth.
+    <br/>
+    <br/>Ви можете знайти надихаючі та цікаві проекти на сайті Calliope за посиланням <a href="https://calliope.cc">calliope.cc</a>!
+    <br/>
+    <br/>Розважайтеся!
+    <br/>
+    <br/>Calliope gGmbH
+    <br/>Raumerstrasse 11
+    <br/>10437 Berlin
+    <br/>Germany
+    <br/>E-Mail: <a href="mailto:info@calliope.cc">info@calliope.cc</a>
+    ]]></string>
+
+    <string name="welcome">ласкаво просимо</string>
+
+    <string name="title_rename">Перейменувати</string>
+    <string name="title_share">Поділитися</string>
+    <string name="title_delete">Видалити</string>
+
+    <string name="title_dialog_rename">Перейменувати файл</string>
+    <string name="title_dialog_delete">Видалити файл</string>
+    <string name="title_dialog_share">Поділитися файлом</string>
+
+    <string name="button_cancel">Скасувати</string>
+    <string name="button_rename">Так</string>
+    <string name="button_continue">Так</string>
+    <string name="button_enable">Увімкнути</string>
+
+    <string name="info_dialog_delete">Ви назавжди видалите \"%s\".</string>
+    <string name="subject_dialog_share">Поділитися файлом…</string>
+    <string name="text_dialog_share">Calliope mini firmware</string>
+
+    <string name="error_snackbar_no_connected">Calliope mini не під\`єднано</string>
+    <string name="error_snackbar_name_exists">Файл з такою назвою існує</string>
+    <string name="error_snackbar_no_internet">Немає доступу до інтернету</string>
+    <string name="error_snackbar_download_error">Помилка завантаження</string>
+    <string name="error_snackbar_bluetooth_disable">Bluetooth вимкнено</string>
+    <string name="error_snackbar_location_disable">Визначення місцезнаходження вимкнено</string>
+    <string name="open_hex_info">Ви намагаєтеся відкрити файл \"%s\" і прошити його до вашого Calliope mini.
+        \n\nЯкщо ви прошиєте неправильний або пошкоджений файл, можливо, вам доведеться під\'єднати Calliope mini до комп\'ютера, щоб перепрошити його.</string>
+    <string name="open_hex_button">Прошити</string>
+
+    <string name="flashing_device_connecting">Під\'єднання пристрою…</string>
+    <string name="flashing_device_connected">Пристрій під\'єднано</string>
+    <string name="flashing_process_starting">Розпочинаємо процес…</string>
+    <string name="flashing_process_started">Процес розпочато</string>
+    <string name="flashing_enabling_dfu_mode">Увімкнення режиму DFU…</string>
+    <string name="flashing_firmware_validating">Перевірка прошивки…</string>
+    <string name="flashing_device_disconnecting">Від\'єднання пристрою…</string>
+    <string name="flashing_device_disconnected">Пристрій від\'єднано</string>
+    <string name="flashing_completed">Прошивку завершено</string>
+    <string name="flashing_aborted">Прошивку скасовано</string>
+    <string name="flashing_uploading">Завантаження…</string>
+    <string name="flashing_error">Помилка %d. %s</string>
+    <string name="flashing_connection_fail">Помилка з\'єднання</string>
+    <string name="flashing_status">Статус %d</string>
+    <string name="title_dialog_edit_link">Редагувати посилання</string>
+    <string name="button_save">Зберегти</string>
+    <string name="menu_fab_connect">Під\'єднання</string>
+    <string name="menu_fab_scripts">Програми</string>
+    <string name="menu_fab_full_screen">На весь екран</string>
+    <string name="error_snackbar_save_file_error">Помилка збереження файлу</string>
+    <string name="title_rename_files">Перейменування файлів</string>
+    <string name="title_settings">Налаштування</string>
+    <string name="bonding_started">Створення пари</string>
+    <string name="bonding_succeeded">Пару створено</string>
+    <string name="bonding_not_succeeded">Не вдалося створити пару</string>
+    <string name="button_retry">Повторити</string>
+    <string name="title_copy">Копіювати</string>
+    <string name="summary_auto_flashing">після завантаження .hex файлу.</string>
+    <string name="summary_background_flashing">увімкнути або вимкнути</string>
+    <string name="title_partial_flashing">Часткове прошивання</string>
+    <string name="title_background_flashing">Фонове прошивання</string>
+    <string name="title_auto_flashing">Автоматичне прошивання</string>
+    <string name="button_ok">Так</string>
+    <string name="summary_rename_files">додається (n), якщо файл існує</string>
+    <string name="button_remove">Видалити</string>
+    <string name="title_pattern_connected">%s підключено</string>
+</resources>

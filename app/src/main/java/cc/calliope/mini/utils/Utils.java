@@ -1,147 +1,172 @@
-/*
- * Copyright (c) 2015, Nordic Semiconductor
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *  Redistributions of source code must retain the above copyright notice, this
- *   list of conditions and the following disclaimer.
- *
- *  Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
- *   and/or other materials provided with the distribution.
- *
- *  Neither the name of copyright holder nor the names of its
- *   contributors may be used to endorse or promote products derived from
- *   this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 package cc.calliope.mini.utils;
 
-import android.Manifest;
-import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.os.Build;
-import android.preference.PreferenceManager;
-import android.provider.Settings;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
+import android.location.LocationManager;
+import android.net.ConnectivityManager;
+import android.text.format.DateFormat;
+import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import androidx.core.content.ContextCompat;
+
+import com.google.android.material.snackbar.Snackbar;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Date;
+
+import cc.calliope.mini.R;
 
 public class Utils {
-	private static final String PREFS_LOCATION_NOT_REQUIRED = "location_not_required";
-	private static final String PREFS_PERMISSION_REQUESTED = "permission_requested";
+    private static final String TAG = "UTILS";
 
-	/**
-	 * Checks whether Bluetooth is enabled.
-	 * @return true if Bluetooth is enabled, false otherwise.
-	 */
-	public static boolean isBleEnabled() {
-		final BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
-		return adapter != null && adapter.isEnabled();
-	}
+    /**
+     * Checks whether device is connected to network
+     *
+     * @param context the context
+     * @return true if connected, false otherwise.
+     */
+    public static boolean isNetworkConnected(Context context) {
+        ConnectivityManager manager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        return manager.getActiveNetworkInfo() != null && manager.getActiveNetworkInfo().isConnected();
+    }
 
-	/**
-	 * Checks for required permissions.
-	 *
-	 * @return true if permissions are already granted, false otherwise.
-	 */
-	public static boolean isLocationPermissionsGranted(final Context context) {
-		return ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-	}
+    /**
+     * Actually checks if device is connected to internet
+     * (There is a possibility it's connected to a network but not to internet)
+     *
+     * @return true if connected, false otherwise.
+     */
+    public static boolean isInternetAvailable() {
+        String command = "ping -c 1 google.com";
+        try {
+            return Runtime.getRuntime().exec(command).waitFor() == 0;
+        } catch (InterruptedException | IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 
+    /**
+     * Checks whether Bluetooth is enabled.
+     *
+     * @return true if Bluetooth is enabled, false otherwise.
+     */
+    public static boolean isBluetoothEnabled() {
+        final BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+        return adapter != null && adapter.isEnabled();
+    }
 
-	/**
-	 * Checks for required permissions.
-	 *
-	 * @return true if permissions are already granted, false otherwise.
-	 */
-	public static boolean isBluetoothScanPermissionsGranted(final Context context) {
-		return ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED;
-	}
+    /**
+     * On some devices running Android Marshmallow or newer location services must be enabled in order to scan for Bluetooth LE devices.
+     * This method returns whether the Location has been enabled or not.
+     *
+     * @return true on Android 6.0+ if location mode is different than LOCATION_MODE_OFF.
+     */
+    public static boolean isLocationEnabled(final Context context) {
+        LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        boolean gpsEnabled = false;
+        boolean networkEnabled = false;
 
-	/**
-	 * Returns true if location permission has been requested at least twice and
-	 * user denied it, and checked 'Don't ask again'.
-	 * @param activity the activity
-	 * @return true if permission has been denied and the popup will not come up any more, false otherwise
-	 */
-	public static boolean isLocationPermissionDeniedForever(final Activity activity) {
-		final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(activity);
+        try {
+            gpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        } catch (Exception ex) {
+            Log.e(TAG, "isLocationEnabled: " + ex);
+        }
 
-		return !isLocationPermissionsGranted(activity) // Location permission must be denied
-				&& preferences.getBoolean(PREFS_PERMISSION_REQUESTED, false) // Permission must have been requested before
-				&& !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.ACCESS_COARSE_LOCATION); // This method should return false
-	}
+        try {
+            networkEnabled = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch (Exception ex) {
+            Log.e(TAG, "isLocationEnabled: " + ex);
+        }
 
-	/**
-	 * On some devices running Android Marshmallow or newer location services must be enabled in order to scan for Bluetooth LE devices.
-	 * This method returns whether the Location has been enabled or not.
-	 *
-	 * @return true on Android 6.0+ if location mode is different than LOCATION_MODE_OFF. It always returns true on Android versions prior to Marshmallow.
-	 */
-	public static boolean isLocationEnabled(final Context context) {
-		if (isMarshmallowOrAbove()) {
-			int locationMode = Settings.Secure.LOCATION_MODE_OFF;
-			try {
-				locationMode = Settings.Secure.getInt(context.getContentResolver(), Settings.Secure.LOCATION_MODE);
-			} catch (final Settings.SettingNotFoundException e) {
-				// do nothing
-			}
-			return locationMode != Settings.Secure.LOCATION_MODE_OFF;
-		}
-		return true;
-	}
+        return gpsEnabled && networkEnabled;
+    }
 
-	/**
-	 * Location enabled is required on some phones running Android Marshmallow or newer (for example on Nexus and Pixel devices).
-	 *
-	 * @param context the context
-	 * @return false if it is known that location is not required, true otherwise
-	 */
-	public static boolean isLocationRequired(final Context context) {
-		final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-		return preferences.getBoolean(PREFS_LOCATION_NOT_REQUIRED, isMarshmallowOrAbove());
-	}
+    public static Snackbar infoSnackbar(View view, String message) {
+        return baseSnackbar(view, message, R.color.aqua_500);
+    }
 
-	/**
-	 * When a Bluetooth LE packet is received while Location is disabled it means that Location
-	 * is not required on this device in order to scan for LE devices. This is a case of Samsung phones, for example.
-	 * Save this information for the future to keep the Location info hidden.
-	 * @param context the context
-	 */
-	public static void markLocationNotRequired(final Context context) {
-		final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-		preferences.edit().putBoolean(PREFS_LOCATION_NOT_REQUIRED, false).apply();
-	}
+    public static Snackbar warningSnackbar(View view, String message) {
+        return baseSnackbar(view, message, R.color.yellow_500);
+    }
 
-	/**
-	 * The first time an app requests a permission there is no 'Don't ask again' checkbox and
-	 * {@link ActivityCompat#shouldShowRequestPermissionRationale(Activity, String)} returns false.
-	 * This situation is similar to a permission being denied forever, so to distinguish both cases
-	 * a flag needs to be saved.
-	 * @param context the context
-	 */
-	public static void markLocationPermissionRequested(final Context context) {
-		final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-		preferences.edit().putBoolean(PREFS_PERMISSION_REQUESTED, true).apply();
-	}
+    public static Snackbar errorSnackbar(View view, String message) {
+        return baseSnackbar(view, message, R.color.red);
+    }
 
-	public static boolean isMarshmallowOrAbove() {
-		return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
-	}
+    public static Snackbar baseSnackbar(View view, String message, int color) {
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        params.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+
+        Snackbar snackbar = Snackbar.make(view, message, Snackbar.LENGTH_LONG);
+        snackbar.getView().setBackgroundTintList(ContextCompat.getColorStateList(view.getContext(), color));
+        snackbar.getView().setLayoutParams(params);
+        return snackbar;
+    }
+
+    /**
+     * This method converts dp unit to equivalent pixels, depending on device density.
+     *
+     * @param dp      A value in dp (density independent pixels) unit. Which we need to convert into pixels
+     * @param context Context to get resources and device specific display metrics
+     * @return A int value to represent px equivalent to dp depending on device density
+     */
+    public static int convertDpToPixel(Context context, int dp) {
+        return dp * (context.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT);
+    }
+
+    public static String dateFormat(long lastModified) {
+        final String OUTPUT_DATE_FORMAT = "EEEE dd.MM.yyyy HH:mm";
+        Date date = new Date(lastModified);
+
+        return DateFormat.format(OUTPUT_DATE_FORMAT, date.getTime()).toString();
+    }
+
+    public static int getFileVersion(String filePath) {
+        String firstLine, secondLine;
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            firstLine = br.readLine();
+            secondLine = br.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return -1;
+        }
+
+        if (secondLine != null) {
+            if (secondLine.startsWith(":0400000A9900C0DEBB")) {
+                return 0;
+            }
+        }
+
+        if (firstLine != null) {
+            if (firstLine.startsWith(":020000040000FA")) {
+                return 1;
+            } else if (firstLine.startsWith(":1000000000040020810A000015070000610A0000BA")) {
+                return 2;
+            }
+        }
+
+        return 0;
+    }
+
+    public static void log(int priority, String TAG, String message) {
+        Log.println(priority, TAG, "### " + android.os.Process.myTid() + " # " + message);
+    }
+
+    public static void log(int priority, String TAG, String message, Exception e) {
+        log(priority, TAG, message + " " + e.getMessage());
+    }
+
+    public static void log(String TAG, String message) {
+        log(Log.INFO, TAG, message);
+    }
 }

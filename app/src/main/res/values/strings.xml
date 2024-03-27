@@ -1,128 +1,195 @@
-<!--
-  ~ Copyright (c) 2015, Nordic Semiconductor
-  ~ All rights reserved.
-  ~
-  ~ Redistribution and use in source and binary forms, with or without
-  ~ modification, are permitted provided that the following conditions are met:
-  ~
-  ~ * Redistributions of source code must retain the above copyright notice, this
-  ~   list of conditions and the following disclaimer.
-  ~
-  ~ * Redistributions in binary form must reproduce the above copyright notice,
-  ~   this list of conditions and the following disclaimer in the documentation
-  ~   and/or other materials provided with the distribution.
-  ~
-  ~ * Neither the name of copyright holder nor the names of its
-  ~   contributors may be used to endorse or promote products derived from
-  ~   this software without specific prior written permission.
-  ~
-  ~ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-  ~ AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-  ~ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-  ~ DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-  ~ FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-  ~ DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-  ~ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-  ~ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-  ~ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-  ~ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  -->
-
 <resources>
-    <string name="app_name" translatable="false">Calliope mini</string>
+    <string name="app_name" translatable="false">Calliope mini Next (BETA)</string>
+    <string name="title_home">Home</string>
+    <string name="title_editors">Editors</string>
+    <string name="title_help">Help</string>
 
-    <string name="title_activity_main" translatable="false">Calliope mini</string>
-    <string name="title_activity_my_code" translatable="false">Calliope mini</string>
-    <string name="title_activity_dfu" translatable="false">Calliope mini</string>
-    <string name="title_activity_settings" translatable="false">Calliope mini</string>
+    <string name="title_location_permission">LOCATION PERMISSION REQUIRED</string>
+    <string name="title_bluetooth_permission">BLUETOOTH PERMISSION REQUIRED</string>
+    <string name="title_notification_permission">NOTIFICATION PERMISSION REQUIRED</string>
 
-    <string name="feature_name" translatable="false">mini</string>
-
-    <string name="button_create_code">Code erstellen</string>
-    <string name="button_my_programs">Deine Programme</string>
-    <string name="text_welcome">Spiele eigene Programme auf deinen mini!</string>
-    <string name="text_select_editor">Wähle dein Lieblingswerkzeug aus und leg einfach los!</string>
-    <string name="button_select_editor_mini" translatable="false">Calliope mini Editor</string>
-    <string name="button_select_editor_makecode" translatable="false">MakeCode</string>
-    <string name="button_select_editor_nepo" translatable="false">Open Roberta NEPO</string>
-    <!--  <string name="refresh">SUCHEN</string>
-      <string name="button_bluetooth_on">An</string>
-      <string name="button_bluetooth_off">Aus</string>
-      <string name="button_bluetooth_disconnect">Trennen</string> -->
-
-    <string name="title" translatable="false">@string/app_name</string>
-
-    <string name="set_nepo_link_title">Modifiziere den eigenen Link</string>
-
-    <string name="download_error">Fehler beim herunterladen</string>
-    <string name="download_no_mini_connected">Datei gespeichert, kein mini verbunden</string>
-    <string name="upload_no_mini_connected">kein mini ausgewählt</string>
+    <string name="info_location_permission">From Android 6.0 Marshmallow onwards the application requires Location permission in order to scan for Bluetooth devices.
+        \n\nThis is because Bluetooth may be used to determine the phone\'s and user\'s location, <b>Calliope</b> will not use this information in any way.</string>
+    <string name="info_bluetooth_permission">To use Bluetooth features to communicate APP with your <b>Calliope mini</b> you must granted several permissions.</string>
+    <string name="info_notification_permission">Click "Allow" to allow the app to send you notifications about the flashing status.</string>
 
 
-    <string name="location_permission_title">STANDORTGENEHMIGUNG ERFORDERLICH</string>
-    <string name="location_permission_action">Erteile berechtigung</string>
+    <string name="settings_btn_permission">Settings</string>
+    <string name="action_btn_permission">Grant permission</string>
 
-    <string name="bluetooth_disabled_title">BLUETOOTH DEAKTIVIERT</string>
-    <string name="bluetooth_disabled_info">Bluetooth scheint deaktiviert zu sein. Drücke unten auf „Anschalten“, um Bluetooth zu aktivieren!</string>
-    <string name="bluetooth_disabled_action">Anschalten</string>
+    <string name="title_make_code" translatable="false">MakeCode</string>
+    <string name="title_roberta" translatable="false">Open Roberta Lab</string>
+    <string name="title_library">Preinstalled Programs</string>
+    <string name="title_custom">Custom editor</string>
+    <string name="title_scripts">Your programs</string>
+    <string name="info_make_code">Microsoft MakeCode is a free, open source platform for creating engaging computer science learning experiences that support a progression path into real-world programming.</string>
+    <string name="info_roberta">The Open Roberta Lab is a cloud-based integrated programming environment that enables children and adolescents to program easily different robot/microcontroller systems.</string>
+    <string name="info_library">Here you find the original programs, to change or reload.</string>
+    <string name="info_custom">Here you can enter to the custom editor.</string>
+    <string name="info_scripts">Your programs will be here.</string>
 
-    <string name="mini_guide_title">DEIN MINI WIRD NICHT ERKANNT?</string>
-    <string name="mini_guide_location_info">3. Der Standortservice ist deaktiviert. Einige Android-Handys erfordern die Aktivierung, um nach Bluetooth-Geräten zu suchen.
-        \n\nWenn du sicher bist, dass dein mini sichtbar ist und nicht hier angezeigt wird, klicke auf die Schaltfläche unten, um den Standortservice zu aktivieren.</string>
+    <string name="title_welcome">Let\'s Go</string>
+    <string name="info_welcome">On this page you will learn how to get the Calliope mini up and running step by step. The first step shows you how to connect the Calliope mini correctly to the power supply.</string>
 
-    <string name="unknown_device">Unbekanntes Gerät</string>
-
-    <!--
-   <string name="turn_on">On</string>
-   <string name="turn_off">Off</string>
-   <string name="button_pressed">PRESSED</string>
-   <string name="button_released">RELEASED</string>
-   <string name="button_unknown">UNKNOWN</string>
-   <string name="led_summary">Toggle the switch to turn the LED 3 on or off.</string>
-   <string name="button_summary">Press Button 1 on the dev kit.</string>
-
-   <string name="state_scanning">Scanning…</string>
-   <string name="state_connecting">Connecting…</string>
-   <string name="state_discovering_services">Discovering services…</string>
-
- -->
-
-
-    <string name="btn_upload_hex">Übertragen</string>
-    <string name="btn_share_hex">Teilen</string>
-    <string name="text_no_mini_connected">Kein mini ausgewählt</string>
-    <string name="text_connected_with">ausgewählt</string>
-    <string name="mini_guide_info">1. Ist dein mini <b>angeschaltet</b>? Überprüfe die Stromverbindung
-        \n\n2. Ist Bluetooth auf dem mini aktiv? Installiere die <b>mini Firmware</b>, falls du nicht sicher bist.</string>
-    <string name="mini_guide_location_action">Anschalten</string>
-    <string name="location_permission_info">Ab Android 6.0 Marshmallow benötigt die Anwendung eine Standortberechtigung, um nach Bluetooth-Geräten zu suchen.
-        \n\nDies liegt daran, dass Bluetoothn verwendet werden kannn, um den Standort des Telefons und des Benutzers zu bestimmen. <b>mini</b> wird diese Informationen in keiner Weise verwenden.</string>
-    <string name="location_permission_settings">Einstellungen</string>
-    <string name="btn_open">Öffnen</string>
-    <string name="btn_default_program">Start-Program</string>
-    <string name="info_text_uploading_init">Verbinde mit mini ...</string>
-    <string name="info_text_uploading">Übertrage Programm</string>
-    <string name="info_text"><![CDATA[ <b>Hallo und willkommen in der Calliope mini App!</b><br/>
+    <string name="title_battery">"Connect "</string>
+    <string name="info_battery"><![CDATA[
+    Before you can start, the Calliope mini must be powered.
     <br/>
-    Mit Hilfe dieser App kannst du dich mit deinem <b>mini</b> verbinden und mobil programmieren.<br/>
-     <br/>
-    Unter <b>„Mit mini verbinden“</b> kannst du deinen <b>mini</b> finden und eine Bluetooth Verbindung herstellen.<br/>
-    Das original Skript kannst du über den Punkt <b>„Start-Program“</b> laden und auf den <b>mini</b> spielen.<br/>
-    Der Punkt <b>„Code erstellen“</b> gibt dir die Möglichkeit unterschiedliche Programmieroberflächen zu testen und deinen <b>mini</b> zu steuern.<br/>
-    Bei <b>„Deine Programme“</b> kannst du gespeicherte Programme auswählen und auf den <b>mini</b> spielen<br/>
+    <br/>1. fill the battery compartment with two batteries of type <b>AAA</b>. Make sure that the batteries are aligned correctly.
     <br/>
-    Infos zu tollen Projekten oder weiteren Aktionen findest du auf der Calliope Webseite unter https://calliope.cc!<br/>
+    <br/>2. take the battery block provided and carefully insert the small, <b>white plastic end (JST connector)</b> into the battery connector attached to the Calliope mini.
     <br/>
-    Um die App nutzen zu können, wird ein Calliope mini dringend empfohlen.<br/>
+    <br/>Make sure that the closed end of the plug is at the top with the raised part in the middle. If the cable connector fits easily into the battery connector on the board, it is correct.
+    ]]></string>
+
+    <string name="title_demo">Demo sequence</string>
+    <string name="info_demo"><![CDATA[
+    Meet the Calliope mini. The Calliope mini will show you on the display which input you should make.
     <br/>
-    Falls du Fragen oder Anmerkungen hast, kannst du uns an die Emailadresse info@calliope.cc eine Nachricht schreiben.<br/>
+    <br/>1. press the button <b>A</b>.
+    <br/>2. press the button <b>B</b>.
+    <br/>3. press the keys <b>A+B</b> simultaneously.
+    <br/>4. The position sensor - shake the Calliope mini.
+    <br/>5. Ready!
+    ]]></string>
+
+    <string name="info_app"><![CDATA[
+    <b>Hello and welcome to the Calliope mini app!</b>
     <br/>
-    Viel Spaß wünscht dir das Calliope Team!<br/>
+    <br/>By using this app you can connect, code and flash programs to your <b>Calliope mini</b> via Bluetooth.
     <br/>
-    Calliope gGmbH<br/>Raumerstrasse 11<br/>
+    <br/>You can find inspiring and fun projects at the Calliope website at <a href="https://calliope.cc">calliope.cc</a>!
+    <br/>
+    <br/>Have fun!
+    <br/>
+    <br/>Calliope gGmbH
+    <br/>Raumerstrasse 11
+    <br/>10437 Berlin
+    <br/>Germany
+    <br/>E-Mail: <a href="mailto:info@calliope.cc">info@calliope.cc</a>
+    ]]></string>
+
+    <string name="info_app_text" translatable="false">
+    Hello and welcome to the Calliope mini app!
+    By using this app you can connect, code and flash programs to your Calliope mini via Bluetooth.
+    You can find inspiring and fun projects at the Calliope website at https://calliope.cc!
+    Have fun!
+    Calliope gGmbH
+    Raumerstrasse 11
     10437 Berlin
-    <br /><br /><br /><br /><br /> ]]></string>
-    <string name="info_text_pairing">A+B gedrückt halten, währenddessen Reset drücken und loslassen, um den mini in den Pairingmodus zu versetzen.</string>
-    <string name="start_programm_url">https://calliope.cc/calliope-mini/25programme#25</string>
-    <string name="button_select_editor_custom">Eigener Link</string>
+    Germany
+    E-Mail: info@calliope.cc
+    </string>
+
+    <string name="welcome">welcome</string>
+
+    <string name="title_rename">Rename</string>
+    <string name="title_share">Share</string>
+    <string name="title_delete">Delete</string>
+    <string name="button_save">Save</string>
+
+    <string name="title_dialog_rename">Rename file</string>
+    <string name="title_dialog_delete">Delete file</string>
+    <string name="title_dialog_share">Share File</string>
+    <string name="title_dialog_edit_link">Edit link</string>
+
+    <string name="button_cancel">Cancel</string>
+    <string name="button_ok">Ok</string>
+    <string name="button_rename">Rename</string>
+    <string name="button_continue">Continue</string>
+    <string name="button_enable">Enable</string>
+    <string name="button_remove">Remove</string>
+
+    <string name="info_dialog_delete">You will permanently delete \"%s\".</string>
+    <string name="subject_dialog_share">Sharing File…</string>
+    <string name="text_dialog_share">Calliope mini firmware</string>
+
+    <string name="error_snackbar_no_connected">No mini connected</string>
+    <string name="error_snackbar_name_exists">The file with this name exists</string>
+    <string name="error_snackbar_bluetooth_disable">Bluetooth is disable</string>
+    <string name="error_snackbar_location_disable">Location is disable</string>
+    <string name="error_snackbar_no_internet">No internet available</string>
+    <string name="error_snackbar_download_error">Download error</string>
+    <string name="error_snackbar_save_file_error">Save file error</string>
+
+    <string name="open_hex_info">You are trying to open the \"%s\" file and flash it to your Calliope mini.
+        \n\nIf you flash an incorrect or damaged file, you may have to connect your Calliope mini to the computer to reflash it.</string>
+    <string name="open_hex_button">Flash</string>
+
+    <string name="flashing_device_connecting">Device connecting…</string>
+    <string name="flashing_device_connected">Device connected</string>
+    <string name="flashing_process_starting">Process starting…</string>
+    <string name="flashing_process_started">Process started</string>
+    <string name="flashing_enabling_dfu_mode">Enabling DFU mode…</string>
+    <string name="flashing_firmware_validating">Firmware validating…</string>
+    <string name="flashing_device_disconnecting">Device disconnecting…</string>
+    <string name="flashing_device_disconnected">Device disconnected</string>
+    <string name="flashing_completed">Flashing completed</string>
+    <string name="flashing_aborted">Flashing aborted</string>
+    <string name="flashing_uploading">Uploading…</string>
+    <string name="flashing_percent" translatable="false">%d%%</string>
+    <string name="flashing_error">Error %d. %s</string>
+    <string name="flashing_connection_fail">Connection fail</string>
+    <string name="flashing_status">Status %d</string>
+    <string name="points" translatable="false">…</string>
+    <string name="title_web" translatable="false">WEB</string>
+    <string name="menu_fab_connect">Connection</string>
+    <string name="menu_fab_scripts">Programs</string>
+    <string name="menu_fab_full_screen">Full screen</string>
+    <string name="summary_custom">Link to the custom editor</string>
+    <string name="summary_auto_flashing">after downloading the .hex file</string>
+    <string name="summary_rename_files">appended (n) if file exists</string>
+    <string name="summary_partial_flashing">enable or disable</string>
+    <string name="summary_background_flashing">enable or disable</string>
+    <string name="title_partial_flashing">Partial flashing</string>
+    <string name="title_auto_flashing">Automatic flashing</string>
+    <string name="title_background_flashing">Background flashing</string>
+    <string name="title_rename_files">Rename files</string>
+    <string name="title_settings">Settings</string>
+    <string name="title_pattern_connected">%s connected</string>
+    <string name="bonding_started">Bonding started</string>
+    <string name="bonding_succeeded">Bonding succeeded</string>
+    <string name="bonding_not_succeeded">Bonding not succeeded</string>
+    <string name="button_retry">Retry</string>
+
+    <string name="gatt_success" translatable="false">GATT SUCCESS</string>
+    <string name="gatt_invalid_handle" translatable="false">GATT INVALID HANDLE</string>
+    <string name="gatt_read_not_permit" translatable="false">GATT READ NOT PERMIT</string>
+    <string name="gatt_write_not_permitted" translatable="false">GATT write operation is not permitted</string>
+    <string name="gatt_invalid_pdu" translatable="false">GATT INVALID PDU</string>
+    <string name="gatt_insuf_authentication" translatable="false">GATT INSUF AUTHENTICATION</string>
+    <string name="gatt_request_not_supported" translatable="false">The given request is not supported</string>
+    <string name="gatt_invalid_offset" translatable="false">A read or write operation was requested with an invalid offset</string>
+    <string name="gatt_insufficient_authorization" translatable="false">Insufficient authorization for a given operation</string>
+    <string name="gatt_prepare_q_full" translatable="false">GATT PREPARE Q FULL</string>
+    <string name="gatt_not_found" translatable="false">GATT NOT FOUND</string>
+    <string name="gatt_not_long" translatable="false">GATT NOT LONG</string>
+    <string name="gatt_insuf_key_size" translatable="false">GATT INSUF KEY SIZE</string>
+    <string name="gatt_invalid_attribute_length" translatable="false">A write operation exceeds the maximum length of the attribute</string>
+    <string name="gatt_invalid_attr_len" translatable="false">GATT INVALID ATTR LEN</string>
+    <string name="gatt_err_unlikely" translatable="false">GATT ERR UNLIKELY</string>
+    <string name="gatt_insufficient_encryption" translatable="false">Insufficient encryption for a given operation</string>
+    <string name="gatt_unsupport_grp_type" translatable="false">GATT UNSUPPORT GRP TYPE</string>
+    <string name="gatt_insuf_resource" translatable="false">GATT INSUF RESOURCE</string>
+    <string name="gatt_disconnected_by_device" translatable="false">Disconnected by device</string>
+    <string name="gatt_no_bonded" translatable="false">Issue with bond</string>
+    <string name="gatt_no_ressources" translatable="false">GATT NO RESSOURCES</string>
+    <string name="gatt_internal_error" translatable="false">GATT INTERNAL ERROR</string>
+    <string name="gatt_wrong_state" translatable="false">GATT WRONG_STATE</string>
+    <string name="gatt_db_full" translatable="false">GATT DB FULL</string>
+    <string name="gatt_busy" translatable="false">GATT BUSY</string>
+    <string name="gatt_error" translatable="false">GATT ERROR</string>
+    <string name="gatt_cmd_started" translatable="false">GATT CMD STARTED</string>
+    <string name="gatt_illegal_parameter" translatable="false">GATT ILLEGAL PARAMETER</string>
+    <string name="gatt_pending" translatable="false">GATT PENDING</string>
+    <string name="gatt_auth_fail" translatable="false">A GATT operation failed, errors other than the above</string>
+    <string name="gatt_more" translatable="false">GATT MORE</string>
+    <string name="gatt_invalid_cfg" translatable="false">GATT INVALID CFG</string>
+    <string name="gatt_service_started" translatable="false">GATT SERVICE STARTED</string>
+    <string name="gatt_encryped_no_mitm" translatable="false">GATT ENCRYPED NO MITM</string>
+    <string name="gatt_not_encrypted" translatable="false">GATT NOT ENCRYPTED</string>
+    <string name="gatt_connection_congested" translatable="false">A remote device connection is congested.</string>
+    <string name="gatt_failure" translatable="false">GATT FAILURE</string>
+    <string name="gatt_unidentified" translatable="false">GATT UNIDENTIFIED</string>
+    <string name="title_copy">Copy</string>
 </resources>
