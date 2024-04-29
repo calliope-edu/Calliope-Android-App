@@ -77,7 +77,6 @@ public abstract class PartialFlashingBaseService extends Service {
     protected final static int STATE_CONNECTED_AND_READY = -3;
     protected final static int STATE_DISCONNECTING = -4;
     protected final static int STATE_CLOSED = -5;
-
     protected final static int ATTEMPT_FILED = -1;
     protected final static int ATTEMPT_ENTER_DFU = 0;
     protected final static int ATTEMPT_SUCCESS = 1;

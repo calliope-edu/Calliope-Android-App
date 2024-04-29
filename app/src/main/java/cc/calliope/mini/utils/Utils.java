@@ -18,6 +18,8 @@ import com.google.android.material.snackbar.Snackbar;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Date;
 
 import cc.calliope.mini.R;
