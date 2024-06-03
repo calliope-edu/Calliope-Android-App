@@ -100,6 +100,11 @@ open class LegacyDfuService : Service() {
             }
         }
 
+        override fun onServiceChanged(gatt: BluetoothGatt) {
+            super.onServiceChanged(gatt)
+            Utils.log(Log.ASSERT, TAG, "onServiceChanged")
+        }
+
         @Suppress("DEPRECATION")
         @Deprecated(
             "Used natively in Android 12 and lower",

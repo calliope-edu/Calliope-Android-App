@@ -8,12 +8,14 @@ import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 import android.app.ActivityManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.IBinder;
 import android.util.Log;
 
-import androidx.core.content.PermissionChecker;
+import android.content.ServiceConnection;
 import androidx.lifecycle.LifecycleService;
 import androidx.preference.PreferenceManager;
 
@@ -29,6 +31,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import cc.calliope.mini.notification.NotificationManager;
+import cc.calliope.mini.pf.Test;
 import cc.calliope.mini.service.DfuService;
 import cc.calliope.mini.service.PartialFlashingService;
 import cc.calliope.mini.utils.FileUtils;
@@ -52,6 +55,9 @@ public class FlashingService extends LifecycleService implements ProgressListene
     private String currentPath;
     private int progress = -10;
 
+    private Test testService;
+    private boolean isBound = false;
+
     private record HexToDfu(String path, int size) {
     }
 
@@ -61,10 +67,13 @@ public class FlashingService extends LifecycleService implements ProgressListene
 
         ProgressCollector progressCollector = new ProgressCollector(this);
         getLifecycle().addObserver(progressCollector);
+
+        bindToTestService();
     }
 
     @Override
     public void onDestroy() {
+        unbindFromTestService();
         super.onDestroy();
     }
 
@@ -115,7 +124,6 @@ public class FlashingService extends LifecycleService implements ProgressListene
 
     @Override
     public void onError(int code, String message) {
-        Utils.log(Log.ASSERT, TAG, "ERROR: " + code + " " + message);
         if (code == 4110) {
             BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
             if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
@@ -124,6 +132,8 @@ public class FlashingService extends LifecycleService implements ProgressListene
                 BluetoothDevice device = bluetoothAdapter.getRemoteDevice(currentAddress);
                 device.createBond();
             }
+        } else {
+            Utils.log(Log.ERROR, TAG, "ERROR: " + code + " " + message);
         }
     }
 
@@ -214,10 +224,45 @@ public class FlashingService extends LifecycleService implements ProgressListene
     private void startPartialFlashing() {
         Utils.log(TAG, "Starting PartialFlashing Service...");
 
-        Intent service = new Intent(this, PartialFlashingService.class);
-        service.putExtra(PartialFlashingService.EXTRA_DEVICE_ADDRESS, currentAddress);
-        service.putExtra(Constants.EXTRA_FILE_PATH, currentPath); // a path or URI must be provided.
+        Intent service = new Intent(this, Test.class);
+        service.putExtra("deviceAddress", currentAddress);
+        service.putExtra("filePath", currentPath); // a path or URI must be provided.
+        service.putExtra("hardwareType", currentVersion);
         startService(service);
+    }
+
+    private final ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            Test.LocalBinder binder = (Test.LocalBinder) service;
+            testService = binder.getService();
+            isBound = true;
+
+            testService.getProgressData().observeForever(progress -> {
+                Utils.log(Log.ASSERT, TAG, "Progress: " + progress);
+            });
+
+            testService.getServiceState().observeForever(state -> {
+                Utils.log(Log.ASSERT, TAG, "State: " + state);
+            });
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            isBound = false;
+        }
+    };
+
+    public void bindToTestService() {
+        Intent intent = new Intent(this, Test.class);
+        bindService(intent, connection, Context.BIND_AUTO_CREATE);
+    }
+
+    public void unbindFromTestService() {
+        if (isBound) {
+            unbindService(connection);
+            isBound = false;
+        }
     }
 
     private void startDfuControlService() {

@@ -17,6 +17,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.annotation.IntDef
 import cc.calliope.mini.notification.Notification.TYPE_ERROR
+import cc.calliope.mini.notification.Notification.TYPE_INFO
 import cc.calliope.mini.notification.NotificationManager
 import cc.calliope.mini.service.GattStatus
 import cc.calliope.mini.utils.BluetoothUtils
@@ -148,6 +149,7 @@ open class BondingService : Service() {
         Utils.log(TAG, "Bonding Service destroyed")
         Preference.putInt(applicationContext, Constants.CURRENT_DEVICE_VERSION, deviceVersion)
         Utils.log(Log.DEBUG, TAG, "Device version: $deviceVersion")
+        NotificationManager.updateNotificationMessage(TYPE_INFO, "Mini version $deviceVersion connected")
         serviceJob.cancel()
     }
 

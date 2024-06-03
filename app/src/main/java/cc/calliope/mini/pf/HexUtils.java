@@ -1,4 +1,4 @@
-package org.microbit.android.partialflashing;
+package cc.calliope.mini.pf;
 
 import android.util.Log;
 
@@ -124,66 +124,7 @@ public class HexUtils {
         // Return -1 if no match
         return -1;
     }
-
-    /*
-     * A function to search for an address in a hex file
-     * @param search the address to search for
-     * @return the index of the address. -1 if not found.
-     */
-    public int searchForAddress( long address) throws IOException {
-        long lastBaseAddr = 0;
-        String data;
-        // Iterate through
-        ListIterator i = hexLines.listIterator();
-        while ( i.hasNext()) {
-            // Have to call nextIndex() before next()
-            int index = i.nextIndex();
-            String line = i.next().toString();
-
-            switch (getRecordType(line)) {
-                case 2: {               // Extended Segment Address
-                    data = getRecordData(line);
-                    if ( data.length() != 4) {
-                        return -1;
-                    }
-                    int hi = Integer.parseInt( data.substring(0, 1), 16);
-                    int lo = Integer.parseInt( data.substring(1), 16);
-                    lastBaseAddr = (long) hi * (long) 0x1000 + (long) lo * (long) 0x10;
-                    if ( lastBaseAddr > address) {
-                        return -1;
-                    }
-                    break;
-                }
-                case 4: {
-                    data = getRecordData(line);
-                    if ( data.length() != 4) {
-                        return -1;
-                    }
-                    lastBaseAddr = Integer.parseInt( data, 16);
-                    lastBaseAddr *= (long) 0x10000;
-                    if ( lastBaseAddr > address) {
-                        return -1;
-                    }
-                    break;
-                }
-                case 0:
-                case 0x0D: {
-                    if ( address - lastBaseAddr < 0x10000) {
-                        long a = lastBaseAddr + getRecordAddress(line);
-                        int  n = getRecordDataLength( line) / 2; // bytes
-                        if ( a <= address && a + n > address) {
-                            return index;
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-
-        // Return -1 if no match
-        return -1;
-    }
-
+    
     /*
      * Returns data from an index
      * @param index
@@ -322,9 +263,9 @@ public class HexUtils {
         data[2] = (byte)(offset & 0xFF);
         data[3] = (byte)(packetNum & 0xFF);
 
-        Log.v(TAG, "Sent: " + data.toString());
+//        Log.v(TAG, "Sent: " + data.toString());
 
         return data;
     }
-}
 
+}

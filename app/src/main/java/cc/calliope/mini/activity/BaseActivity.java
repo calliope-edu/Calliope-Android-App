@@ -1,6 +1,7 @@
 package cc.calliope.mini.activity;
 
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -32,6 +33,8 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Observer;
 
+import cc.calliope.mini.ProgressCollector;
+import cc.calliope.mini.ProgressListener;
 import cc.calliope.mini.notification.Notification;
 import cc.calliope.mini.notification.NotificationManager;
 import cc.calliope.mini.popup.PopupAdapter;
@@ -46,7 +49,7 @@ import no.nordicsemi.android.dfu.DfuProgressListener;
 import no.nordicsemi.android.dfu.DfuProgressListenerAdapter;
 import no.nordicsemi.android.dfu.DfuServiceListenerHelper;
 
-public abstract class BaseActivity extends AppCompatActivity implements DialogInterface.OnDismissListener {
+public abstract class BaseActivity extends AppCompatActivity implements DialogInterface.OnDismissListener, ProgressListener {
     private static final int SNACKBAR_DURATION = 10000; // how long to display the snackbar message.
     private static boolean requestWasSent = false;
     private MovableFloatingActionButton patternFab;
@@ -127,11 +130,60 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         }
     };
 
+
+    @Override
+    public void onDfuAttempt() {
+
+    }
+
+    @Override
+    public void onDfuControlComplete() {
+
+    }
+
+    @Override
+    public void onProgressUpdate(int progress) {
+        if(progress > 0){
+            patternFab.setProgress(progress);
+            patternFab.setColor(R.color.blue_light);
+            isFlashing = true;
+        }else {
+            patternFab.setProgress(0);
+            patternFab.setColor(R.color.aqua_200);
+            isFlashing = false;
+        }
+
+    }
+
+    @Override
+    public void onBluetoothBondingStateChanged(@NonNull BluetoothDevice device, int bondState, int previousBondState) {
+
+    }
+
+    @Override
+    public void onConnectionFailed() {
+        patternFab.setProgress(0);
+        patternFab.setColor(R.color.aqua_200);
+        Utils.warningSnackbar(rootView, getString(R.string.flashing_aborted)).show();
+        isFlashing = false;
+    }
+
+    @Override
+    public void onError(int code, String message) {
+        patternFab.setProgress(0);
+        patternFab.setColor(R.color.aqua_200);
+        Utils.errorSnackbar(rootView, String.format(getString(R.string.flashing_error), code, message)).show();
+        isFlashing = false;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         NotificationManager.getNotificationLiveData().observe(this, notificationObserver);
+
+        ProgressCollector progressCollector = new ProgressCollector(this);
+        getLifecycle().addObserver(progressCollector);
     }
     private final Observer<Notification> notificationObserver = new Observer<>() {
         @Override

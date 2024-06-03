@@ -16,6 +16,7 @@ import android.content.SharedPreferences;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -197,16 +198,14 @@ public class PatternDialogFragment extends DialogFragment {
     }
 
     private void onActionClick(View view){
+        onRemoveClick(view);
+
         if(currentDevice != null && currentDevice.isActual()){
+            removeBond(currentDevice.getAddress());
             saveCurrentDevice();
 
             if(!currentAddress.equals(currentDevice.getAddress())){
                 Preference.putInt(context, Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
-            }
-
-            BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-            if (bluetoothAdapter == null) {
-                return;
             }
 
             Intent service = new Intent(context, BondingService.class);
@@ -223,6 +222,14 @@ public class PatternDialogFragment extends DialogFragment {
             return;
         }
         String address = currentDevice == null ? currentAddress : currentDevice.getAddress();
+        BluetoothUtils.removeBond(bluetoothAdapter.getRemoteDevice(address));
+    }
+
+    private void removeBond(String address) {
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (bluetoothAdapter == null) {
+            return;
+        }
         BluetoothUtils.removeBond(bluetoothAdapter.getRemoteDevice(address));
     }
 
@@ -254,8 +261,10 @@ public class PatternDialogFragment extends DialogFragment {
 
     private void setupButtons(boolean isBonded, boolean isActual){
         String buttonText = getString(isBonded ? R.string.button_ok : R.string.button_cancel);
-        binding.buttonRemove.setVisibility(isBonded ? View.VISIBLE : View.GONE);
-        binding.buttonAction.setBackgroundResource(!isBonded && isActual ? R.drawable.btn_connect_green : R.drawable.btn_aqua);
-        binding.buttonAction.setText(!isBonded && isActual ? "" : buttonText);
+//        binding.buttonRemove.setVisibility(isBonded ? View.VISIBLE : View.GONE);
+//        binding.buttonAction.setBackgroundResource(!isBonded && isActual ? R.drawable.btn_connect_green : R.drawable.btn_aqua);
+//        binding.buttonAction.setText(!isBonded && isActual ? "" : buttonText);
+        binding.buttonAction.setText(isActual ? "" : buttonText);
+        binding.buttonAction.setBackgroundResource(isActual ? R.drawable.btn_connect_green : R.drawable.btn_aqua);
     }
 }

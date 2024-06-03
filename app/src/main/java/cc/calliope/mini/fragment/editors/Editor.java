@@ -13,7 +13,7 @@ public enum Editor {
             R.string.title_roberta,
             R.drawable.ic_editors_roberta,
             R.string.info_roberta,
-            "https://lab.open-roberta.org/#loadSystem&&calliope2017"),
+            "https://lab.open-roberta.org?loadSystem=calliope2017"),
     LIBRARY(
             R.string.title_library,
             R.drawable.ic_editors_library,

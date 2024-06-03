@@ -122,6 +122,9 @@
         <service
             android:name=".LegacyDfuService"
             android:enabled="true" />
+        <service
+            android:name=".pf.Test"
+            android:enabled="true" />
 
     </application>
 </manifest>
