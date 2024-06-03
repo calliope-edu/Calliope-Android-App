@@ -39,7 +39,6 @@ import android.util.Log.INFO
 import android.util.Log.WARN
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.MutableLiveData
-import cc.calliope.mini.BondingService
 import cc.calliope.mini.utils.BluetoothUtils
 import cc.calliope.mini.utils.Utils
 import java.util.UUID
@@ -68,6 +67,8 @@ class Test : Service() {
 
         const val MINI_V1 = 1
         const val MINI_V2 = 2
+
+        const val TAG = "PartialFlashingService"
 
         var BLUETOOTH_PERMISSIONS: Array<String> =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
@@ -414,7 +415,7 @@ class Test : Service() {
         if (adapter == null || !adapter.isEnabled || !BluetoothUtils.isValidBluetoothMAC(deviceAddress)) {
             Utils.log(
                 ERROR,
-                BondingService.TAG,
+                TAG,
                 "Bluetooth is not enabled or invalid MAC address"
             )
             return null
@@ -422,7 +423,7 @@ class Test : Service() {
 
         val device = adapter.getRemoteDevice(deviceAddress)
         if (device == null) {
-            Utils.log(ERROR, BondingService.TAG, "Device is null")
+            Utils.log(ERROR, TAG, "Device is null")
             return null
         }
 

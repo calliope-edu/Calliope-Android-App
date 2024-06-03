@@ -68,12 +68,12 @@ public class FlashingService extends LifecycleService implements ProgressListene
         ProgressCollector progressCollector = new ProgressCollector(this);
         getLifecycle().addObserver(progressCollector);
 
-        bindToTestService();
+        //bindToTestService();
     }
 
     @Override
     public void onDestroy() {
-        unbindFromTestService();
+        //unbindFromTestService();
         super.onDestroy();
     }
 

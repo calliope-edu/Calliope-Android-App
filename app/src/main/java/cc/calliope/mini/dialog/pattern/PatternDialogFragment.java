@@ -2,6 +2,7 @@ package cc.calliope.mini.dialog.pattern;
 
 import static cc.calliope.mini.BondingService.EXTRA_DEVICE_ADDRESS;
 import static cc.calliope.mini.BondingService.EXTRA_DEVICE_VERSION;
+import static cc.calliope.mini.utils.Constants.MINI_V2;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 
 import android.app.Activity;
@@ -210,7 +211,7 @@ public class PatternDialogFragment extends DialogFragment {
 
             Intent service = new Intent(context, BondingService.class);
             service.putExtra(EXTRA_DEVICE_ADDRESS, currentDevice.getAddress());
-            service.putExtra(EXTRA_DEVICE_VERSION, UNIDENTIFIED);
+            service.putExtra(EXTRA_DEVICE_VERSION, MINI_V2);
             getActivity().startService(service);
         }
         dismiss();

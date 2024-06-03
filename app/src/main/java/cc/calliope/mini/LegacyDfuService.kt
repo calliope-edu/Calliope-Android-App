@@ -72,7 +72,7 @@ open class LegacyDfuService : Service() {
                     }
                 }
                 GATT_DISCONNECTED_BY_DEVICE -> {
-                    Utils.log(Log.WARN, BondingService.TAG, "Disconnected by device")
+                    Utils.log(Log.WARN, TAG, "Disconnected by device")
                     reConnect(gatt.device.address)
                 }
                 else -> {
@@ -116,10 +116,10 @@ open class LegacyDfuService : Service() {
 
         override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray, status: Int) {
             if (status == GATT_SUCCESS) {
-                Utils.log(Log.DEBUG, BondingService.TAG, "Characteristic read: ${characteristic.uuid} Value: ${value.let { it.contentToString() }}")
+                Utils.log(Log.DEBUG, TAG, "Characteristic read: ${characteristic.uuid} Value: ${value.let { it.contentToString() }}")
                 writeCharacteristic(gatt, characteristic)
             } else {
-                Utils.log(Log.WARN, BondingService.TAG, "Characteristic read failed: ${characteristic.uuid}")
+                Utils.log(Log.WARN, TAG, "Characteristic read failed: ${characteristic.uuid}")
                 gatt.disconnect()
             }
         }
@@ -176,7 +176,7 @@ open class LegacyDfuService : Service() {
     }
 
     private fun reConnect(address: String?) {
-        Utils.log(Log.DEBUG, BondingService.TAG, "Reconnecting to the device...")
+        Utils.log(Log.DEBUG, TAG, "Reconnecting to the device...")
         serviceScope.launch {
             delay(2000)
             connect(address)

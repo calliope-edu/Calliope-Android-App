@@ -3,7 +3,6 @@ package cc.calliope.mini.utils
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.util.Log
-import cc.calliope.mini.BondingService
 
 class BluetoothUtils {
     companion object {

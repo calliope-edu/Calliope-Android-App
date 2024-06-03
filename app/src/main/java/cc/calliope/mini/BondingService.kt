@@ -4,6 +4,7 @@ import android.app.Service
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGatt.GATT_INSUFFICIENT_AUTHORIZATION
 import android.bluetooth.BluetoothGatt.GATT_SUCCESS
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
@@ -15,7 +16,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import androidx.annotation.IntDef
+import android.util.Log.ASSERT
 import cc.calliope.mini.notification.Notification.TYPE_ERROR
 import cc.calliope.mini.notification.Notification.TYPE_INFO
 import cc.calliope.mini.notification.NotificationManager
@@ -41,7 +42,7 @@ open class BondingService : Service() {
         const val EXTRA_DEVICE_ADDRESS = Constants.CURRENT_DEVICE_ADDRESS
         const val EXTRA_DEVICE_VERSION = Constants.CURRENT_DEVICE_VERSION
         const val EXTRA_NUMB_ATTEMPTS = Constants.EXTRA_NUMB_ATTEMPTS
-        const val DEFAULT_NUMB_ATTEMPTS = 2
+        const val DEFAULT_NUMB_ATTEMPTS = 0
 
         private val DFU_CONTROL_SERVICE_UUID = Constants.DFU_CONTROL_SERVICE_UUID
         private val DFU_CONTROL_CHARACTERISTIC_UUID = Constants.DFU_CONTROL_CHARACTERISTIC_UUID
@@ -50,7 +51,7 @@ open class BondingService : Service() {
     }
 
     private var attempts = 0
-    private var numbAttempts = LegacyDfuService.DEFAULT_NUMB_ATTEMPTS
+    private var numbAttempts = DEFAULT_NUMB_ATTEMPTS
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
     private var deviceVersion: Int = UNIDENTIFIED
@@ -69,7 +70,11 @@ open class BondingService : Service() {
                 }
                 GATT_DISCONNECTED_BY_DEVICE -> {
                     Utils.log(Log.WARN, TAG, "Disconnected by device")
-                    reConnect(gatt.device.address)
+                    stopService(gatt)
+                    //reConnect(gatt.device.address)
+                }
+                GATT_INSUFFICIENT_AUTHORIZATION -> {
+                    Utils.log(Log.WARN, TAG, "Insufficient authorization")
                 }
                 else -> {
                     if (attempts < numbAttempts) {
@@ -128,7 +133,7 @@ open class BondingService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Utils.log(TAG, "Bonding Service started")
+        Utils.log(ASSERT, TAG, "Bonding Service started")
 
         if (!Permission.isAccessGranted(this, *Permission.BLUETOOTH_PERMISSIONS)) {
                 Utils.log(Log.ERROR, TAG, "BLUETOOTH permission no granted")
@@ -139,6 +144,7 @@ open class BondingService : Service() {
 
         val address = intent?.getStringExtra(EXTRA_DEVICE_ADDRESS)
         numbAttempts = intent?.getIntExtra(EXTRA_NUMB_ATTEMPTS, DEFAULT_NUMB_ATTEMPTS) ?: DEFAULT_NUMB_ATTEMPTS
+        deviceVersion = intent?.getIntExtra(EXTRA_DEVICE_VERSION, UNIDENTIFIED) ?: UNIDENTIFIED
         connect(address)
 
         return START_NOT_STICKY
