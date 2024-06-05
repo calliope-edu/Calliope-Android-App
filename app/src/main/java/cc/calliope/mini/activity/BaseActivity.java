@@ -1,11 +1,14 @@
 package cc.calliope.mini.activity;
 
+import static cc.calliope.mini.state.State.STATE_NO_DEFINED;
+
 import android.animation.ObjectAnimator;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
@@ -34,6 +37,7 @@ import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Observer;
+import androidx.preference.PreferenceManager;
 
 import cc.calliope.mini.ProgressCollector;
 import cc.calliope.mini.ProgressListener;
@@ -45,6 +49,7 @@ import cc.calliope.mini.R;
 import cc.calliope.mini.dialog.pattern.PatternDialogFragment;
 import cc.calliope.mini.state.State;
 import cc.calliope.mini.state.StateManager;
+import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Permission;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.views.FobParams;
@@ -192,6 +197,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
             String message = state.getMessage();
             switch (type) {
                 case State.STATE_READY -> {
+                    saveState(State.STATE_READY);
                     patternFab.setColor(R.color.green);
                     stopRotationAnimation(patternFab);
                     if (message != null && !message.isEmpty()) {
@@ -210,17 +216,21 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
                 case State.STATE_COMPLETED ->
                     patternFab.setColor(R.color.green);
                 case State.STATE_ERROR -> {
+                    saveState(STATE_NO_DEFINED);
                     patternFab.setColor(R.color.red);
                     stopRotationAnimation(patternFab);
                     if (message != null && !message.isEmpty()) {
                         Utils.errorSnackbar(rootView, message).show();
                     }
                 }
-                default ->
+                default -> {
+                    saveState(STATE_NO_DEFINED);
                     patternFab.setColor(R.color.aqua_200);
+                }
             }
         });
 
+        StateManager.updateState(restoreState(), null);
         ProgressCollector progressCollector = new ProgressCollector(this);
         getLifecycle().addObserver(progressCollector);
     }
@@ -482,5 +492,16 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
             }
         }
         return false;
+    }
+
+    private void saveState(int state){
+        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(this).edit();
+        editor.putInt("APP_STATE", state);
+        editor.apply();
+    }
+
+    private int restoreState(){
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        return preferences.getInt("APP_STATE", STATE_NO_DEFINED);
     }
 }

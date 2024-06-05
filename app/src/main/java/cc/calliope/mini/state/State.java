@@ -7,13 +7,14 @@ import java.lang.annotation.RetentionPolicy;
 
 public class State {
 
+    public static final int STATE_NO_DEFINED = -2;
     public static final int STATE_INITIALIZATION = -1;
     public static final int STATE_READY = 0;
     public static final int STATE_FLASHING = 1;
     public static final int STATE_COMPLETED = 2;
     public static final int STATE_ERROR = 3;
 
-    @IntDef({STATE_INITIALIZATION, STATE_READY, STATE_FLASHING, STATE_COMPLETED, STATE_ERROR})
+    @IntDef({STATE_NO_DEFINED, STATE_INITIALIZATION, STATE_READY, STATE_FLASHING, STATE_COMPLETED, STATE_ERROR})
     @Retention(RetentionPolicy.SOURCE)
     public @interface StateType {
     }

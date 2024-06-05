@@ -89,7 +89,7 @@ public class Utils {
             Log.e(TAG, "isLocationEnabled: " + ex);
         }
 
-        return gpsEnabled && networkEnabled;
+        return gpsEnabled || networkEnabled;
     }
 
     public static Snackbar infoSnackbar(View view, @NotNull String message) {
