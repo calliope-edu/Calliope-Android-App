@@ -12,8 +12,8 @@
         android:title="@string/title_editors" />
 
     <item
-        android:id="@+id/navigation_help"
-        android:icon="@drawable/ic_help_black_24dp"
-        android:title="@string/title_help" />
+        android:id="@+id/navigation_settings"
+        android:icon="@drawable/ic_settings_24"
+        android:title="@string/title_settings" />
 
 </menu>

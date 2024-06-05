@@ -21,6 +21,9 @@ import cc.calliope.mini.notification.Notification.TYPE_ERROR
 import cc.calliope.mini.notification.Notification.TYPE_INFO
 import cc.calliope.mini.notification.NotificationManager
 import cc.calliope.mini.service.GattStatus
+import cc.calliope.mini.state.State.STATE_ERROR
+import cc.calliope.mini.state.State.STATE_READY
+import cc.calliope.mini.state.StateManager
 import cc.calliope.mini.utils.BluetoothUtils
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Constants.MINI_V1
@@ -42,7 +45,7 @@ open class BondingService : Service() {
         const val EXTRA_DEVICE_ADDRESS = Constants.CURRENT_DEVICE_ADDRESS
         const val EXTRA_DEVICE_VERSION = Constants.CURRENT_DEVICE_VERSION
         const val EXTRA_NUMB_ATTEMPTS = Constants.EXTRA_NUMB_ATTEMPTS
-        const val DEFAULT_NUMB_ATTEMPTS = 0
+        const val DEFAULT_NUMB_ATTEMPTS = 2
 
         private val DFU_CONTROL_SERVICE_UUID = Constants.DFU_CONTROL_SERVICE_UUID
         private val DFU_CONTROL_CHARACTERISTIC_UUID = Constants.DFU_CONTROL_CHARACTERISTIC_UUID
@@ -55,6 +58,7 @@ open class BondingService : Service() {
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
     private var deviceVersion: Int = UNIDENTIFIED
+    private var errorCounter = 0;
 
     @SuppressWarnings("MissingPermission")
     private val gattCallback = object : BluetoothGattCallback() {
@@ -82,9 +86,9 @@ open class BondingService : Service() {
                         attempts++
                         reConnect(gatt.device.address)
                     } else {
-                        Utils.log(Log.ERROR, TAG, "Connection failed, attempts: $attempts")
                         val message: String = getString(GattStatus.get(status).message)
-                        Utils.log(Log.ERROR, TAG, "Error: $status $message")
+                        Utils.log(Log.ERROR, TAG, "Connection failed, attempts: $attempts; Error: $status $message")
+                        errorCounter++
                         notifyError()
                         stopService(gatt)
                     }
@@ -136,10 +140,11 @@ open class BondingService : Service() {
         Utils.log(ASSERT, TAG, "Bonding Service started")
 
         if (!Permission.isAccessGranted(this, *Permission.BLUETOOTH_PERMISSIONS)) {
-                Utils.log(Log.ERROR, TAG, "BLUETOOTH permission no granted")
-                notifyError()
-                stopSelf()
-                return START_NOT_STICKY
+            Utils.log(Log.ERROR, TAG, "BLUETOOTH permission no granted")
+            errorCounter++
+            notifyError()
+            stopSelf()
+            return START_NOT_STICKY
         }
 
         val address = intent?.getStringExtra(EXTRA_DEVICE_ADDRESS)
@@ -153,9 +158,14 @@ open class BondingService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         Utils.log(TAG, "Bonding Service destroyed")
-        Preference.putInt(applicationContext, Constants.CURRENT_DEVICE_VERSION, deviceVersion)
-        Utils.log(Log.DEBUG, TAG, "Device version: $deviceVersion")
-        NotificationManager.updateNotificationMessage(TYPE_INFO, "Mini version $deviceVersion connected")
+        if(errorCounter == 0) {
+            Utils.log(Log.DEBUG, TAG, "Device version: $deviceVersion")
+            StateManager.updateState(STATE_READY, "Mini version $deviceVersion connected")
+            Preference.putInt(applicationContext, Constants.CURRENT_DEVICE_VERSION, deviceVersion)
+        } else {
+            Utils.log(Log.DEBUG, TAG, "Device version: $UNIDENTIFIED")
+            Preference.putInt(applicationContext, Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED)
+        }
         serviceJob.cancel()
     }
 
@@ -176,6 +186,7 @@ open class BondingService : Service() {
 
         if (adapter == null || !adapter.isEnabled || !BluetoothUtils.isValidBluetoothMAC(address)) {
             Utils.log(Log.ERROR, TAG, "Bluetooth is not enabled or invalid MAC address")
+            errorCounter++
             notifyError()
             stopSelf()
             return
@@ -184,6 +195,7 @@ open class BondingService : Service() {
         val device = adapter.getRemoteDevice(address)
         if (device == null) {
             Utils.log(Log.ERROR, TAG, "Device is null")
+            errorCounter++
             notifyError()
             stopSelf()
             return
@@ -199,21 +211,22 @@ open class BondingService : Service() {
             device.connectGatt(this, false,
                 gattCallback)
         }
+        Utils.log(Log.DEBUG, TAG, "Connecting to the device...")
     }
 
     @SuppressWarnings("MissingPermission")
     private fun handleConnectedState(gatt: BluetoothGatt) {
         val bondState = gatt.device.bondState
-        if (bondState == BluetoothDevice.BOND_BONDING) {
-            Utils.log(Log.WARN, TAG, "Waiting for bonding to complete")
-        } else {
+//        if (bondState == BluetoothDevice.BOND_BONDING) {
+//            Utils.log(Log.WARN, TAG, "Waiting for bonding to complete")
+//        } else {
             BluetoothUtils.clearServicesCache(gatt)
             serviceScope.launch {
                 Utils.log(Log.DEBUG, TAG, "Wait for 2000 millis before service discovery")
                 delay(2000)
                 startServiceDiscovery(gatt)
             }
-        }
+//        }
     }
 
     @SuppressWarnings("MissingPermission")
@@ -231,6 +244,9 @@ open class BondingService : Service() {
 
         if (!result) {
             Utils.log(Log.ERROR, TAG, "Discover Services failed to start")
+            errorCounter++
+            notifyError()
+            gatt.disconnect()
         }
     }
 
@@ -289,6 +305,6 @@ open class BondingService : Service() {
 
     private fun notifyError() {
         val message = getString(R.string.flashing_connection_fail)
-        NotificationManager.updateNotificationMessage(TYPE_ERROR, message)
+        StateManager.updateState(STATE_ERROR, message)
     }
 }

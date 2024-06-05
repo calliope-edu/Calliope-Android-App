@@ -35,6 +35,8 @@ import cc.calliope.mini.DeviceKt;
 import cc.calliope.mini.BondingService;
 import cc.calliope.mini.PatternMatrixView;
 import cc.calliope.mini.ScanViewModelKt;
+import cc.calliope.mini.state.State;
+import cc.calliope.mini.state.StateManager;
 import cc.calliope.mini.utils.BluetoothUtils;
 import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Constants;
@@ -202,6 +204,8 @@ public class PatternDialogFragment extends DialogFragment {
         onRemoveClick(view);
 
         if(currentDevice != null && currentDevice.isActual()){
+            StateManager.updateState(State.STATE_INITIALIZATION, "Connecting to the device...");
+
             removeBond(currentDevice.getAddress());
             saveCurrentDevice();
 
@@ -218,12 +222,12 @@ public class PatternDialogFragment extends DialogFragment {
     }
 
     private void onRemoveClick(View view) {
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (bluetoothAdapter == null) {
-            return;
-        }
-        String address = currentDevice == null ? currentAddress : currentDevice.getAddress();
-        BluetoothUtils.removeBond(bluetoothAdapter.getRemoteDevice(address));
+//        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+//        if (bluetoothAdapter == null) {
+//            return;
+//        }
+//        String address = currentDevice == null ? currentAddress : currentDevice.getAddress();
+//        BluetoothUtils.removeBond(bluetoothAdapter.getRemoteDevice(address));
     }
 
     private void removeBond(String address) {

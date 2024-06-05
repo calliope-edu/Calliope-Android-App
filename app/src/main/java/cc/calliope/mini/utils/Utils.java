@@ -15,6 +15,8 @@ import androidx.core.content.ContextCompat;
 
 import com.google.android.material.snackbar.Snackbar;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -90,24 +92,25 @@ public class Utils {
         return gpsEnabled && networkEnabled;
     }
 
-    public static Snackbar infoSnackbar(View view, String message) {
+    public static Snackbar infoSnackbar(View view, @NotNull String message) {
         return baseSnackbar(view, message, R.color.aqua_500);
     }
 
-    public static Snackbar warningSnackbar(View view, String message) {
+    public static Snackbar warningSnackbar(View view, @NotNull String message) {
         return baseSnackbar(view, message, R.color.yellow_500);
     }
 
-    public static Snackbar errorSnackbar(View view, String message) {
+    public static Snackbar errorSnackbar(View view, @NotNull String message) {
         return baseSnackbar(view, message, R.color.red);
     }
 
-    public static Snackbar baseSnackbar(View view, String message, int color) {
+    public static Snackbar baseSnackbar(View view, @NotNull String message, int color) {
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
         );
         params.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        params.topMargin = convertDpToPixel(view.getContext(), 8);
 
         Snackbar snackbar = Snackbar.make(view, message, Snackbar.LENGTH_LONG);
         snackbar.getView().setBackgroundTintList(ContextCompat.getColorStateList(view.getContext(), color));

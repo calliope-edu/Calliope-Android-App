@@ -43,4 +43,9 @@
         android:label="@string/title_web"
         tools:layout="@layout/fragment_web" />
 
+    <fragment
+        android:id="@+id/navigation_settings"
+        android:name="cc.calliope.mini.fragment.settings.SettingsFragment"
+        android:label="@string/title_settings" />
+
 </navigation>

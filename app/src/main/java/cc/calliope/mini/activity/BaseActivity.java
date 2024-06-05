@@ -1,5 +1,6 @@
 package cc.calliope.mini.activity;
 
+import android.animation.ObjectAnimator;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
@@ -15,6 +16,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.widget.AdapterView;
 import android.widget.ListView;
@@ -41,6 +43,8 @@ import cc.calliope.mini.popup.PopupAdapter;
 import cc.calliope.mini.popup.PopupItem;
 import cc.calliope.mini.R;
 import cc.calliope.mini.dialog.pattern.PatternDialogFragment;
+import cc.calliope.mini.state.State;
+import cc.calliope.mini.state.StateManager;
 import cc.calliope.mini.utils.Permission;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.views.FobParams;
@@ -60,6 +64,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     private int popupMenuWidth;
     private int popupMenuHeight;
     private boolean isFlashing;
+    private ObjectAnimator rotationAnimator;
 
     ActivityResultLauncher<Intent> bluetoothEnableResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -70,14 +75,14 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         @Override
         public void onDeviceConnecting(@NonNull String deviceAddress) {
             super.onDeviceConnecting(deviceAddress);
-            patternFab.setColor(R.color.blue_light);
+            //patternFab.setColor(R.color.blue_light);
             isFlashing = true;
         }
 
         @Override
         public void onDeviceConnected(@NonNull String deviceAddress) {
             super.onDeviceConnected(deviceAddress);
-            patternFab.setColor(R.color.blue_light);
+            //patternFab.setColor(R.color.blue_light);
             isFlashing = true;
         }
 
@@ -85,27 +90,28 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         public void onProgressChanged(@NonNull String deviceAddress, int percent, float speed, float avgSpeed, int currentPart, int partsTotal) {
             patternFab.setProgress(percent);
             patternFab.setColor(R.color.blue_light);
+            stopRotationAnimation(patternFab);
             isFlashing = true;
         }
 
         @Override
         public void onDeviceDisconnecting(String deviceAddress) {
             patternFab.setProgress(0);
-            patternFab.setColor(R.color.aqua_200);
+            //patternFab.setColor(R.color.aqua_200);
             isFlashing = false;
         }
 
         @Override
         public void onDeviceDisconnected(@NonNull String deviceAddress) {
             patternFab.setProgress(0);
-            patternFab.setColor(R.color.aqua_200);
+            //patternFab.setColor(R.color.aqua_200);
             isFlashing = false;
         }
 
         @Override
         public void onDfuCompleted(@NonNull String deviceAddress) {
             patternFab.setProgress(0);
-            patternFab.setColor(R.color.aqua_200);
+            //patternFab.setColor(R.color.aqua_200);
             Utils.infoSnackbar(rootView, getString(R.string.flashing_completed)).show();
             isFlashing = false;
         }
@@ -113,7 +119,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         @Override
         public void onDfuAborted(@NonNull String deviceAddress) {
             patternFab.setProgress(0);
-            patternFab.setColor(R.color.aqua_200);
+            //patternFab.setColor(R.color.aqua_200);
             Utils.warningSnackbar(rootView, getString(R.string.flashing_aborted)).show();
             isFlashing = false;
         }
@@ -124,7 +130,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
                 return;
             }
             patternFab.setProgress(0);
-            patternFab.setColor(R.color.aqua_200);
+            //patternFab.setColor(R.color.aqua_200);
             Utils.errorSnackbar(rootView, String.format(getString(R.string.flashing_error), error, message)).show();
             isFlashing = false;
         }
@@ -145,11 +151,11 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     public void onProgressUpdate(int progress) {
         if(progress > 0){
             patternFab.setProgress(progress);
-            patternFab.setColor(R.color.blue_light);
+            //patternFab.setColor(R.color.blue_light);
             isFlashing = true;
         }else {
             patternFab.setProgress(0);
-            patternFab.setColor(R.color.aqua_200);
+            //patternFab.setColor(R.color.aqua_200);
             isFlashing = false;
         }
 
@@ -163,7 +169,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     @Override
     public void onConnectionFailed() {
         patternFab.setProgress(0);
-        patternFab.setColor(R.color.aqua_200);
+        //patternFab.setColor(R.color.aqua_200);
         Utils.warningSnackbar(rootView, getString(R.string.flashing_aborted)).show();
         isFlashing = false;
     }
@@ -171,7 +177,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     @Override
     public void onError(int code, String message) {
         patternFab.setProgress(0);
-        patternFab.setColor(R.color.aqua_200);
+        //patternFab.setColor(R.color.aqua_200);
         Utils.errorSnackbar(rootView, String.format(getString(R.string.flashing_error), code, message)).show();
         isFlashing = false;
     }
@@ -181,10 +187,61 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         super.onCreate(savedInstanceState);
 
         NotificationManager.getNotificationLiveData().observe(this, notificationObserver);
+        StateManager.getStateLiveData().observe(this, state -> {
+            int type = state.getType();
+            String message = state.getMessage();
+            switch (type) {
+                case State.STATE_READY -> {
+                    patternFab.setColor(R.color.green);
+                    stopRotationAnimation(patternFab);
+                    if (message != null && !message.isEmpty()) {
+                        Utils.infoSnackbar(rootView, message).show();
+                    }
+                }
+                case State.STATE_INITIALIZATION -> {
+                    patternFab.setColor(R.color.yellow_200);
+                    startRotationAnimation(patternFab);
+                    if (message != null && !message.isEmpty()) {
+                        Utils.warningSnackbar(rootView, message).show();
+                    }
+                }
+                case State.STATE_FLASHING ->
+                    patternFab.setColor(R.color.blue_light);
+                case State.STATE_COMPLETED ->
+                    patternFab.setColor(R.color.green);
+                case State.STATE_ERROR -> {
+                    patternFab.setColor(R.color.red);
+                    stopRotationAnimation(patternFab);
+                    if (message != null && !message.isEmpty()) {
+                        Utils.errorSnackbar(rootView, message).show();
+                    }
+                }
+                default ->
+                    patternFab.setColor(R.color.aqua_200);
+            }
+        });
 
         ProgressCollector progressCollector = new ProgressCollector(this);
         getLifecycle().addObserver(progressCollector);
     }
+
+    private void startRotationAnimation(final View view) {
+        rotationAnimator = ObjectAnimator.ofFloat(view, "rotation", 0f, 360f);
+        rotationAnimator.setDuration(2000);
+        rotationAnimator.setInterpolator(new LinearInterpolator());
+        rotationAnimator.setRepeatCount(ObjectAnimator.INFINITE);
+        rotationAnimator.start();
+    }
+
+    private void stopRotationAnimation(final View view) {
+        if (rotationAnimator != null) {
+            rotationAnimator.cancel();
+        }
+        ObjectAnimator rotateToZero = ObjectAnimator.ofFloat(view, "rotation", view.getRotation(), 0f);
+        rotateToZero.setDuration(300);
+        rotateToZero.start();
+    }
+
     private final Observer<Notification> notificationObserver = new Observer<>() {
         @Override
         public void onChanged(Notification notification) {
@@ -216,7 +273,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         checkPermission();
         readDisplayMetrics();
         patternFab.setProgress(0);
-        patternFab.setColor(R.color.aqua_200);
+//        patternFab.setColor(R.color.aqua_200);
         DfuServiceListenerHelper.registerProgressListener(this, dfuProgressListener);
     }
 
@@ -365,7 +422,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     private void showPopupMenu(View view) {
         Point point = getOffset(view);
         popupWindow.showAsDropDown(view, point.x, point.y);
-        dimBackground(0.5f);  // затемнюємо фон до 50%
+        dimBackground(0.5f);
         ViewCompat.animate(view)
                 .rotation(45.0F)
                 .withLayer().setDuration(300)

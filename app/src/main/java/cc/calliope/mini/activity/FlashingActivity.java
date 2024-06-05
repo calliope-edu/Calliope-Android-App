@@ -95,9 +95,11 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
 
         @Override
         public void onProgressChanged(@NonNull String deviceAddress, int percent, float speed, float avgSpeed, int currentPart, int partsTotal) {
-            status.setText(R.string.flashing_uploading);
-            progressBar.setProgress(percent);
-            title.setText(String.format(getString(R.string.flashing_percent), percent));
+            if(percent >= 0 && percent <= 100) {
+                status.setText(R.string.flashing_uploading);
+                progressBar.setProgress(percent);
+                title.setText(String.format(getString(R.string.flashing_percent), percent));
+            }
         }
 
         @Override
@@ -160,9 +162,9 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
 
     @Override
     public void onProgressUpdate(int progress) {
-        status.setText(R.string.flashing_uploading);
-        progressBar.setProgress(progress);
-        title.setText(String.format(getString(R.string.flashing_percent), progress));
+//        status.setText(R.string.flashing_uploading);
+//        progressBar.setProgress(progress);
+//        title.setText(String.format(getString(R.string.flashing_percent), progress));
     }
 
     @Override

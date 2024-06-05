@@ -1,5 +1,10 @@
 package cc.calliope.mini.service;
 
+import static cc.calliope.mini.notification.Notification.TYPE_INFO;
+import static cc.calliope.mini.state.State.STATE_FLASHING;
+import static cc.calliope.mini.state.State.STATE_INITIALIZATION;
+import static cc.calliope.mini.state.State.STATE_READY;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Build;
@@ -10,6 +15,9 @@ import androidx.core.app.NotificationCompat;
 
 import cc.calliope.mini.BuildConfig;
 import cc.calliope.mini.activity.NotificationActivity;
+import cc.calliope.mini.notification.Notification;
+import cc.calliope.mini.notification.NotificationManager;
+import cc.calliope.mini.state.StateManager;
 import no.nordicsemi.android.dfu.DfuBaseService;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
 
@@ -21,6 +29,7 @@ public class DfuService extends DfuBaseService{
 
     @Override
     public void onCreate() {
+        StateManager.updateState(STATE_INITIALIZATION, "Connecting...");
         // Enable Notification Channel for Android OREO
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             DfuServiceInitiator.createDfuNotificationChannel(getApplicationContext());
@@ -30,6 +39,7 @@ public class DfuService extends DfuBaseService{
 
     @Override
     public void onDestroy() {
+        StateManager.updateState(STATE_READY, null);
         super.onDestroy();
     }
 

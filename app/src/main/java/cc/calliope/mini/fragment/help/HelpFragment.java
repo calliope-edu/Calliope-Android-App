@@ -17,6 +17,7 @@ import androidx.fragment.app.Fragment;
 import cc.calliope.mini.R;
 import cc.calliope.mini.activity.SettingsActivity;
 import cc.calliope.mini.databinding.FragmentHelpBinding;
+import cc.calliope.mini.fragment.home.HomeItemFragment;
 
 public class HelpFragment extends Fragment {
     private FragmentHelpBinding binding;
@@ -32,12 +33,12 @@ public class HelpFragment extends Fragment {
         appInfo.setText(spanned);
 
         // Adding menu items programmatically
-        MenuItem shareMenuItem = binding.topAppBar.getMenu().add(R.string.title_settings);
-        shareMenuItem.setOnMenuItemClickListener(item -> {
-            Intent intent = new Intent(getContext(), SettingsActivity.class);
-            startActivity(intent);
-            return true;
-        });
+//        MenuItem shareMenuItem = binding.topAppBar.getMenu().add(R.string.title_settings);
+//        shareMenuItem.setOnMenuItemClickListener(item -> {
+//            Intent intent = new Intent(getContext(), SettingsActivity.class);
+//            startActivity(intent);
+//            return true;
+//        });
 
         return binding.getRoot();
     }
