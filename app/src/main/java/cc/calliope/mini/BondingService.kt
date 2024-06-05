@@ -64,7 +64,7 @@ open class BondingService : Service() {
     private val gattCallback = object : BluetoothGattCallback() {
 
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-            Utils.log(Log.DEBUG, TAG, "onConnectionStateChange: $newState")
+            Utils.log(Log.ASSERT, TAG, "onConnectionStateChange: $newState")
             when (status) {
                 GATT_SUCCESS -> {
                     when (newState) {
@@ -181,6 +181,9 @@ open class BondingService : Service() {
     private fun connect(address: String?) {
         Utils.log(Log.DEBUG, TAG, "Connecting to the device...")
 
+        // Sleep for 2 seconds to avoid connection issues
+        Thread.sleep(2000)
+
         val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val adapter: BluetoothAdapter? = bluetoothManager.adapter
 
@@ -211,22 +214,21 @@ open class BondingService : Service() {
             device.connectGatt(this, false,
                 gattCallback)
         }
-        Utils.log(Log.DEBUG, TAG, "Connecting to the device...")
     }
 
     @SuppressWarnings("MissingPermission")
     private fun handleConnectedState(gatt: BluetoothGatt) {
         val bondState = gatt.device.bondState
-//        if (bondState == BluetoothDevice.BOND_BONDING) {
-//            Utils.log(Log.WARN, TAG, "Waiting for bonding to complete")
-//        } else {
+        if (bondState == BluetoothDevice.BOND_BONDING) {
+            Utils.log(Log.WARN, TAG, "Waiting for bonding to complete")
+        } else {
             BluetoothUtils.clearServicesCache(gatt)
             serviceScope.launch {
                 Utils.log(Log.DEBUG, TAG, "Wait for 2000 millis before service discovery")
                 delay(2000)
                 startServiceDiscovery(gatt)
             }
-//        }
+        }
     }
 
     @SuppressWarnings("MissingPermission")
