@@ -16,9 +16,9 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import cc.calliope.mini.notification.Notification.TYPE_ERROR
-import cc.calliope.mini.notification.NotificationManager
 import cc.calliope.mini.service.GattStatus
+import cc.calliope.mini.state.ApplicationStateHandler
+import cc.calliope.mini.state.Notification.ERROR
 import cc.calliope.mini.utils.BluetoothUtils
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Permission
@@ -171,7 +171,7 @@ open class LegacyDfuService : Service() {
             sendBroadcast(BROADCAST_COMPLETED)
         }else {
             sendBroadcast(BROADCAST_CONNECTION_FAILED)
-            NotificationManager.updateNotificationMessage(TYPE_ERROR, getString(R.string.error_snackbar_no_connected))
+            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_no_connected))
         }
     }
 
@@ -192,7 +192,7 @@ open class LegacyDfuService : Service() {
 
         if (adapter == null || !adapter.isEnabled || !BluetoothUtils.isValidBluetoothMAC(address)) {
             sendBroadcastError("Bluetooth adapter is null or not enabled")
-            NotificationManager.updateNotificationMessage(TYPE_ERROR, "Bluetooth adapter is null or not enabled")
+            ApplicationStateHandler.updateNotification(ERROR, "Bluetooth adapter is null or not enabled")
             stopSelf()
             return
         }
@@ -200,7 +200,7 @@ open class LegacyDfuService : Service() {
         val device = adapter.getRemoteDevice(address)
         if (device == null) {
             Utils.log(Log.ERROR, TAG, "Device is null")
-            NotificationManager.updateNotificationMessage(TYPE_ERROR, "Device is null")
+            ApplicationStateHandler.updateNotification(ERROR, "Device is null")
             stopSelf()
             return
         }

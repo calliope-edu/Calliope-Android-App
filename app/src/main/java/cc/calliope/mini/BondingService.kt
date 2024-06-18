@@ -17,13 +17,11 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import android.util.Log.ASSERT
-import cc.calliope.mini.notification.Notification.TYPE_ERROR
-import cc.calliope.mini.notification.Notification.TYPE_INFO
-import cc.calliope.mini.notification.NotificationManager
 import cc.calliope.mini.service.GattStatus
 import cc.calliope.mini.state.State.STATE_ERROR
 import cc.calliope.mini.state.State.STATE_READY
-import cc.calliope.mini.state.StateManager
+import cc.calliope.mini.state.ApplicationStateHandler
+import cc.calliope.mini.state.Notification
 import cc.calliope.mini.utils.BluetoothUtils
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Constants.MINI_V1
@@ -160,7 +158,17 @@ open class BondingService : Service() {
         Utils.log(TAG, "Bonding Service destroyed")
         if(errorCounter == 0) {
             Utils.log(Log.DEBUG, TAG, "Device version: $deviceVersion")
-            StateManager.updateState(STATE_READY, "Mini version $deviceVersion connected")
+            ApplicationStateHandler.updateState(STATE_READY)
+            val versionString = when (deviceVersion) {
+                1 -> getString(R.string.mini_version_1)  // Use R.string.mini_version_1 for version 1
+                2 -> getString(R.string.mini_version_2)  // Use R.string.mini_version_2 for version 2
+                else -> deviceVersion.toString()  // Default case if version is unknown
+            }
+
+            // Get the full message string from resources
+            val message = getString(R.string.info_mini_conected, versionString)
+            ApplicationStateHandler.updateNotification(Notification.INFO, message)
+
             Preference.putInt(applicationContext, Constants.CURRENT_DEVICE_VERSION, deviceVersion)
         } else {
             Utils.log(Log.DEBUG, TAG, "Device version: $UNIDENTIFIED")
@@ -307,6 +315,6 @@ open class BondingService : Service() {
 
     private fun notifyError() {
         val message = getString(R.string.flashing_connection_fail)
-        StateManager.updateState(STATE_ERROR, message)
+        ApplicationStateHandler.updateError(message)
     }
 }

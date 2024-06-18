@@ -1,6 +1,6 @@
 package cc.calliope.mini.activity;
 
-import static cc.calliope.mini.notification.Notification.TYPE_ERROR;
+import static cc.calliope.mini.state.Notification.ERROR;
 
 import android.Manifest;
 import android.content.Intent;
@@ -28,7 +28,7 @@ import cc.calliope.mini.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityHexBinding;
 import cc.calliope.mini.fragment.editors.Editor;
-import cc.calliope.mini.notification.NotificationManager;
+import cc.calliope.mini.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.FileUtils;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
@@ -139,7 +139,7 @@ public class OpenHexActivity extends BaseActivity {
 
     private void startDFUActivity(File file) {
         if(!Utils.isBluetoothEnabled()){
-            NotificationManager.updateNotificationMessage(TYPE_ERROR, getString(R.string.error_snackbar_bluetooth_disable));
+            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disable));
             return;
         }
 

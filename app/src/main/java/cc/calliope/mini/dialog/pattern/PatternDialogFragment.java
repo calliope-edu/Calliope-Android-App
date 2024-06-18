@@ -17,7 +17,6 @@ import android.content.SharedPreferences;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -35,8 +34,9 @@ import cc.calliope.mini.DeviceKt;
 import cc.calliope.mini.BondingService;
 import cc.calliope.mini.PatternMatrixView;
 import cc.calliope.mini.ScanViewModelKt;
+import cc.calliope.mini.state.Notification;
 import cc.calliope.mini.state.State;
-import cc.calliope.mini.state.StateManager;
+import cc.calliope.mini.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.BluetoothUtils;
 import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Constants;
@@ -204,7 +204,8 @@ public class PatternDialogFragment extends DialogFragment {
         onRemoveClick(view);
 
         if(currentDevice != null && currentDevice.isActual()){
-            StateManager.updateState(State.STATE_INITIALIZATION, "Connecting to the device...");
+            ApplicationStateHandler.updateState(State.STATE_BUSY);
+            ApplicationStateHandler.updateNotification(Notification.WARNING, "Connecting to the device...");
 
             removeBond(currentDevice.getAddress());
             saveCurrentDevice();

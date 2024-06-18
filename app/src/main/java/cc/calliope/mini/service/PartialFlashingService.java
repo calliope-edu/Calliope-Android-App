@@ -1,6 +1,6 @@
 package cc.calliope.mini.service;
 
-import static cc.calliope.mini.notification.Notification.TYPE_INFO;
+import static cc.calliope.mini.state.Notification.INFO;
 
 import android.app.Activity;
 
@@ -8,7 +8,7 @@ import android.app.Activity;
 import org.microbit.android.partialflashing.PartialFlashingBaseService;
 
 import cc.calliope.mini.activity.NotificationActivity;
-import cc.calliope.mini.notification.NotificationManager;
+import cc.calliope.mini.state.ApplicationStateHandler;
 
 public class PartialFlashingService extends PartialFlashingBaseService {
     @Override
@@ -18,7 +18,7 @@ public class PartialFlashingService extends PartialFlashingBaseService {
 
     @Override
     public void onCreate() {
-        NotificationManager.updateNotificationMessage(TYPE_INFO, "Partial Flashing in progress...");
+        ApplicationStateHandler.updateNotification(INFO, "Partial Flashing in progress...");
         super.onCreate();
     }
 

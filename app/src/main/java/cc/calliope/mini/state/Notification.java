@@ -1,4 +1,4 @@
-package cc.calliope.mini.notification;
+package cc.calliope.mini.state;
 
 import androidx.annotation.IntDef;
 
@@ -7,11 +7,11 @@ import java.lang.annotation.RetentionPolicy;
 
 public class Notification {
 
-    public static final int TYPE_INFO = 0;
-    public static final int TYPE_WARNING = 1;
-    public static final int TYPE_ERROR = 2;
+    public static final int INFO = 0;
+    public static final int WARNING = 1;
+    public static final int ERROR = 2;
 
-    @IntDef({TYPE_INFO, TYPE_WARNING, TYPE_ERROR})
+    @IntDef({INFO, WARNING, ERROR})
     @Retention(RetentionPolicy.SOURCE)
     public @interface NotificationType {
     }

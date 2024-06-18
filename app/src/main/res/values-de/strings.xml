@@ -48,20 +48,19 @@
     <br/>5. <b>Fertig!</b>
     ]]></string>
 
-    <string name="info_app"><![CDATA[
-    <b>Hallo und willkommen in der Calliope mini App!</b>
-    <br/>
-    <br/>Mit Hilfe dieser App kannst du dich mit deinem <b>Calliope mini</b> verbinden und diesen mobil programmieren.
-    <br/>
-    <br/>Um die App nutzen zu können, wird ein Calliope mini dringend empfohlen.
-    <br/>
-    <br/>Falls du Fragen oder Anmerkungen hast, kannst du uns an die Emailadresse <a href="mailto:info@calliope.cc">info@calliope.cc</a> eine Nachricht schreiben.
-    <br/>
-    <br/>Viel Spaß wünscht dir das Calliope Team!
-    <br/>
-    <br/>Calliope gGmbH<br/>Raumerstrasse 11
-    <br/>10437 Berlin
-    ]]></string>
+    <string name="info_app">
+        <![CDATA[
+        <b>Hallo und willkommen in der Calliope mini App!</b>
+        <br/>
+        <br/>Mit Hilfe dieser App kannst du dich mit deinem <b>Calliope mini</b> verbinden und diesen mobil programmieren.
+        <br/>
+        <br/>Um die App nutzen zu können, wird ein Calliope mini dringend empfohlen.
+        <br/>
+        <br/>Falls du Fragen oder Anmerkungen hast, kannst du uns an die Emailadresse <a href="mailto:info@calliope.cc">info@calliope.cc</a> eine Nachricht schreiben.
+        <br/>
+        <br/>Viel Spaß wünscht dir das Calliope Team!
+        ]]>
+    </string>
 
     <string name="welcome">Willkommen</string>
 
@@ -104,7 +103,7 @@
     <string name="flashing_completed">Flashen abgeschlossen</string>
     <string name="flashing_aborted">Flashen abgebrochen</string>
     <string name="flashing_uploading">Hochladen…</string>
-    <string name="flashing_error">Fehler %d. %s</string>
+    <string name="flashing_error">Fehler (%d): %s</string>
     <string name="flashing_connection_fail">Verbindung fehlgeschlagen</string>
     <string name="flashing_status">Zustand %d</string>
     <string name="title_dialog_edit_link">Link bearbeiten</string>
@@ -131,4 +130,17 @@
     <string name="summary_rename_files">angehängtes (n), wenn Datei vorhanden ist</string>
     <string name="button_remove">Entfernen</string>
     <string name="title_pattern_connected">%s angeschlossen</string>
+    <string name="title_contact_сategory">Contact</string>
+    <string name="title_contact">Contact Information</string>
+    <string name="summary_contact">
+        <![CDATA[
+        Calliope gGmbH<br/>
+        Raumerstrasse 11<br/>
+        10437 Berlin<br/>
+        E-Mail: <a href="mailto:info@calliope.cc">info@calliope.cc</a>
+        ]]>
+    </string>
+    <string name="info_mini_conected">Mini-Version %s verbunden</string>
+    <string name="mini_version_1">1 oder 2</string>
+    <string name="mini_version_2">3</string>
 </resources>

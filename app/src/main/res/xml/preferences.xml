@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+
     <PreferenceCategory
         android:title="@string/title_settings"
         app:iconSpaceReserved="false">
@@ -42,4 +43,17 @@
             app:iconSpaceReserved="false"/>
 
     </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/title_contact_сategory"
+        app:iconSpaceReserved="false">
+
+        <Preference
+            android:key="pref_key_contact"
+            android:title="@string/title_contact"
+            android:summary="@string/summary_contact"
+            android:layout="@layout/preference_contact"
+            app:iconSpaceReserved="false"/>
+    </PreferenceCategory>
+
 </PreferenceScreen>

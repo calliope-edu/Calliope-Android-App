@@ -7,24 +7,21 @@ import java.lang.annotation.RetentionPolicy;
 
 public class State {
 
-    public static final int STATE_NO_DEFINED = -2;
-    public static final int STATE_INITIALIZATION = -1;
+    public static final int STATE_ERROR = -2;
+    public static final int STATE_NO_DEFINED = -1;
     public static final int STATE_READY = 0;
-    public static final int STATE_FLASHING = 1;
-    public static final int STATE_COMPLETED = 2;
-    public static final int STATE_ERROR = 3;
+    public static final int STATE_BUSY = 1;
+    public static final int STATE_FLASHING = 2;
 
-    @IntDef({STATE_NO_DEFINED, STATE_INITIALIZATION, STATE_READY, STATE_FLASHING, STATE_COMPLETED, STATE_ERROR})
+    @IntDef({STATE_NO_DEFINED, STATE_BUSY, STATE_READY, STATE_FLASHING, STATE_ERROR})
     @Retention(RetentionPolicy.SOURCE)
     public @interface StateType {
     }
 
     private int type;
-    private String message;
 
-    public State(int type, String message) {
+    public State(int type) {
         this.type = type;
-        this.message = message;
     }
 
     @StateType
@@ -32,15 +29,8 @@ public class State {
         return type;
     }
 
-    public String getMessage() {
-        return message;
-    }
-
     public void setType(@StateType int type) {
         this.type = type;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
 }

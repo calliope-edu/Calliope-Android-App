@@ -1,6 +1,7 @@
 package cc.calliope.mini;
 
-import static cc.calliope.mini.notification.Notification.TYPE_INFO;
+import static cc.calliope.mini.state.Notification.ERROR;
+import static cc.calliope.mini.state.Notification.INFO;
 import static cc.calliope.mini.utils.Constants.MINI_V1;
 import static cc.calliope.mini.utils.Constants.MINI_V2;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
@@ -30,10 +31,11 @@ import java.nio.ByteOrder;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import cc.calliope.mini.notification.NotificationManager;
 import cc.calliope.mini.pf.Test;
 import cc.calliope.mini.service.DfuService;
 import cc.calliope.mini.service.PartialFlashingService;
+import cc.calliope.mini.state.ApplicationStateHandler;
+import cc.calliope.mini.state.State;
 import cc.calliope.mini.utils.FileUtils;
 import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Settings;
@@ -54,7 +56,6 @@ public class FlashingService extends LifecycleService implements ProgressListene
     private int currentVersion;
     private String currentPath;
     private int progress = -10;
-
     private Test testService;
     private boolean isBound = false;
 
@@ -82,7 +83,7 @@ public class FlashingService extends LifecycleService implements ProgressListene
         super.onStartCommand(intent, flags, startId);
         Utils.log(Log.DEBUG, TAG, "FlashingService started");
 
-        NotificationManager.updateNotificationMessage(TYPE_INFO, "Flashing in progress. Please wait...");
+        ApplicationStateHandler.updateNotification(INFO, "Flashing in progress. Please wait...");
 
         if (isThisServiceRunning) {
             Utils.log(Log.INFO, TAG, "Service is already running.");
@@ -303,10 +304,12 @@ public class FlashingService extends LifecycleService implements ProgressListene
         Utils.log(Log.INFO, TAG, "File version: " + fv);
         if(fv == 2 && currentVersion == MINI_V1){
             Utils.log(Log.ERROR, TAG, "File version is 3, but device is Mini V1,2. Service will stop.");
+            ApplicationStateHandler.updateError("File version is 3, but device is Mini V1,2. Service will stop.");
             stopSelf();
             return;
         } else if(fv == 1 && currentVersion == MINI_V2){
             Utils.log(Log.ERROR, TAG, "File version is 1,2, but device is Mini V3. Service will stop.");
+            ApplicationStateHandler.updateError("File version is 1,2, but device is Mini V3. Service will stop.");
             stopSelf();
             return;
         }

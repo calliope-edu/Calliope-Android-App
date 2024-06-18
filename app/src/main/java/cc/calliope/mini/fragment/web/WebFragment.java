@@ -1,6 +1,7 @@
 package cc.calliope.mini.fragment.web;
 
-import static cc.calliope.mini.notification.Notification.TYPE_ERROR;
+
+import static cc.calliope.mini.state.Notification.ERROR;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -13,7 +14,7 @@ import androidx.fragment.app.Fragment;
 import cc.calliope.mini.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.activity.FlashingActivity;
-import cc.calliope.mini.notification.NotificationManager;
+import cc.calliope.mini.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.Settings;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.FileUtils;
@@ -312,7 +313,7 @@ public class WebFragment extends Fragment implements DownloadListener {
         }
 
         if(!Utils.isBluetoothEnabled()){
-            NotificationManager.updateNotificationMessage(TYPE_ERROR, getString(R.string.error_snackbar_bluetooth_disable));
+            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disable));
             return;
         }
 

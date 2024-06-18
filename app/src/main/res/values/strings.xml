@@ -43,15 +43,17 @@
     ]]></string>
 
     <string name="title_demo">Demo sequence</string>
-    <string name="info_demo"><![CDATA[
-    Meet the Calliope mini. The Calliope mini will show you on the display which input you should make.
-    <br/>
-    <br/>1. press the button <b>A</b>.
-    <br/>2. press the button <b>B</b>.
-    <br/>3. press the keys <b>A+B</b> simultaneously.
-    <br/>4. The position sensor - shake the Calliope mini.
-    <br/>5. Ready!
-    ]]></string>
+    <string name="info_demo">
+        <![CDATA[
+        Meet the Calliope mini. The Calliope mini will show you on the display which input you should make.
+        <br/>
+        <br/>1. press the button <b>A</b>.
+        <br/>2. press the button <b>B</b>.
+        <br/>3. press the keys <b>A+B</b> simultaneously.
+        <br/>4. The position sensor - shake the Calliope mini.
+        <br/>5. Ready!
+        ]]>
+    </string>
 
     <string name="info_app"><![CDATA[
     <b>Hello and welcome to the Calliope mini app!</b>
@@ -61,12 +63,6 @@
     <br/>You can find inspiring and fun projects at the Calliope website at <a href="https://calliope.cc">calliope.cc</a>!
     <br/>
     <br/>Have fun!
-    <br/>
-    <br/>Calliope gGmbH
-    <br/>Raumerstrasse 11
-    <br/>10437 Berlin
-    <br/>Germany
-    <br/>E-Mail: <a href="mailto:info@calliope.cc">info@calliope.cc</a>
     ]]></string>
 
     <string name="info_app_text" translatable="false">
@@ -74,11 +70,6 @@
     By using this app you can connect, code and flash programs to your Calliope mini via Bluetooth.
     You can find inspiring and fun projects at the Calliope website at https://calliope.cc!
     Have fun!
-    Calliope gGmbH
-    Raumerstrasse 11
-    10437 Berlin
-    Germany
-    E-Mail: info@calliope.cc
     </string>
 
     <string name="welcome">welcome</string>
@@ -128,7 +119,7 @@
     <string name="flashing_aborted">Flashing aborted</string>
     <string name="flashing_uploading">Uploading…</string>
     <string name="flashing_percent" translatable="false">%d%%</string>
-    <string name="flashing_error">Error %d. %s</string>
+    <string name="flashing_error">Error (%d): %s</string>
     <string name="flashing_connection_fail">Connection fail</string>
     <string name="flashing_status">Status %d</string>
     <string name="points" translatable="false">…</string>
@@ -192,4 +183,18 @@
     <string name="gatt_failure" translatable="false">GATT FAILURE</string>
     <string name="gatt_unidentified" translatable="false">GATT UNIDENTIFIED</string>
     <string name="title_copy">Copy</string>
+    <string name="title_contact_сategory">Contact</string>
+    <string name="title_contact">Contact Information</string>
+    <string name="summary_contact">
+        <![CDATA[
+        Calliope gGmbH<br/>
+        Raumerstrasse 11<br/>
+        10437 Berlin<br/>
+        Germany<br/>
+        E-Mail: <a href="mailto:info@calliope.cc">info@calliope.cc</a>
+        ]]>
+    </string>
+    <string name="info_mini_conected">Mini version %s connected</string>
+    <string name="mini_version_1">1 or 2</string>
+    <string name="mini_version_2">3</string>
 </resources>

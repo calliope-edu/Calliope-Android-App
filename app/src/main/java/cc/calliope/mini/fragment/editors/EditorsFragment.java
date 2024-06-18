@@ -36,8 +36,8 @@ public class EditorsFragment extends Fragment {
     private void setupEditorViews() {
         setupEditorView(binding.clRow1, Editor.MAKECODE);
         setupEditorView(binding.clRow2, Editor.ROBERTA);
-        setupEditorView(binding.clRow3, Editor.LIBRARY);
-        setupEditorView(binding.clRow4, Editor.CUSTOM);
+        setupEditorView(binding.clRow3, Editor.CUSTOM);
+        binding.clRow4.setVisibility(View.GONE);
     }
 
     private void setupEditorView(View view, Editor editor) {
