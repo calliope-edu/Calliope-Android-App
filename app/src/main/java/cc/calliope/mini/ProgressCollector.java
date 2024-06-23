@@ -15,7 +15,7 @@ import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
-import cc.calliope.mini.service.DfuService;
+import cc.calliope.mini.core.service.DfuService;
 import no.nordicsemi.android.dfu.DfuBaseService;
 import no.nordicsemi.android.error.GattError;
 

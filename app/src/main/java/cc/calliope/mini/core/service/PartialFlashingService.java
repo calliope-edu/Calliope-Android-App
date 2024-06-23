@@ -1,6 +1,6 @@
-package cc.calliope.mini.service;
+package cc.calliope.mini.core.service;
 
-import static cc.calliope.mini.state.Notification.INFO;
+import static cc.calliope.mini.core.state.Notification.INFO;
 
 import android.app.Activity;
 
@@ -8,7 +8,7 @@ import android.app.Activity;
 import org.microbit.android.partialflashing.PartialFlashingBaseService;
 
 import cc.calliope.mini.activity.NotificationActivity;
-import cc.calliope.mini.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.ApplicationStateHandler;
 
 public class PartialFlashingService extends PartialFlashingBaseService {
     @Override

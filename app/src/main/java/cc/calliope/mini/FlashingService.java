@@ -1,7 +1,7 @@
 package cc.calliope.mini;
 
-import static cc.calliope.mini.state.Notification.ERROR;
-import static cc.calliope.mini.state.Notification.INFO;
+import static cc.calliope.mini.core.state.Notification.ERROR;
+import static cc.calliope.mini.core.state.Notification.INFO;
 import static cc.calliope.mini.utils.Constants.MINI_V1;
 import static cc.calliope.mini.utils.Constants.MINI_V2;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
@@ -31,12 +31,11 @@ import java.nio.ByteOrder;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import cc.calliope.mini.dialog.DialogUtils;
 import cc.calliope.mini.pf.Test;
-import cc.calliope.mini.service.DfuService;
-import cc.calliope.mini.service.PartialFlashingService;
-import cc.calliope.mini.state.ApplicationStateHandler;
-import cc.calliope.mini.state.State;
+import cc.calliope.mini.core.service.DfuService;
+import cc.calliope.mini.core.service.PartialFlashingService;
+import cc.calliope.mini.core.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.utils.FileUtils;
 import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Settings;

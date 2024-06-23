@@ -1,7 +1,7 @@
 package cc.calliope.mini.dialog.pattern;
 
-import static cc.calliope.mini.core.BondingService.EXTRA_DEVICE_ADDRESS;
-import static cc.calliope.mini.core.BondingService.EXTRA_DEVICE_VERSION;
+import static cc.calliope.mini.core.service.BondingService.EXTRA_DEVICE_ADDRESS;
+import static cc.calliope.mini.core.service.BondingService.EXTRA_DEVICE_VERSION;
 import static cc.calliope.mini.utils.Constants.MINI_V2;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 
@@ -31,12 +31,12 @@ import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import cc.calliope.mini.DeviceKt;
-import cc.calliope.mini.core.BondingService;
+import cc.calliope.mini.core.service.BondingService;
 import cc.calliope.mini.PatternMatrixView;
 import cc.calliope.mini.ScanViewModelKt;
-import cc.calliope.mini.state.Notification;
-import cc.calliope.mini.state.State;
-import cc.calliope.mini.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.Notification;
+import cc.calliope.mini.core.state.State;
+import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.BluetoothUtils;
 import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Constants;

@@ -1,7 +1,7 @@
 package cc.calliope.mini.fragment.web;
 
 
-import static cc.calliope.mini.state.Notification.ERROR;
+import static cc.calliope.mini.core.state.Notification.ERROR;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -14,7 +14,7 @@ import androidx.fragment.app.Fragment;
 import cc.calliope.mini.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.activity.FlashingActivity;
-import cc.calliope.mini.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.Settings;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.FileUtils;

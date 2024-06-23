@@ -108,16 +108,16 @@
             android:exported="false" />
 
         <service
-            android:name=".service.DfuService"
+            android:name=".core.service.DfuService"
             android:enabled="true" />
         <service
-            android:name=".service.PartialFlashingService"
+            android:name=".core.service.PartialFlashingService"
             android:enabled="true" />
         <service
             android:name=".FlashingService"
             android:enabled="true" />
         <service
-            android:name=".core.BondingService"
+            android:name=".core.service.BondingService"
             android:enabled="true" />
         <service
             android:name=".LegacyDfuService"

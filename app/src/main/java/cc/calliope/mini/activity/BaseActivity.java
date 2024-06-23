@@ -1,10 +1,9 @@
 package cc.calliope.mini.activity;
 
-import static cc.calliope.mini.state.State.STATE_NO_DEFINED;
+import static cc.calliope.mini.core.state.State.STATE_NO_DEFINED;
 
 import android.animation.ObjectAnimator;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -30,7 +29,6 @@ import java.util.List;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.ViewCompat;
@@ -42,15 +40,14 @@ import androidx.preference.PreferenceManager;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 
 import cc.calliope.mini.ProgressCollector;
-import cc.calliope.mini.ProgressListener;
 import cc.calliope.mini.popup.PopupAdapter;
 import cc.calliope.mini.popup.PopupItem;
 import cc.calliope.mini.R;
 import cc.calliope.mini.dialog.pattern.PatternDialogFragment;
-import cc.calliope.mini.state.Notification;
-import cc.calliope.mini.state.Progress;
-import cc.calliope.mini.state.State;
-import cc.calliope.mini.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.Notification;
+import cc.calliope.mini.core.state.Progress;
+import cc.calliope.mini.core.state.State;
+import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.Permission;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.views.FobParams;

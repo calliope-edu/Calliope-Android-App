@@ -16,9 +16,9 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import cc.calliope.mini.service.GattStatus
-import cc.calliope.mini.state.ApplicationStateHandler
-import cc.calliope.mini.state.Notification.ERROR
+import cc.calliope.mini.core.service.GattStatus
+import cc.calliope.mini.core.state.ApplicationStateHandler
+import cc.calliope.mini.core.state.Notification.ERROR
 import cc.calliope.mini.utils.BluetoothUtils
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Permission

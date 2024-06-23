@@ -1,8 +1,8 @@
-package cc.calliope.mini.service;
+package cc.calliope.mini.core.service;
 
-import static cc.calliope.mini.state.State.STATE_BUSY;
-import static cc.calliope.mini.state.State.STATE_FLASHING;
-import static cc.calliope.mini.state.State.STATE_READY;
+import static cc.calliope.mini.core.state.State.STATE_BUSY;
+import static cc.calliope.mini.core.state.State.STATE_FLASHING;
+import static cc.calliope.mini.core.state.State.STATE_READY;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -20,9 +20,8 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import cc.calliope.mini.BuildConfig;
 import cc.calliope.mini.R;
 import cc.calliope.mini.activity.NotificationActivity;
-import cc.calliope.mini.state.ApplicationStateHandler;
-import cc.calliope.mini.state.Notification;
-import cc.calliope.mini.state.State;
+import cc.calliope.mini.core.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.utils.Utils;
 import no.nordicsemi.android.dfu.DfuBaseService;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;

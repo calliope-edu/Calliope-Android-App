@@ -1,4 +1,4 @@
-package cc.calliope.mini.state;
+package cc.calliope.mini.core.state;
 
 import androidx.annotation.IntDef;
 

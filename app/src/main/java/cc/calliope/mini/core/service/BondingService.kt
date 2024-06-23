@@ -1,4 +1,4 @@
-package cc.calliope.mini.core
+package cc.calliope.mini.core.service
 
 import android.app.Service
 import android.bluetooth.BluetoothAdapter
@@ -15,15 +15,11 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.os.Message
 import android.util.Log
-import android.util.Log.ASSERT
 import cc.calliope.mini.R
-import cc.calliope.mini.service.GattStatus
-import cc.calliope.mini.state.State.STATE_READY
-import cc.calliope.mini.state.ApplicationStateHandler
-import cc.calliope.mini.state.Notification
-import cc.calliope.mini.state.State
+import cc.calliope.mini.core.state.State.STATE_READY
+import cc.calliope.mini.core.state.ApplicationStateHandler
+import cc.calliope.mini.core.state.Notification
 import cc.calliope.mini.utils.BluetoothUtils
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Constants.MINI_V1
@@ -230,7 +226,8 @@ open class BondingService : Service() {
 
             // Get the full message string from resources
             val message = getString(R.string.info_mini_conected, versionString)
-            ApplicationStateHandler.updateNotification(Notification.INFO, message)
+            ApplicationStateHandler.updateNotification(
+                Notification.INFO, message)
 
             Preference.putInt(applicationContext, Constants.CURRENT_DEVICE_VERSION, deviceVersion)
         } else {
@@ -394,7 +391,9 @@ open class BondingService : Service() {
                 return
             }
 
-            val dfuControlCharacteristic = dfuControlService.getCharacteristic(DFU_CONTROL_CHARACTERISTIC_UUID)
+            val dfuControlCharacteristic = dfuControlService.getCharacteristic(
+                DFU_CONTROL_CHARACTERISTIC_UUID
+            )
             if (dfuControlCharacteristic == null) {
                 Utils.log(Log.WARN, TAG, "Cannot find DFU legacy characteristic: $DFU_CONTROL_CHARACTERISTIC_UUID")
                 gatt.disconnect()
@@ -435,11 +434,23 @@ open class BondingService : Service() {
             Utils.log(Log.INFO, TAG, "Found Secure DFU Service: $SECURE_DFU_SERVICE_UUID")
             deviceVersion = MINI_V2
 
+            handleBonding(gatt.device)
+
             gatt.disconnect()
         } catch (e: Exception) {
             Utils.log(Log.ERROR, TAG, "Error in getSecureDfuService: ${e.message}")
             gatt.disconnect()
             notifyError(getString(R.string.error_service_discovery))
+        }
+    }
+
+    @SuppressWarnings("MissingPermission")
+    private fun handleBonding(device: BluetoothDevice) {
+        if (device.bondState == BluetoothDevice.BOND_NONE) {
+            Utils.log(Log.WARN, TAG, "Device is not bonded. Attempting to bond.")
+            device.createBond()
+        } else {
+            Utils.log(Log.INFO, TAG, "Device is already bonded.")
         }
     }
 

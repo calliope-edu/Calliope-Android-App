@@ -4,7 +4,7 @@ import android.content.Context;
 import android.util.AttributeSet;
 
 import androidx.annotation.Nullable;
-import cc.calliope.mini.service.DfuService;
+import cc.calliope.mini.core.service.DfuService;
 
 public class BoardProgressBar extends BoardView {
 

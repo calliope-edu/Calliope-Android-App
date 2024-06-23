@@ -1,6 +1,6 @@
 package cc.calliope.mini.activity;
 
-import static cc.calliope.mini.state.Notification.ERROR;
+import static cc.calliope.mini.core.state.Notification.ERROR;
 
 import android.Manifest;
 import android.content.Intent;
@@ -28,7 +28,7 @@ import cc.calliope.mini.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityHexBinding;
 import cc.calliope.mini.fragment.editors.Editor;
-import cc.calliope.mini.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.FileUtils;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
