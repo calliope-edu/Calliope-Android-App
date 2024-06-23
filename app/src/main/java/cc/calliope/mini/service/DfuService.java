@@ -1,7 +1,6 @@
 package cc.calliope.mini.service;
 
 import static cc.calliope.mini.state.State.STATE_BUSY;
-import static cc.calliope.mini.state.State.STATE_ERROR;
 import static cc.calliope.mini.state.State.STATE_FLASHING;
 import static cc.calliope.mini.state.State.STATE_READY;
 
@@ -25,14 +24,12 @@ import cc.calliope.mini.state.ApplicationStateHandler;
 import cc.calliope.mini.state.Notification;
 import cc.calliope.mini.utils.Utils;
 import no.nordicsemi.android.dfu.DfuBaseService;
-import no.nordicsemi.android.dfu.DfuProgressListener;
-import no.nordicsemi.android.dfu.DfuProgressListenerAdapter;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
-import no.nordicsemi.android.dfu.DfuServiceListenerHelper;
 import no.nordicsemi.android.error.GattError;
 
 public class DfuService extends DfuBaseService{
     static final String TAG = "DfuService";
+    static final int PROGRESS_UPLOADING = 0;
     @Override
     protected Class<? extends Activity> getNotificationTarget() {
         return NotificationActivity.class;
@@ -41,15 +38,15 @@ public class DfuService extends DfuBaseService{
     @Override
     public void onCreate() {
         ApplicationStateHandler.updateState(STATE_BUSY);
-        ApplicationStateHandler.updateNotification(Notification.WARNING, "Connecting...");
+        ApplicationStateHandler.updateNotification(Notification.WARNING, getString(R.string.flashing_device_connecting));
         // Enable Notification Channel for Android OREO
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             DfuServiceInitiator.createDfuNotificationChannel(getApplicationContext());
         }
 
         IntentFilter dfuServiceFilter = new IntentFilter();
-        dfuServiceFilter.addAction(DfuService.BROADCAST_PROGRESS);
-        dfuServiceFilter.addAction(DfuService.BROADCAST_ERROR);
+        dfuServiceFilter.addAction(BROADCAST_PROGRESS);
+        dfuServiceFilter.addAction(BROADCAST_ERROR);
         LocalBroadcastManager.getInstance(this).registerReceiver(progressReceiver, dfuServiceFilter);
 
         super.onCreate();
@@ -92,39 +89,37 @@ public class DfuService extends DfuBaseService{
             }
 
             switch (action) {
-                case DfuService.BROADCAST_PROGRESS -> {
+                case BROADCAST_PROGRESS -> {
                     int extra = intent.getIntExtra(EXTRA_DATA, 0);
                     ApplicationStateHandler.updateProgress(extra);
                     switch (extra) {
-                        case DfuService.PROGRESS_STARTING -> {
-                            String message = getString(R.string.flashing_process_starting);
+                        case PROGRESS_UPLOADING -> {
+                            String message = getString(R.string.flashing_uploading);
                             ApplicationStateHandler.updateNotification(Notification.INFO, message);
                             ApplicationStateHandler.updateState(STATE_FLASHING);
                         }
-                        case DfuService.PROGRESS_COMPLETED -> {
+                        case PROGRESS_COMPLETED -> {
                             String message = getString(R.string.flashing_completed);
                             ApplicationStateHandler.updateNotification(Notification.INFO, message);
                             ApplicationStateHandler.updateState(STATE_READY);
                         }
-                        case DfuService.PROGRESS_ABORTED -> {
+                        case PROGRESS_ABORTED -> {
                             String message = getString(R.string.flashing_aborted);
                             ApplicationStateHandler.updateNotification(Notification.INFO, message);
                             ApplicationStateHandler.updateState(STATE_READY);
                         }
                         default -> {
-                            String message = getString(R.string.flashing_uploading);
-                            ApplicationStateHandler.updateNotification(Notification.INFO, message);
                             ApplicationStateHandler.updateState(STATE_FLASHING);
                         }
                     }
                 }
-                case DfuService.BROADCAST_ERROR -> {
+                case BROADCAST_ERROR -> {
                     int code = intent.getIntExtra(EXTRA_DATA, 0);
-                    int type = intent.getIntExtra(DfuBaseService.EXTRA_ERROR_TYPE, 0);
+                    int type = intent.getIntExtra(EXTRA_ERROR_TYPE, 0);
                     String message = switch (type) {
-                        case DfuBaseService.ERROR_TYPE_COMMUNICATION_STATE ->
+                        case ERROR_TYPE_COMMUNICATION_STATE ->
                                 GattError.parseConnectionError(code);
-                        case DfuBaseService.ERROR_TYPE_DFU_REMOTE ->
+                        case ERROR_TYPE_DFU_REMOTE ->
                                 GattError.parseDfuRemoteError(code);
                         default -> GattError.parse(code);
                     };

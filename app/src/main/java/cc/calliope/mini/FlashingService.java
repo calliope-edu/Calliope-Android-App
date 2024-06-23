@@ -31,6 +31,7 @@ import java.nio.ByteOrder;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import cc.calliope.mini.dialog.DialogUtils;
 import cc.calliope.mini.pf.Test;
 import cc.calliope.mini.service.DfuService;
 import cc.calliope.mini.service.PartialFlashingService;
@@ -302,21 +303,13 @@ public class FlashingService extends LifecycleService implements ProgressListene
         // TODO show error if file not correct
         int fv = Utils.getFileVersion(currentPath);
         Utils.log(Log.INFO, TAG, "File version: " + fv);
-        if(fv == 2 && currentVersion == MINI_V1){
-            Utils.log(Log.ERROR, TAG, "File version is 3, but device is Mini V1,2. Service will stop.");
-            ApplicationStateHandler.updateError("File version is 3, but device is Mini V1,2. Service will stop.");
-            stopSelf();
-            return;
-        } else if(fv == 1 && currentVersion == MINI_V2){
-            Utils.log(Log.ERROR, TAG, "File version is 1,2, but device is Mini V3. Service will stop.");
-            ApplicationStateHandler.updateError("File version is 1,2, but device is Mini V3. Service will stop.");
+        if((fv == 2 && currentVersion == MINI_V1) || (fv == 1 && currentVersion == MINI_V2)){
+            Utils.log(Log.ERROR, TAG, "Flashing version mismatch");
+            ApplicationStateHandler.updateState(State.STATE_READY);
+            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.flashing_version_mismatch));
             stopSelf();
             return;
         }
-
-//        DialogUtils.showWarningDialog(, "tesst", "test", () -> {
-//            Utils.log(Log.INFO, TAG, "Starting DFU Service...");
-//        });
 
         HexToDfu hexToDFU = universalHexToDFU(currentPath, currentVersion);
         String hexPath = hexToDFU.path;

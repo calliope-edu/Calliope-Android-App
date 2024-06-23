@@ -1,7 +1,5 @@
 package cc.calliope.mini.state;
 
-import cc.calliope.mini.R;
-
 public class ApplicationStateHandler {
 
     private static final StateLiveData stateLiveData = new StateLiveData();

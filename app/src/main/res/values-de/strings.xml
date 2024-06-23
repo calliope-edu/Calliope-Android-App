@@ -143,4 +143,5 @@
     <string name="info_mini_conected">Mini-Version %s verbunden</string>
     <string name="mini_version_1">1 oder 2</string>
     <string name="mini_version_2">3</string>
+    <string name="flashing_version_mismatch">App-Version und Mini-Version stimmen nicht überein. Flashen nicht möglich!</string>
 </resources>

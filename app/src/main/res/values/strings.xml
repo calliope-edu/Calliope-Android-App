@@ -197,4 +197,5 @@
     <string name="info_mini_conected">Mini version %s connected</string>
     <string name="mini_version_1">1 or 2</string>
     <string name="mini_version_2">3</string>
+    <string name="flashing_version_mismatch">App version and Mini version mismatch. Flashing not possible!</string>
 </resources>

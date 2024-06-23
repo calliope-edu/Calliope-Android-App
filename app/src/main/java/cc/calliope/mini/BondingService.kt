@@ -62,7 +62,7 @@ open class BondingService : Service() {
     private val gattCallback = object : BluetoothGattCallback() {
 
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-            Utils.log(Log.ASSERT, TAG, "onConnectionStateChange: $newState")
+            Utils.log(ASSERT, TAG, "onConnectionStateChange: $newState")
             when (status) {
                 GATT_SUCCESS -> {
                     when (newState) {
@@ -160,8 +160,8 @@ open class BondingService : Service() {
             Utils.log(Log.DEBUG, TAG, "Device version: $deviceVersion")
             ApplicationStateHandler.updateState(STATE_READY)
             val versionString = when (deviceVersion) {
-                1 -> getString(R.string.mini_version_1)  // Use R.string.mini_version_1 for version 1
-                2 -> getString(R.string.mini_version_2)  // Use R.string.mini_version_2 for version 2
+                MINI_V1 -> getString(R.string.mini_version_1)  // Use R.string.mini_version_1 for version 1
+                MINI_V2 -> getString(R.string.mini_version_2)  // Use R.string.mini_version_2 for version 2
                 else -> deviceVersion.toString()  // Default case if version is unknown
             }
 
