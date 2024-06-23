@@ -206,4 +206,6 @@
     <string name="error_service_discovery">Service discovery failed</string>
     <string name="error_missing_characteristic">Cannot find DFU legacy characteristic</string>
     <string name="error_reading_characteristic">Failed to read DFU control characteristic</string>
+    <string name="pattern_removed">%s removed</string>
+    <string name="pattern_remove_failed">Failed to remove device</string>
 </resources>

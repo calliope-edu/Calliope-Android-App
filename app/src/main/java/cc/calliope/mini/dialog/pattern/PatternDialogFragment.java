@@ -24,6 +24,7 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -207,7 +208,7 @@ public class PatternDialogFragment extends DialogFragment {
             ApplicationStateHandler.updateState(State.STATE_BUSY);
             ApplicationStateHandler.updateNotification(Notification.WARNING, "Connecting to the device...");
 
-            removeBond(currentDevice.getAddress());
+            //removeBond(currentDevice.getAddress());
             saveCurrentDevice();
 
             if(!currentAddress.equals(currentDevice.getAddress())){
@@ -223,12 +224,18 @@ public class PatternDialogFragment extends DialogFragment {
     }
 
     private void onRemoveClick(View view) {
-//        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-//        if (bluetoothAdapter == null) {
-//            return;
-//        }
-//        String address = currentDevice == null ? currentAddress : currentDevice.getAddress();
-//        BluetoothUtils.removeBond(bluetoothAdapter.getRemoteDevice(address));
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (bluetoothAdapter == null) {
+            return;
+        }
+        String address = currentDevice == null ? currentAddress : currentDevice.getAddress();
+        if(BluetoothUtils.removeBond(bluetoothAdapter.getRemoteDevice(address))){
+            String message = getString(R.string.pattern_removed, currentPattern);
+            ApplicationStateHandler.updateNotification(Notification.INFO, message);
+        } else {
+            String message = getString(R.string.pattern_remove_failed);
+            ApplicationStateHandler.updateNotification(Notification.ERROR, message);
+        }
     }
 
     private void removeBond(String address) {
@@ -236,7 +243,13 @@ public class PatternDialogFragment extends DialogFragment {
         if (bluetoothAdapter == null) {
             return;
         }
-        BluetoothUtils.removeBond(bluetoothAdapter.getRemoteDevice(address));
+        if(BluetoothUtils.removeBond(bluetoothAdapter.getRemoteDevice(address))){
+            String message = getString(R.string.pattern_removed, currentPattern);
+            ApplicationStateHandler.updateNotification(Notification.INFO, message);
+        } else {
+            String message = getString(R.string.pattern_remove_failed);
+            ApplicationStateHandler.updateNotification(Notification.ERROR, message);
+        }
     }
 
     private void onPatternChange(String pattern) {
@@ -266,11 +279,25 @@ public class PatternDialogFragment extends DialogFragment {
     }
 
     private void setupButtons(boolean isBonded, boolean isActual){
-        String buttonText = getString(isBonded ? R.string.button_ok : R.string.button_cancel);
+        Button button = binding.buttonAction;
+        if(isBonded){
+            button.setText(R.string.button_remove);
+            button.setOnClickListener(this::onRemoveClick);
+            button.setBackgroundResource(R.drawable.btn_red);
+        } else if (isActual) {
+            button.setText("");
+            button.setOnClickListener(this::onActionClick);
+            button.setBackgroundResource(R.drawable.btn_connect_green);
+        } else {
+            button.setText(R.string.button_cancel);
+            button.setOnClickListener(v -> dismiss());
+            button.setBackgroundResource(R.drawable.btn_aqua);
+        }
+//        String buttonText = getString(isBonded ? R.string.button_ok : R.string.button_cancel);
 //        binding.buttonRemove.setVisibility(isBonded ? View.VISIBLE : View.GONE);
 //        binding.buttonAction.setBackgroundResource(!isBonded && isActual ? R.drawable.btn_connect_green : R.drawable.btn_aqua);
 //        binding.buttonAction.setText(!isBonded && isActual ? "" : buttonText);
-        binding.buttonAction.setText(isActual ? "" : buttonText);
-        binding.buttonAction.setBackgroundResource(isActual ? R.drawable.btn_connect_green : R.drawable.btn_aqua);
+//        binding.buttonAction.setText(isActual ? "" : buttonText);
+//        binding.buttonAction.setBackgroundResource(isActual ? R.drawable.btn_connect_green : R.drawable.btn_aqua);
     }
 }
