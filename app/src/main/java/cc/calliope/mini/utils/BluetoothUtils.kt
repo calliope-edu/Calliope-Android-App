@@ -23,6 +23,7 @@ class BluetoothUtils {
 
         @JvmStatic
         fun clearServicesCache(gatt: BluetoothGatt) {
+            Utils.log(Log.INFO, TAG, "Refreshing device cache...")
             try {
                 val refresh = gatt.javaClass.getMethod("refresh")
                 val success = refresh.invoke(gatt) as Boolean

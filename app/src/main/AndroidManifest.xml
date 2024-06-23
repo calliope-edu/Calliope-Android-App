@@ -117,7 +117,7 @@
             android:name=".FlashingService"
             android:enabled="true" />
         <service
-            android:name=".BondingService"
+            android:name=".core.BondingService"
             android:enabled="true" />
         <service
             android:name=".LegacyDfuService"

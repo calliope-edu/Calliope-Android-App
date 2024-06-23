@@ -198,4 +198,12 @@
     <string name="mini_version_1">1 or 2</string>
     <string name="mini_version_2">3</string>
     <string name="flashing_version_mismatch">App version and Mini version mismatch. Flashing not possible!</string>
+    <string name="error_bluetooth_permissions">Bluetooth permissions not granted</string>
+    <string name="error_connection_failed">Connection failed</string>
+    <string name="error_device_null">Device is null</string>
+    <string name="error_bluetooth_not_enabled">Bluetooth is not enabled</string>
+    <string name="error_invalid_mac_address">Invalid MAC address</string>
+    <string name="error_service_discovery">Service discovery failed</string>
+    <string name="error_missing_characteristic">Cannot find DFU legacy characteristic</string>
+    <string name="error_reading_characteristic">Failed to read DFU control characteristic</string>
 </resources>

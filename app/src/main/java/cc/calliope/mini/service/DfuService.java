@@ -22,6 +22,7 @@ import cc.calliope.mini.R;
 import cc.calliope.mini.activity.NotificationActivity;
 import cc.calliope.mini.state.ApplicationStateHandler;
 import cc.calliope.mini.state.Notification;
+import cc.calliope.mini.state.State;
 import cc.calliope.mini.utils.Utils;
 import no.nordicsemi.android.dfu.DfuBaseService;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
