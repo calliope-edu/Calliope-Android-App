@@ -44,7 +44,7 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import cc.calliope.mini.FlashingService;
+import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.FileWrapper;
 import cc.calliope.mini.R;
 import cc.calliope.mini.activity.FlashingActivity;
@@ -156,7 +156,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
 
     private void openDfuActivity(FileWrapper file) {
         if(!Utils.isBluetoothEnabled()){
-            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disable));
+            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
             dismiss();
             return;
         }

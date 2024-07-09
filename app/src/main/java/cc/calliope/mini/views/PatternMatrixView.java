@@ -1,4 +1,4 @@
-package cc.calliope.mini;
+package cc.calliope.mini.views;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -11,6 +11,8 @@ import android.view.View;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
+
+import cc.calliope.mini.R;
 
 
 public class PatternMatrixView extends View {

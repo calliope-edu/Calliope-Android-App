@@ -20,6 +20,7 @@ import cc.calliope.mini.R
 import cc.calliope.mini.core.state.State.STATE_READY
 import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.Notification
+import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.BluetoothUtils
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Constants.MINI_V1
@@ -88,7 +89,10 @@ open class BondingService : Service() {
 
         private fun handleDeviceDisconnection(gatt: BluetoothGatt) {
             Utils.log(Log.WARN, TAG, "Disconnected by device. Will wait for 2 seconds before attempting to reconnect.")
-            reConnect(gatt.device.address)
+            serviceScope.launch {
+                delay(2000)
+                reConnect(gatt.device.address)
+            }
         }
 
         private fun handleInsufficientAuthorization(gatt: BluetoothGatt) {
@@ -105,7 +109,7 @@ open class BondingService : Service() {
                 val message: String = getString(GattStatus.get(status).message)
                 Utils.log(Log.ERROR, TAG, "Connection failed, attempts: $attempts; Error: $status $message")
                 errorCounter++
-                notifyError(message)
+                notifyError(R.string.error_connection_failed)
                 stopService(gatt)
             }
         }
@@ -127,7 +131,7 @@ open class BondingService : Service() {
             } catch (e: Exception) {
                 Utils.log(Log.ERROR, TAG, "Error while handling services: ${e.message}")
                 errorCounter++
-                notifyError(getString(R.string.error_service_discovery))
+                notifyError(R.string.error_service_discovery)
                 gatt.disconnect()
             }
         }
@@ -135,7 +139,7 @@ open class BondingService : Service() {
         private fun handleServiceDiscoveryFailure(gatt: BluetoothGatt, status: Int) {
             Utils.log(Log.WARN, TAG, "Service discovery failed with status: $status")
             errorCounter++
-            notifyError(getString(R.string.error_service_discovery))
+            notifyError(R.string.error_service_discovery)
             gatt.disconnect()
         }
 
@@ -174,14 +178,14 @@ open class BondingService : Service() {
         if (!arePermissionsGranted()) {
             errorCounter++
             Utils.log(Log.ERROR, TAG, "Bluetooth permissions not granted")
-            notifyError(getString(R.string.error_bluetooth_permissions))
+            notifyError(R.string.error_bluetooth_permissions)
             stopSelf()
             return START_NOT_STICKY
         }
 
         if (intent == null) {
             Utils.log(Log.ERROR, TAG, "Intent is null, stopping service")
-            notifyError(getString(R.string.error_connection_failed))
+            notifyError(R.string.error_connection_failed)
             stopSelf()
             return START_NOT_STICKY
         }
@@ -189,7 +193,7 @@ open class BondingService : Service() {
         val address = intent.getStringExtra(EXTRA_DEVICE_ADDRESS)
         if (address == null) {
             Utils.log(Log.ERROR, TAG, "Device address is null, stopping service")
-            notifyError(getString(R.string.error_connection_failed))
+            notifyError(R.string.error_connection_failed)
             stopSelf()
             return START_NOT_STICKY
         }
@@ -201,7 +205,7 @@ open class BondingService : Service() {
             connect(address)
         } catch (e: Exception) {
             Utils.log(Log.ERROR, TAG, "Failed to connect to device: ${e.message}")
-            notifyError(getString(R.string.error_connection_failed))
+            notifyError(R.string.error_connection_failed)
             stopSelf()
         }
 
@@ -226,8 +230,7 @@ open class BondingService : Service() {
 
             // Get the full message string from resources
             val message = getString(R.string.info_mini_conected, versionString)
-            ApplicationStateHandler.updateNotification(
-                Notification.INFO, message)
+            ApplicationStateHandler.updateNotification(Notification.INFO, message)
 
             Preference.putInt(applicationContext, Constants.CURRENT_DEVICE_VERSION, deviceVersion)
         } else {
@@ -268,7 +271,7 @@ open class BondingService : Service() {
                 if (device == null) {
                     Utils.log(Log.ERROR, TAG, "Device is null")
                     errorCounter++
-                    notifyError(getString(R.string.error_device_null))
+                    notifyError(R.string.error_device_null)
                     stopSelf()
                     return@launch
                 }
@@ -277,7 +280,7 @@ open class BondingService : Service() {
             } catch (e: Exception) {
                 Utils.log(Log.ERROR, TAG, "Failed to get remote device: ${e.message}")
                 errorCounter++
-                notifyError(getString(R.string.error_connection_failed))
+                notifyError(R.string.error_connection_failed)
                 stopSelf()
             }
         }
@@ -287,7 +290,7 @@ open class BondingService : Service() {
         if (adapter == null || !adapter.isEnabled) {
             errorCounter++
             Utils.log(Log.ERROR, TAG, "Bluetooth is not enabled")
-            notifyError(getString(R.string.error_bluetooth_not_enabled))
+            notifyError(R.string.error_bluetooth_not_enabled)
             stopSelf()
             return false
         }
@@ -298,7 +301,7 @@ open class BondingService : Service() {
         if (!BluetoothUtils.isValidBluetoothMAC(address)) {
             errorCounter++
             Utils.log(Log.ERROR, TAG, "Invalid MAC address")
-            notifyError(getString(R.string.error_invalid_mac_address))
+            notifyError(R.string.error_invalid_mac_address)
             stopSelf()
             return false
         }
@@ -333,7 +336,7 @@ open class BondingService : Service() {
         } catch (e: Exception) {
             Utils.log(Log.ERROR, TAG, "Failed to connect to device: ${e.message}")
             errorCounter++
-            notifyError(getString(R.string.error_connection_failed))
+            notifyError(R.string.error_connection_failed)
             stopSelf()
         }
     }
@@ -377,7 +380,7 @@ open class BondingService : Service() {
         } else {
             Utils.log(Log.ERROR, TAG, "Failed to start service discovery")
             errorCounter++
-            notifyError(getString(R.string.error_service_discovery))
+            notifyError(R.string.error_service_discovery)
             gatt.disconnect()
         }
     }
@@ -397,7 +400,7 @@ open class BondingService : Service() {
             if (dfuControlCharacteristic == null) {
                 Utils.log(Log.WARN, TAG, "Cannot find DFU legacy characteristic: $DFU_CONTROL_CHARACTERISTIC_UUID")
                 gatt.disconnect()
-                notifyError(getString(R.string.error_missing_characteristic))
+                notifyError(R.string.error_missing_characteristic)
                 return
             }
 
@@ -406,14 +409,14 @@ open class BondingService : Service() {
             if (!gatt.readCharacteristic(dfuControlCharacteristic)) {
                 Utils.log(Log.ERROR, TAG, "Failed to read DFU control characteristic")
                 gatt.disconnect()
-                notifyError(getString(R.string.error_reading_characteristic))
+                notifyError(R.string.error_reading_characteristic)
             } else {
                 Utils.log(Log.INFO, TAG, "Reading DFU control characteristic to initiate pairing")
             }
         } catch (e: Exception) {
             Utils.log(Log.ERROR, TAG, "Error in getDfuControlService: ${e.message}")
             gatt.disconnect()
-            notifyError(getString(R.string.error_service_discovery))
+            notifyError(R.string.error_service_discovery)
         }
     }
 
@@ -440,7 +443,7 @@ open class BondingService : Service() {
         } catch (e: Exception) {
             Utils.log(Log.ERROR, TAG, "Error in getSecureDfuService: ${e.message}")
             gatt.disconnect()
-            notifyError(getString(R.string.error_service_discovery))
+            notifyError(R.string.error_service_discovery)
         }
     }
 
@@ -458,7 +461,7 @@ open class BondingService : Service() {
     private fun handleMissingSecureDfuService(gatt: BluetoothGatt) {
         Utils.log(Log.ERROR, TAG, "Cannot find Secure DFU service. No reconnection will be attempted.")
         errorCounter++
-        notifyError(getString(R.string.error_connection_failed))
+        notifyError(R.string.error_connection_failed)
         gatt.disconnect()
     }
 
@@ -469,7 +472,8 @@ open class BondingService : Service() {
         stopSelf()
     }
 
-    private fun notifyError(message: String) {
-        ApplicationStateHandler.updateError(message)
+    private fun notifyError(message: Int) {
+        ApplicationStateHandler.updateNotification(Notification.ERROR, message)
+        ApplicationStateHandler.updateState(State.STATE_ERROR)
     }
 }

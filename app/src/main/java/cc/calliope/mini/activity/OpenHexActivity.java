@@ -24,7 +24,7 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import cc.calliope.mini.FlashingService;
+import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityHexBinding;
 import cc.calliope.mini.fragment.editors.Editor;
@@ -139,7 +139,7 @@ public class OpenHexActivity extends BaseActivity {
 
     private void startDFUActivity(File file) {
         if(!Utils.isBluetoothEnabled()){
-            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disable));
+            ApplicationStateHandler.updateNotification(ERROR, R.string.error_snackbar_bluetooth_disabled);
             return;
         }
 

@@ -11,6 +11,7 @@ import cc.calliope.mini.R;
 
 public class SettingsFragment extends PreferenceFragmentCompat {
 
+    // TODO: GitHub link
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.preferences, rootKey);

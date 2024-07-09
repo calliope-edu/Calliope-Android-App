@@ -1,4 +1,4 @@
-package cc.calliope.mini
+package cc.calliope.mini.core.service
 
 import android.app.Service
 import android.bluetooth.BluetoothAdapter
@@ -16,7 +16,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import cc.calliope.mini.core.service.GattStatus
+import cc.calliope.mini.R
 import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.Notification.ERROR
 import cc.calliope.mini.utils.BluetoothUtils
@@ -41,15 +41,15 @@ open class LegacyDfuService : Service() {
         private val DFU_CONTROL_CHARACTERISTIC_UUID = Constants.DFU_CONTROL_CHARACTERISTIC_UUID
 
         const val BROADCAST_START =
-            "cc.calliope.mini.LegacyDfuService.BROADCAST_START"
+            "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_START"
         const val BROADCAST_COMPLETED =
-            "cc.calliope.mini.LegacyDfuService.BROADCAST_COMPLETE"
+            "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_COMPLETE"
         const val BROADCAST_CONNECTION_FAILED =
-            "cc.calliope.mini.LegacyDfuService.BROADCAST_CONNECTION_FAILED"
+            "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_CONNECTION_FAILED"
         const val BROADCAST_ERROR =
-            "cc.calliope.mini.LegacyDfuService.BROADCAST_ERROR"
+            "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_ERROR"
         const val EXTRA_ERROR_MESSAGE =
-            "cc.calliope.mini.LegacyDfuService.EXTRA_ERROR_MESSAGE"
+            "cc.calliope.mini.core.service.LegacyDfuService.EXTRA_ERROR_MESSAGE"
 
     }
 
@@ -171,7 +171,7 @@ open class LegacyDfuService : Service() {
             sendBroadcast(BROADCAST_COMPLETED)
         }else {
             sendBroadcast(BROADCAST_CONNECTION_FAILED)
-            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_no_connected))
+            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_no_connected))
         }
     }
 
@@ -268,7 +268,9 @@ open class LegacyDfuService : Service() {
             return
         }
 
-        val dfuControlCharacteristic = dfuControlService.getCharacteristic(DFU_CONTROL_CHARACTERISTIC_UUID)
+        val dfuControlCharacteristic = dfuControlService.getCharacteristic(
+            DFU_CONTROL_CHARACTERISTIC_UUID
+        )
         if (dfuControlCharacteristic == null) {
             Utils.log(Log.ERROR, TAG, "Cannot find DFU legacy characteristic")
             sendBroadcastError("Cannot find DFU legacy characteristic.")

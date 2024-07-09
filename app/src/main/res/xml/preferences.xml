@@ -50,7 +50,6 @@
 
         <Preference
             android:key="pref_key_contact"
-            android:title="@string/title_contact"
             android:summary="@string/summary_contact"
             android:layout="@layout/preference_contact"
             app:iconSpaceReserved="false"/>

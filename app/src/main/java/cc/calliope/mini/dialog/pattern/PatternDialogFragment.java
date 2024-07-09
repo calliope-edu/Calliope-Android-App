@@ -33,7 +33,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import cc.calliope.mini.DeviceKt;
 import cc.calliope.mini.core.service.BondingService;
-import cc.calliope.mini.PatternMatrixView;
+import cc.calliope.mini.views.PatternMatrixView;
 import cc.calliope.mini.ScanViewModelKt;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.State;
@@ -195,6 +195,17 @@ public class PatternDialogFragment extends DialogFragment {
         editor.apply();
     }
 
+    private void removeCurrentDevice() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        if(preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "").equals(currentDevice.getAddress())){
+            ApplicationStateHandler.updateState(State.STATE_UNDEFINED);
+            editor.remove(Constants.CURRENT_DEVICE_ADDRESS);
+            editor.remove(Constants.CURRENT_DEVICE_PATTERN);
+            editor.apply();
+        }
+    }
+
     private void restoreCurrentDevice() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         currentAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
@@ -232,20 +243,7 @@ public class PatternDialogFragment extends DialogFragment {
         if(BluetoothUtils.removeBond(bluetoothAdapter.getRemoteDevice(address))){
             String message = getString(R.string.pattern_removed, currentPattern);
             ApplicationStateHandler.updateNotification(Notification.INFO, message);
-        } else {
-            String message = getString(R.string.pattern_remove_failed);
-            ApplicationStateHandler.updateNotification(Notification.ERROR, message);
-        }
-    }
-
-    private void removeBond(String address) {
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (bluetoothAdapter == null) {
-            return;
-        }
-        if(BluetoothUtils.removeBond(bluetoothAdapter.getRemoteDevice(address))){
-            String message = getString(R.string.pattern_removed, currentPattern);
-            ApplicationStateHandler.updateNotification(Notification.INFO, message);
+            removeCurrentDevice();
         } else {
             String message = getString(R.string.pattern_remove_failed);
             ApplicationStateHandler.updateNotification(Notification.ERROR, message);

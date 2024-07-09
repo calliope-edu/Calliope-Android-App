@@ -22,6 +22,7 @@ import cc.calliope.mini.R;
 import cc.calliope.mini.activity.NotificationActivity;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.core.state.Notification;
+import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.utils.Utils;
 import no.nordicsemi.android.dfu.DfuBaseService;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
@@ -125,7 +126,8 @@ public class DfuService extends DfuBaseService{
                     };
 
                     Utils.log(Log.ERROR, TAG, "Error (" + code + "): " + message);
-                    ApplicationStateHandler.updateError(code, message);
+                    ApplicationStateHandler.updateState(State.STATE_UNDEFINED);
+                    ApplicationStateHandler.updateNotification(Notification.ERROR, R.string.error_connection_failed);
                 }
             }
         }

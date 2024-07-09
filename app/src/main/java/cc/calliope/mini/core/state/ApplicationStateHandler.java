@@ -1,5 +1,9 @@
 package cc.calliope.mini.core.state;
 
+import android.content.Context;
+
+import cc.calliope.mini.AppContext;
+
 public class ApplicationStateHandler {
 
     private static final StateLiveData stateLiveData = new StateLiveData();
@@ -15,19 +19,12 @@ public class ApplicationStateHandler {
         notificationLiveData.setNotification(type, message);
     }
 
+    public static void updateNotification(@Notification.NotificationType int type, int stringId){
+        notificationLiveData.setNotification(type, getString(stringId));
+    }
+
     public static void updateProgress(int percent){
         progressLiveData.setProgress(percent);
-    }
-
-    public static void updateError(int code, String message){
-        errorLiveData.setError(code, message);
-        stateLiveData.setState(State.STATE_ERROR);
-        progressLiveData.setProgress(0);
-        notificationLiveData.setNotification(Notification.ERROR, message);
-    }
-
-    public static void updateError(String message){
-        updateError(133, message);
     }
 
     public static StateLiveData getStateLiveData() {
@@ -44,5 +41,10 @@ public class ApplicationStateHandler {
 
     public static ErrorLiveData getErrorLiveData() {
         return errorLiveData;
+    }
+
+    private static String getString(int stringId){
+        Context context = AppContext.getInstance().getContext();
+        return context.getString(stringId);
     }
 }

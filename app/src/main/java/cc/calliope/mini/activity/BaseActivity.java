@@ -1,6 +1,6 @@
 package cc.calliope.mini.activity;
 
-import static cc.calliope.mini.core.state.State.STATE_NO_DEFINED;
+import static cc.calliope.mini.core.state.State.STATE_UNDEFINED;
 
 import android.animation.ObjectAnimator;
 import android.bluetooth.BluetoothAdapter;
@@ -64,7 +64,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     private int popupMenuWidth;
     private int popupMenuHeight;
     private ObjectAnimator rotationAnimator;
-    private int previousState = STATE_NO_DEFINED;
+    private int previousState = STATE_UNDEFINED;
 
     ActivityResultLauncher<Intent> bluetoothEnableResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -132,11 +132,11 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
                     patternFab.setColor(R.color.blue_light);
                 }
                 case State.STATE_ERROR -> {
-                    saveState(STATE_NO_DEFINED);
+                    saveState(STATE_UNDEFINED);
                     patternFab.setColor(R.color.red);
                 }
-                case State.STATE_NO_DEFINED -> {
-                    saveState(STATE_NO_DEFINED);
+                case State.STATE_UNDEFINED -> {
+                    saveState(STATE_UNDEFINED);
                     patternFab.setColor(R.color.aqua_200);
                 }
             }
@@ -245,7 +245,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     }
 
     private void showBluetoothDisabledWarning() {
-        Utils.errorSnackbar(rootView, getString(R.string.error_snackbar_bluetooth_disable))
+        Utils.errorSnackbar(rootView, getString(R.string.error_snackbar_bluetooth_disabled))
                 .setDuration(BaseTransientBottomBar.LENGTH_INDEFINITE)
                 .setAction(R.string.button_enable, this::startBluetoothEnableActivity)
                 .show();
@@ -404,6 +404,6 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
 
     private int restoreState(){
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        return preferences.getInt("APP_STATE", STATE_NO_DEFINED);
+        return preferences.getInt("APP_STATE", STATE_UNDEFINED);
     }
 }

@@ -11,7 +11,7 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
-import cc.calliope.mini.FlashingService;
+import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.activity.FlashingActivity;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
@@ -313,7 +313,7 @@ public class WebFragment extends Fragment implements DownloadListener {
         }
 
         if(!Utils.isBluetoothEnabled()){
-            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disable));
+            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
             return;
         }
 

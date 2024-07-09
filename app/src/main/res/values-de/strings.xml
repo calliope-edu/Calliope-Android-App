@@ -81,11 +81,11 @@
     <string name="subject_dialog_share">Datei teilen…</string>
     <string name="text_dialog_share">Calliope mini Skript teilen</string>
 
-    <string name="error_snackbar_no_connected">Kein Calliope mini verbunden</string>
+    <string name="error_no_connected">Kein Calliope mini verbunden</string>
     <string name="error_snackbar_name_exists">Die Datei mit diesem Namen existiert bereits</string>
     <string name="error_snackbar_no_internet">Kein Internet verfügbar</string>
     <string name="error_snackbar_download_error">Fehler beim Herunterladen</string>
-    <string name="error_snackbar_bluetooth_disable">Bluetooth ist deaktiviert</string>
+    <string name="error_snackbar_bluetooth_disabled">Bluetooth ist deaktiviert</string>
     <string name="error_snackbar_location_disable">Standort ist deaktiviert</string>
     <string name="open_hex_info">
         Du versuchst, die Datei \"%s\" zu öffnen und auf deinen Calliope mini zu übertragen.
@@ -130,18 +130,19 @@
     <string name="summary_rename_files">angehängtes (n), wenn Datei vorhanden ist</string>
     <string name="button_remove">Entfernen</string>
     <string name="title_pattern_connected">%s angeschlossen</string>
-    <string name="title_contact_сategory">Contact</string>
+    <string name="title_contact_сategory">Contact Information</string>
     <string name="title_contact">Contact Information</string>
     <string name="summary_contact">
         <![CDATA[
         Calliope gGmbH<br/>
         Raumerstrasse 11<br/>
         10437 Berlin<br/>
-        E-Mail: <a href="mailto:info@calliope.cc">info@calliope.cc</a>
+        E-Mail: <a href="mailto:info@calliope.cc">info@calliope.cc</a><br/>
+        GitHub: <a href="https://github.com/calliope-edu/Calliope-Android-App">https://github.com/calliope-edu/Calliope-Android-App</a>
         ]]>
     </string>
-    <string name="info_mini_conected">Mini-Version %s verbunden</string>
+    <string name="info_mini_conected">Calliope mini %s verbunden</string>
     <string name="mini_version_1">1 oder 2</string>
     <string name="mini_version_2">3</string>
-    <string name="flashing_version_mismatch">App-Version und Mini-Version stimmen nicht überein. Flashen nicht möglich!</string>
+    <string name="flashing_version_mismatch">Versionen stimmen nicht überein. Flashen nicht möglich!</string>
 </resources>

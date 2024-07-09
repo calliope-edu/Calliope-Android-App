@@ -1,4 +1,4 @@
-package cc.calliope.mini;
+package cc.calliope.mini.core.service;
 
 import static cc.calliope.mini.core.state.Notification.ERROR;
 import static cc.calliope.mini.core.state.Notification.INFO;
@@ -31,9 +31,10 @@ import java.nio.ByteOrder;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import cc.calliope.mini.ProgressCollector;
+import cc.calliope.mini.ProgressListener;
+import cc.calliope.mini.R;
 import cc.calliope.mini.pf.Test;
-import cc.calliope.mini.core.service.DfuService;
-import cc.calliope.mini.core.service.PartialFlashingService;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.utils.FileUtils;
@@ -83,20 +84,32 @@ public class FlashingService extends LifecycleService implements ProgressListene
         super.onStartCommand(intent, flags, startId);
         Utils.log(Log.DEBUG, TAG, "FlashingService started");
 
-        ApplicationStateHandler.updateNotification(INFO, "Flashing in progress. Please wait...");
 
+        // TODO: are we need it?
         if (isThisServiceRunning) {
             Utils.log(Log.INFO, TAG, "Service is already running.");
         //    return START_STICKY;
         }
 
+        // TODO: are we need it?
         if (isServiceRunning()) {
-        //    stopSelf(); // Stop the service if it's already running
+            Utils.log(Log.INFO, TAG, "Some flashing service is already running.");
             return START_NOT_STICKY; // Service will not be restarted
         }
 
         if(getPath(intent) && getDevice()) {
+            int fileVersion = Utils.getFileVersion(currentPath);
+            if((fileVersion == 2 && currentVersion == MINI_V1) || (fileVersion == 1 && currentVersion == MINI_V2)){
+                ApplicationStateHandler.updateState(State.STATE_READY);
+                ApplicationStateHandler.updateNotification(ERROR, getString(R.string.flashing_version_mismatch));
+                return START_NOT_STICKY;
+            }
+
+            ApplicationStateHandler.updateNotification(INFO, "Flashing in progress. Please wait...");
             initFlashing();
+        } else {
+            ApplicationStateHandler.updateState(State.STATE_UNDEFINED);
+            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_no_connected));
         }
 
         isThisServiceRunning = true;
@@ -298,17 +311,6 @@ public class FlashingService extends LifecycleService implements ProgressListene
     @SuppressWarnings("deprecation")
     private void startFlashing() {
         Utils.log(Log.INFO, TAG, "Starting DFU Service...");
-
-        // TODO show error if file not correct
-        int fv = Utils.getFileVersion(currentPath);
-        Utils.log(Log.INFO, TAG, "File version: " + fv);
-        if((fv == 2 && currentVersion == MINI_V1) || (fv == 1 && currentVersion == MINI_V2)){
-            Utils.log(Log.ERROR, TAG, "Flashing version mismatch");
-            ApplicationStateHandler.updateState(State.STATE_READY);
-            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.flashing_version_mismatch));
-            stopSelf();
-            return;
-        }
 
         HexToDfu hexToDFU = universalHexToDFU(currentPath, currentVersion);
         String hexPath = hexToDFU.path;
