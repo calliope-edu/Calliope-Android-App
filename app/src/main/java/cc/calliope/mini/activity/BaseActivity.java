@@ -1,9 +1,13 @@
 package cc.calliope.mini.activity;
 
+import static cc.calliope.mini.core.state.State.STATE_UNDEFINED;
+
+import android.animation.ObjectAnimator;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
@@ -14,6 +18,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.LinearInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.widget.AdapterView;
 import android.widget.ListView;
@@ -24,29 +29,31 @@ import java.util.List;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Observer;
+import androidx.preference.PreferenceManager;
 
-import cc.calliope.mini.notification.Notification;
-import cc.calliope.mini.notification.NotificationManager;
+import com.google.android.material.snackbar.BaseTransientBottomBar;
+
+import cc.calliope.mini.ProgressCollector;
 import cc.calliope.mini.popup.PopupAdapter;
 import cc.calliope.mini.popup.PopupItem;
 import cc.calliope.mini.R;
 import cc.calliope.mini.dialog.pattern.PatternDialogFragment;
+import cc.calliope.mini.core.state.Notification;
+import cc.calliope.mini.core.state.Progress;
+import cc.calliope.mini.core.state.State;
+import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.Permission;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.views.MovableFloatingActionButton;
-import no.nordicsemi.android.dfu.DfuProgressListener;
-import no.nordicsemi.android.dfu.DfuProgressListenerAdapter;
-import no.nordicsemi.android.dfu.DfuServiceListenerHelper;
 
-public abstract class BaseActivity extends AppCompatActivity implements DialogInterface.OnDismissListener {
+public abstract class BaseActivity extends AppCompatActivity implements DialogInterface.OnDismissListener{
     private static final int SNACKBAR_DURATION = 10000; // how long to display the snackbar message.
     private static boolean requestWasSent = false;
     private MovableFloatingActionButton patternFab;
@@ -56,122 +63,129 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     private PopupWindow popupWindow;
     private int popupMenuWidth;
     private int popupMenuHeight;
-    private boolean isFlashing;
+    private ObjectAnimator rotationAnimator;
+    private int previousState = STATE_UNDEFINED;
 
     ActivityResultLauncher<Intent> bluetoothEnableResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
             }
     );
 
-    private final DfuProgressListener dfuProgressListener = new DfuProgressListenerAdapter() {
-        @Override
-        public void onDeviceConnecting(@NonNull String deviceAddress) {
-            super.onDeviceConnecting(deviceAddress);
-            patternFab.setColor(R.color.blue_light);
-            isFlashing = true;
-        }
-
-        @Override
-        public void onDeviceConnected(@NonNull String deviceAddress) {
-            super.onDeviceConnected(deviceAddress);
-            patternFab.setColor(R.color.blue_light);
-            isFlashing = true;
-        }
-
-        @Override
-        public void onProgressChanged(@NonNull String deviceAddress, int percent, float speed, float avgSpeed, int currentPart, int partsTotal) {
-            patternFab.setProgress(percent);
-            patternFab.setColor(R.color.blue_light);
-            isFlashing = true;
-        }
-
-        @Override
-        public void onDeviceDisconnecting(String deviceAddress) {
-            patternFab.setProgress(0);
-            patternFab.setColor(R.color.aqua_200);
-            isFlashing = false;
-        }
-
-        @Override
-        public void onDeviceDisconnected(@NonNull String deviceAddress) {
-            patternFab.setProgress(0);
-            patternFab.setColor(R.color.aqua_200);
-            isFlashing = false;
-        }
-
-        @Override
-        public void onDfuCompleted(@NonNull String deviceAddress) {
-            patternFab.setProgress(0);
-            patternFab.setColor(R.color.aqua_200);
-            Utils.infoSnackbar(rootView, getString(R.string.flashing_completed)).show();
-            isFlashing = false;
-        }
-
-        @Override
-        public void onDfuAborted(@NonNull String deviceAddress) {
-            patternFab.setProgress(0);
-            patternFab.setColor(R.color.aqua_200);
-            Utils.warningSnackbar(rootView, getString(R.string.flashing_aborted)).show();
-            isFlashing = false;
-        }
-
-        @Override
-        public void onError(@NonNull String deviceAddress, int error, int errorType, String message) {
-            if (error == 4110) {
-                return;
-            }
-            patternFab.setProgress(0);
-            patternFab.setColor(R.color.aqua_200);
-            Utils.errorSnackbar(rootView, String.format(getString(R.string.flashing_error), error, message)).show();
-            isFlashing = false;
-        }
-    };
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        NotificationManager.getNotificationLiveData().observe(this, notificationObserver);
+        ApplicationStateHandler.getNotificationLiveData().observe(this, notificationObserver);
+        ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
+        ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
+
+        ApplicationStateHandler.updateState(restoreState());
+        ProgressCollector progressCollector = new ProgressCollector(this);
+        getLifecycle().addObserver(progressCollector);
     }
+
+    private void startRotationAnimation(final View view) {
+        rotationAnimator = ObjectAnimator.ofFloat(view, "rotation", 0f, 360f);
+        rotationAnimator.setDuration(2000);
+        rotationAnimator.setInterpolator(new LinearInterpolator());
+        rotationAnimator.setRepeatCount(ObjectAnimator.INFINITE);
+        rotationAnimator.start();
+    }
+
+    private void stopRotationAnimation(final View view) {
+        if (rotationAnimator != null) {
+            rotationAnimator.cancel();
+        }
+        ObjectAnimator rotateToZero = ObjectAnimator.ofFloat(view, "rotation", view.getRotation(), 0f);
+        rotateToZero.setDuration(300);
+        rotateToZero.start();
+    }
+
+
+    private final Observer<State> stateObserver = new Observer<>() {
+        @Override
+        public void onChanged(State state) {
+            if (state == null) {
+                return;
+            }
+
+            int type = state.getType();
+
+            if (type != previousState) {
+                if (type == State.STATE_BUSY) {
+                    startRotationAnimation(patternFab);
+                } else if (previousState == State.STATE_BUSY) {
+                    stopRotationAnimation(patternFab);
+                }
+                previousState = type;
+            }
+
+            switch (type) {
+                case State.STATE_READY -> {
+                    saveState(State.STATE_READY);
+                    patternFab.setColor(R.color.green);
+                }
+                case State.STATE_BUSY -> {
+                    patternFab.setColor(R.color.yellow_200);
+                }
+                case State.STATE_FLASHING -> {
+                    patternFab.setColor(R.color.blue_light);
+                }
+                case State.STATE_ERROR -> {
+                    saveState(STATE_UNDEFINED);
+                    patternFab.setColor(R.color.red);
+                }
+                case State.STATE_UNDEFINED -> {
+                    saveState(STATE_UNDEFINED);
+                    patternFab.setColor(R.color.aqua_200);
+                }
+            }
+        }
+    };
+
     private final Observer<Notification> notificationObserver = new Observer<>() {
         @Override
         public void onChanged(Notification notification) {
             int type = notification.getType();
             String message = notification.getMessage();
             switch (type) {
-                case Notification.TYPE_INFO ->
+                case Notification.INFO ->
                         Utils.infoSnackbar(rootView, message).show();
-                case Notification.TYPE_WARNING ->
+                case Notification.WARNING ->
                         Utils.warningSnackbar(rootView, message).show();
-                case Notification.TYPE_ERROR ->
+                case Notification.ERROR ->
                         Utils.errorSnackbar(rootView, message).show();
             }
+        }
+    };
+
+    private final Observer<Progress> progressObserver = new Observer<>() {
+        @Override
+        public void onChanged(Progress progress) {
+            patternFab.setProgress(progress.getPercent());
         }
     };
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        //
-        NotificationManager.getNotificationLiveData().removeObserver(notificationObserver);
+        ApplicationStateHandler.getNotificationLiveData().removeObserver(notificationObserver);
+        ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver);
+        ApplicationStateHandler.getProgressLiveData().removeObserver(progressObserver);
     }
 
     @Override
     public void onResume() {
         super.onResume();
         requestWasSent = false;
-        isFlashing = false;
         checkPermission();
         readDisplayMetrics();
         patternFab.setProgress(0);
-        patternFab.setColor(R.color.aqua_200);
-        DfuServiceListenerHelper.registerProgressListener(this, dfuProgressListener);
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        DfuServiceListenerHelper.unregisterProgressListener(this, dfuProgressListener);
     }
 
     @Override
@@ -231,8 +245,8 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     }
 
     private void showBluetoothDisabledWarning() {
-        Utils.errorSnackbar(rootView, getString(R.string.error_snackbar_bluetooth_disable))
-                .setDuration(SNACKBAR_DURATION)
+        Utils.errorSnackbar(rootView, getString(R.string.error_snackbar_bluetooth_disabled))
+                .setDuration(BaseTransientBottomBar.LENGTH_INDEFINITE)
                 .setAction(R.string.button_enable, this::startBluetoothEnableActivity)
                 .show();
     }
@@ -254,7 +268,14 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     }
 
     public void onFabClick(View view) {
-        if(isFlashing){
+        State state = ApplicationStateHandler.getStateLiveData().getValue();
+        boolean flashing = false;
+
+        if (state != null) {
+            flashing = state.getType() == State.STATE_FLASHING;
+        }
+
+        if(flashing){
             startFlashingActivity();
         } else {
             createPopupMenu(view);
@@ -313,7 +334,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     private void showPopupMenu(View view) {
         Point point = getOffset(view);
         popupWindow.showAsDropDown(view, point.x, point.y);
-        dimBackground(0.5f);  // затемнюємо фон до 50%
+        dimBackground(0.5f);
         ViewCompat.animate(view)
                 .rotation(45.0F)
                 .withLayer().setDuration(300)
@@ -373,5 +394,16 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
             }
         }
         return false;
+    }
+
+    private void saveState(int state){
+        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(this).edit();
+        editor.putInt("APP_STATE", state);
+        editor.apply();
+    }
+
+    private int restoreState(){
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        return preferences.getInt("APP_STATE", STATE_UNDEFINED);
     }
 }

@@ -3,7 +3,6 @@ package cc.calliope.mini.utils
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.util.Log
-import cc.calliope.mini.BondingService
 
 class BluetoothUtils {
     companion object {
@@ -24,6 +23,7 @@ class BluetoothUtils {
 
         @JvmStatic
         fun clearServicesCache(gatt: BluetoothGatt) {
+            Utils.log(Log.INFO, TAG, "Refreshing device cache...")
             try {
                 val refresh = gatt.javaClass.getMethod("refresh")
                 val success = refresh.invoke(gatt) as Boolean

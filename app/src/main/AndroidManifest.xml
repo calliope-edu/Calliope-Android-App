@@ -50,6 +50,7 @@
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
 
     <application
+        android:name=".App"
         android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config"
         android:allowBackup="true"
@@ -108,19 +109,22 @@
             android:exported="false" />
 
         <service
-            android:name=".service.DfuService"
+            android:name=".core.service.DfuService"
             android:enabled="true" />
         <service
-            android:name=".service.PartialFlashingService"
+            android:name=".core.service.PartialFlashingService"
             android:enabled="true" />
         <service
-            android:name=".FlashingService"
+            android:name=".core.service.FlashingService"
             android:enabled="true" />
         <service
-            android:name=".BondingService"
+            android:name=".core.service.BondingService"
             android:enabled="true" />
         <service
-            android:name=".LegacyDfuService"
+            android:name=".core.service.LegacyDfuService"
+            android:enabled="true" />
+        <service
+            android:name=".pf.Test"
             android:enabled="true" />
 
     </application>

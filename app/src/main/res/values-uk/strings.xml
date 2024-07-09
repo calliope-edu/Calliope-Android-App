@@ -51,21 +51,17 @@
     <br/>5. готово!
     ]]></string>
 
-    <string name="info_app"><![CDATA[
-    <b>Привіт і ласкаво просимо до Calliope mini додатку!</b>
-    <br/>
-    <br/>За допомогою цієї програми ви можете підключати, кодувати і прошивати програми до вашого <b>Calliope mini</b> через Bluetooth.
-    <br/>
-    <br/>Ви можете знайти надихаючі та цікаві проекти на сайті Calliope за посиланням <a href="https://calliope.cc">calliope.cc</a>!
-    <br/>
-    <br/>Розважайтеся!
-    <br/>
-    <br/>Calliope gGmbH
-    <br/>Raumerstrasse 11
-    <br/>10437 Berlin
-    <br/>Germany
-    <br/>E-Mail: <a href="mailto:info@calliope.cc">info@calliope.cc</a>
-    ]]></string>
+    <string name="info_app">
+        <![CDATA[
+        <b>Привіт і ласкаво просимо до Calliope mini додатку!</b>
+        <br/>
+        <br/>За допомогою цієї програми ви можете підключати, кодувати і прошивати програми до вашого <b>Calliope mini</b> через Bluetooth.
+        <br/>
+        <br/>Ви можете знайти надихаючі та цікаві проекти на сайті Calliope за посиланням <a href="https://calliope.cc">calliope.cc</a>!
+        <br/>
+        <br/>Розважайтеся!
+        ]]>
+    </string>
 
     <string name="welcome">ласкаво просимо</string>
 
@@ -86,11 +82,11 @@
     <string name="subject_dialog_share">Поділитися файлом…</string>
     <string name="text_dialog_share">Calliope mini firmware</string>
 
-    <string name="error_snackbar_no_connected">Calliope mini не під\`єднано</string>
+    <string name="error_no_connected">Calliope Calliope mini не під\\`єднано</string>
     <string name="error_snackbar_name_exists">Файл з такою назвою існує</string>
     <string name="error_snackbar_no_internet">Немає доступу до інтернету</string>
     <string name="error_snackbar_download_error">Помилка завантаження</string>
-    <string name="error_snackbar_bluetooth_disable">Bluetooth вимкнено</string>
+    <string name="error_snackbar_bluetooth_disabled">Bluetooth вимкнено</string>
     <string name="error_snackbar_location_disable">Визначення місцезнаходження вимкнено</string>
     <string name="open_hex_info">Ви намагаєтеся відкрити файл \"%s\" і прошити його до вашого Calliope mini.
         \n\nЯкщо ви прошиєте неправильний або пошкоджений файл, можливо, вам доведеться під\'єднати Calliope mini до комп\'ютера, щоб перепрошити його.</string>
@@ -107,7 +103,7 @@
     <string name="flashing_completed">Прошивку завершено</string>
     <string name="flashing_aborted">Прошивку скасовано</string>
     <string name="flashing_uploading">Завантаження…</string>
-    <string name="flashing_error">Помилка %d. %s</string>
+    <string name="flashing_error">Помилка (%d): %s</string>
     <string name="flashing_connection_fail">Помилка з\'єднання</string>
     <string name="flashing_status">Статус %d</string>
     <string name="title_dialog_edit_link">Редагувати посилання</string>
@@ -132,4 +128,20 @@
     <string name="summary_rename_files">додається (n), якщо файл існує</string>
     <string name="button_remove">Видалити</string>
     <string name="title_pattern_connected">%s підключено</string>
+    <string name="title_contact_сategory">Контакти</string>
+    <string name="title_contact">Контакти</string>
+    <string name="summary_contact">
+        <![CDATA[
+        Calliope gGmbH<br/>
+        Raumerstrasse 11<br/>
+        10437 Berlin<br/>
+        Germany<br/>
+        E-Mail: <a href="mailto:info@calliope.cc">info@calliope.cc</a><br/>
+        GitHub: <a href="https://github.com/calliope-edu/Calliope-Android-App">https://github.com/calliope-edu/Calliope-Android-App</a>
+        ]]>
+    </string>
+    <string name="info_mini_conected">Calliope mini %s підключена</string>
+    <string name="mini_version_1">1 або 2</string>
+    <string name="mini_version_2">3</string>
+    <string name="flashing_version_mismatch">Версії не співпадають. Прошивка неможлива!</string>
 </resources>

@@ -1,4 +1,4 @@
-package cc.calliope.mini.service;
+package cc.calliope.mini.core.service;
 
 import java.util.HashMap;
 import java.util.Map;

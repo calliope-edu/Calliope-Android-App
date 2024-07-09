@@ -1,6 +1,7 @@
-package cc.calliope.mini;
+package cc.calliope.mini.core.service;
 
-import static cc.calliope.mini.notification.Notification.TYPE_INFO;
+import static cc.calliope.mini.core.state.Notification.ERROR;
+import static cc.calliope.mini.core.state.Notification.INFO;
 import static cc.calliope.mini.utils.Constants.MINI_V1;
 import static cc.calliope.mini.utils.Constants.MINI_V2;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
@@ -8,12 +9,14 @@ import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 import android.app.ActivityManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.IBinder;
 import android.util.Log;
 
-import androidx.core.content.PermissionChecker;
+import android.content.ServiceConnection;
 import androidx.lifecycle.LifecycleService;
 import androidx.preference.PreferenceManager;
 
@@ -28,9 +31,12 @@ import java.nio.ByteOrder;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import cc.calliope.mini.notification.NotificationManager;
-import cc.calliope.mini.service.DfuService;
-import cc.calliope.mini.service.PartialFlashingService;
+import cc.calliope.mini.ProgressCollector;
+import cc.calliope.mini.ProgressListener;
+import cc.calliope.mini.R;
+import cc.calliope.mini.pf.Test;
+import cc.calliope.mini.core.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.utils.FileUtils;
 import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Settings;
@@ -51,6 +57,8 @@ public class FlashingService extends LifecycleService implements ProgressListene
     private int currentVersion;
     private String currentPath;
     private int progress = -10;
+    private Test testService;
+    private boolean isBound = false;
 
     private record HexToDfu(String path, int size) {
     }
@@ -61,10 +69,13 @@ public class FlashingService extends LifecycleService implements ProgressListene
 
         ProgressCollector progressCollector = new ProgressCollector(this);
         getLifecycle().addObserver(progressCollector);
+
+        //bindToTestService();
     }
 
     @Override
     public void onDestroy() {
+        //unbindFromTestService();
         super.onDestroy();
     }
 
@@ -73,20 +84,32 @@ public class FlashingService extends LifecycleService implements ProgressListene
         super.onStartCommand(intent, flags, startId);
         Utils.log(Log.DEBUG, TAG, "FlashingService started");
 
-        NotificationManager.updateNotificationMessage(TYPE_INFO, "Flashing in progress. Please wait...");
 
+        // TODO: are we need it?
         if (isThisServiceRunning) {
             Utils.log(Log.INFO, TAG, "Service is already running.");
         //    return START_STICKY;
         }
 
+        // TODO: are we need it?
         if (isServiceRunning()) {
-        //    stopSelf(); // Stop the service if it's already running
+            Utils.log(Log.INFO, TAG, "Some flashing service is already running.");
             return START_NOT_STICKY; // Service will not be restarted
         }
 
         if(getPath(intent) && getDevice()) {
+            int fileVersion = Utils.getFileVersion(currentPath);
+            if((fileVersion == 2 && currentVersion == MINI_V1) || (fileVersion == 1 && currentVersion == MINI_V2)){
+                ApplicationStateHandler.updateState(State.STATE_READY);
+                ApplicationStateHandler.updateNotification(ERROR, getString(R.string.flashing_version_mismatch));
+                return START_NOT_STICKY;
+            }
+
+            ApplicationStateHandler.updateNotification(INFO, "Flashing in progress. Please wait...");
             initFlashing();
+        } else {
+            ApplicationStateHandler.updateState(State.STATE_UNDEFINED);
+            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_no_connected));
         }
 
         isThisServiceRunning = true;
@@ -115,7 +138,6 @@ public class FlashingService extends LifecycleService implements ProgressListene
 
     @Override
     public void onError(int code, String message) {
-        Utils.log(Log.ASSERT, TAG, "ERROR: " + code + " " + message);
         if (code == 4110) {
             BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
             if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
@@ -124,6 +146,8 @@ public class FlashingService extends LifecycleService implements ProgressListene
                 BluetoothDevice device = bluetoothAdapter.getRemoteDevice(currentAddress);
                 device.createBond();
             }
+        } else {
+            Utils.log(Log.ERROR, TAG, "ERROR: " + code + " " + message);
         }
     }
 
@@ -214,10 +238,45 @@ public class FlashingService extends LifecycleService implements ProgressListene
     private void startPartialFlashing() {
         Utils.log(TAG, "Starting PartialFlashing Service...");
 
-        Intent service = new Intent(this, PartialFlashingService.class);
-        service.putExtra(PartialFlashingService.EXTRA_DEVICE_ADDRESS, currentAddress);
-        service.putExtra(Constants.EXTRA_FILE_PATH, currentPath); // a path or URI must be provided.
+        Intent service = new Intent(this, Test.class);
+        service.putExtra("deviceAddress", currentAddress);
+        service.putExtra("filePath", currentPath); // a path or URI must be provided.
+        service.putExtra("hardwareType", currentVersion);
         startService(service);
+    }
+
+    private final ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            Test.LocalBinder binder = (Test.LocalBinder) service;
+            testService = binder.getService();
+            isBound = true;
+
+            testService.getProgressData().observeForever(progress -> {
+                Utils.log(Log.ASSERT, TAG, "Progress: " + progress);
+            });
+
+            testService.getServiceState().observeForever(state -> {
+                Utils.log(Log.ASSERT, TAG, "State: " + state);
+            });
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            isBound = false;
+        }
+    };
+
+    public void bindToTestService() {
+        Intent intent = new Intent(this, Test.class);
+        bindService(intent, connection, Context.BIND_AUTO_CREATE);
+    }
+
+    public void unbindFromTestService() {
+        if (isBound) {
+            unbindService(connection);
+            isBound = false;
+        }
     }
 
     private void startDfuControlService() {
@@ -252,23 +311,6 @@ public class FlashingService extends LifecycleService implements ProgressListene
     @SuppressWarnings("deprecation")
     private void startFlashing() {
         Utils.log(Log.INFO, TAG, "Starting DFU Service...");
-
-        // TODO show error if file not correct
-        int fv = Utils.getFileVersion(currentPath);
-        Utils.log(Log.INFO, TAG, "File version: " + fv);
-        if(fv == 2 && currentVersion == MINI_V1){
-            Utils.log(Log.ERROR, TAG, "File version is 3, but device is Mini V1,2. Service will stop.");
-            stopSelf();
-            return;
-        } else if(fv == 1 && currentVersion == MINI_V2){
-            Utils.log(Log.ERROR, TAG, "File version is 1,2, but device is Mini V3. Service will stop.");
-            stopSelf();
-            return;
-        }
-
-//        DialogUtils.showWarningDialog(, "tesst", "test", () -> {
-//            Utils.log(Log.INFO, TAG, "Starting DFU Service...");
-//        });
 
         HexToDfu hexToDFU = universalHexToDFU(currentPath, currentVersion);
         String hexPath = hexToDFU.path;

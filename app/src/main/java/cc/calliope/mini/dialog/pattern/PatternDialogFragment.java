@@ -1,7 +1,8 @@
 package cc.calliope.mini.dialog.pattern;
 
-import static cc.calliope.mini.BondingService.EXTRA_DEVICE_ADDRESS;
-import static cc.calliope.mini.BondingService.EXTRA_DEVICE_VERSION;
+import static cc.calliope.mini.core.service.BondingService.EXTRA_DEVICE_ADDRESS;
+import static cc.calliope.mini.core.service.BondingService.EXTRA_DEVICE_VERSION;
+import static cc.calliope.mini.utils.Constants.MINI_V2;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 
 import android.app.Activity;
@@ -23,6 +24,7 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -30,9 +32,12 @@ import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import cc.calliope.mini.DeviceKt;
-import cc.calliope.mini.BondingService;
-import cc.calliope.mini.PatternMatrixView;
+import cc.calliope.mini.core.service.BondingService;
+import cc.calliope.mini.views.PatternMatrixView;
 import cc.calliope.mini.ScanViewModelKt;
+import cc.calliope.mini.core.state.Notification;
+import cc.calliope.mini.core.state.State;
+import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.BluetoothUtils;
 import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Constants;
@@ -190,6 +195,17 @@ public class PatternDialogFragment extends DialogFragment {
         editor.apply();
     }
 
+    private void removeCurrentDevice() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        if(preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "").equals(currentDevice.getAddress())){
+            ApplicationStateHandler.updateState(State.STATE_UNDEFINED);
+            editor.remove(Constants.CURRENT_DEVICE_ADDRESS);
+            editor.remove(Constants.CURRENT_DEVICE_PATTERN);
+            editor.apply();
+        }
+    }
+
     private void restoreCurrentDevice() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         currentAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
@@ -197,21 +213,22 @@ public class PatternDialogFragment extends DialogFragment {
     }
 
     private void onActionClick(View view){
+        onRemoveClick(view);
+
         if(currentDevice != null && currentDevice.isActual()){
+            ApplicationStateHandler.updateState(State.STATE_BUSY);
+            ApplicationStateHandler.updateNotification(Notification.WARNING, "Connecting to the device...");
+
+            //removeBond(currentDevice.getAddress());
             saveCurrentDevice();
 
             if(!currentAddress.equals(currentDevice.getAddress())){
                 Preference.putInt(context, Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
             }
 
-            BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-            if (bluetoothAdapter == null) {
-                return;
-            }
-
             Intent service = new Intent(context, BondingService.class);
             service.putExtra(EXTRA_DEVICE_ADDRESS, currentDevice.getAddress());
-            service.putExtra(EXTRA_DEVICE_VERSION, UNIDENTIFIED);
+            service.putExtra(EXTRA_DEVICE_VERSION, MINI_V2);
             getActivity().startService(service);
         }
         dismiss();
@@ -223,7 +240,14 @@ public class PatternDialogFragment extends DialogFragment {
             return;
         }
         String address = currentDevice == null ? currentAddress : currentDevice.getAddress();
-        BluetoothUtils.removeBond(bluetoothAdapter.getRemoteDevice(address));
+        if(BluetoothUtils.removeBond(bluetoothAdapter.getRemoteDevice(address))){
+            String message = getString(R.string.pattern_removed, currentPattern);
+            ApplicationStateHandler.updateNotification(Notification.INFO, message);
+            removeCurrentDevice();
+        } else {
+            String message = getString(R.string.pattern_remove_failed);
+            ApplicationStateHandler.updateNotification(Notification.ERROR, message);
+        }
     }
 
     private void onPatternChange(String pattern) {
@@ -253,9 +277,25 @@ public class PatternDialogFragment extends DialogFragment {
     }
 
     private void setupButtons(boolean isBonded, boolean isActual){
-        String buttonText = getString(isBonded ? R.string.button_ok : R.string.button_cancel);
-        binding.buttonRemove.setVisibility(isBonded ? View.VISIBLE : View.GONE);
-        binding.buttonAction.setBackgroundResource(!isBonded && isActual ? R.drawable.btn_connect_green : R.drawable.btn_aqua);
-        binding.buttonAction.setText(!isBonded && isActual ? "" : buttonText);
+        Button button = binding.buttonAction;
+        if(isBonded){
+            button.setText(R.string.button_remove);
+            button.setOnClickListener(this::onRemoveClick);
+            button.setBackgroundResource(R.drawable.btn_red);
+        } else if (isActual) {
+            button.setText("");
+            button.setOnClickListener(this::onActionClick);
+            button.setBackgroundResource(R.drawable.btn_connect_green);
+        } else {
+            button.setText(R.string.button_cancel);
+            button.setOnClickListener(v -> dismiss());
+            button.setBackgroundResource(R.drawable.btn_aqua);
+        }
+//        String buttonText = getString(isBonded ? R.string.button_ok : R.string.button_cancel);
+//        binding.buttonRemove.setVisibility(isBonded ? View.VISIBLE : View.GONE);
+//        binding.buttonAction.setBackgroundResource(!isBonded && isActual ? R.drawable.btn_connect_green : R.drawable.btn_aqua);
+//        binding.buttonAction.setText(!isBonded && isActual ? "" : buttonText);
+//        binding.buttonAction.setText(isActual ? "" : buttonText);
+//        binding.buttonAction.setBackgroundResource(isActual ? R.drawable.btn_connect_green : R.drawable.btn_aqua);
     }
 }
