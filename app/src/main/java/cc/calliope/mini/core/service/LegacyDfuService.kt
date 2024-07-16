@@ -19,6 +19,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import cc.calliope.mini.R
 import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.Notification.ERROR
+import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.BluetoothUtils
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Permission
@@ -35,21 +36,21 @@ open class LegacyDfuService : Service() {
         const val GATT_DISCONNECTED_BY_DEVICE = 19
         const val EXTRA_DEVICE_ADDRESS = Constants.CURRENT_DEVICE_ADDRESS
         const val EXTRA_NUMB_ATTEMPTS = Constants.EXTRA_NUMB_ATTEMPTS
-        const val DEFAULT_NUMB_ATTEMPTS = 2
+        const val DEFAULT_NUMB_ATTEMPTS = 1
 
         private val DFU_CONTROL_SERVICE_UUID = Constants.DFU_CONTROL_SERVICE_UUID
         private val DFU_CONTROL_CHARACTERISTIC_UUID = Constants.DFU_CONTROL_CHARACTERISTIC_UUID
 
-        const val BROADCAST_START =
-            "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_START"
+//        const val BROADCAST_START =
+//            "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_START"
         const val BROADCAST_COMPLETED =
             "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_COMPLETE"
-        const val BROADCAST_CONNECTION_FAILED =
-            "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_CONNECTION_FAILED"
-        const val BROADCAST_ERROR =
-            "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_ERROR"
-        const val EXTRA_ERROR_MESSAGE =
-            "cc.calliope.mini.core.service.LegacyDfuService.EXTRA_ERROR_MESSAGE"
+//        const val BROADCAST_CONNECTION_FAILED =
+//            "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_CONNECTION_FAILED"
+//        const val BROADCAST_ERROR =
+//            "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_ERROR"
+//        const val EXTRA_ERROR_MESSAGE =
+//            "cc.calliope.mini.core.service.LegacyDfuService.EXTRA_ERROR_MESSAGE"
 
     }
 
@@ -170,7 +171,7 @@ open class LegacyDfuService : Service() {
         if(isComplete) {
             sendBroadcast(BROADCAST_COMPLETED)
         }else {
-            sendBroadcast(BROADCAST_CONNECTION_FAILED)
+            ApplicationStateHandler.updateState(State.STATE_IDLE)
             ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_no_connected))
         }
     }
@@ -191,8 +192,8 @@ open class LegacyDfuService : Service() {
         val adapter: BluetoothAdapter? = bluetoothManager.adapter
 
         if (adapter == null || !adapter.isEnabled || !BluetoothUtils.isValidBluetoothMAC(address)) {
-            sendBroadcastError("Bluetooth adapter is null or not enabled")
             ApplicationStateHandler.updateNotification(ERROR, "Bluetooth adapter is null or not enabled")
+            ApplicationStateHandler.updateState(State.STATE_IDLE)
             stopSelf()
             return
         }
@@ -205,7 +206,7 @@ open class LegacyDfuService : Service() {
             return
         }
 
-        sendBroadcast(BROADCAST_START)
+        ApplicationStateHandler.updateState(State.STATE_BUSY)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             device.connectGatt(this, false,
@@ -263,7 +264,8 @@ open class LegacyDfuService : Service() {
                 return
             }
             Utils.log(Log.ERROR, TAG, "Cannot find DFU legacy service. Attempts: $attempts")
-            sendBroadcastError("Cannot find DFU legacy service.")
+            ApplicationStateHandler.updateNotification(ERROR, "Cannot find DFU legacy service.")
+            ApplicationStateHandler.updateState(State.STATE_IDLE)
             gatt.disconnect()
             return
         }
@@ -273,7 +275,8 @@ open class LegacyDfuService : Service() {
         )
         if (dfuControlCharacteristic == null) {
             Utils.log(Log.ERROR, TAG, "Cannot find DFU legacy characteristic")
-            sendBroadcastError("Cannot find DFU legacy characteristic.")
+            ApplicationStateHandler.updateNotification(ERROR, "Cannot find DFU legacy characteristic.")
+            ApplicationStateHandler.updateState(State.STATE_IDLE)
             gatt.disconnect()
             return
         }
@@ -320,13 +323,5 @@ open class LegacyDfuService : Service() {
     private fun sendBroadcast(action: String) {
         val broadcast = Intent(action)
         LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(broadcast)
-    }
-
-    private fun sendBroadcastError(message: String) {
-        val broadcast = Intent(BROADCAST_ERROR)
-        broadcast.putExtra(EXTRA_ERROR_MESSAGE, message)
-        LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(broadcast)
-        Utils.log(Log.ERROR, TAG, message)
-        stopSelf()
     }
 }

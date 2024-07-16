@@ -85,6 +85,7 @@
     <string name="title_dialog_edit_link">Edit link</string>
 
     <string name="button_cancel">Cancel</string>
+    <string name="button_select">Select</string>
     <string name="button_ok">Ok</string>
     <string name="button_rename">Rename</string>
     <string name="button_continue">Continue</string>

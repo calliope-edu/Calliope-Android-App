@@ -126,7 +126,7 @@ public class DfuService extends DfuBaseService{
                     };
 
                     Utils.log(Log.ERROR, TAG, "Error (" + code + "): " + message);
-                    ApplicationStateHandler.updateState(State.STATE_UNDEFINED);
+                    ApplicationStateHandler.updateState(State.STATE_IDLE);
                     ApplicationStateHandler.updateNotification(Notification.ERROR, R.string.error_connection_failed);
                 }
             }

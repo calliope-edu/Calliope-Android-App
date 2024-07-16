@@ -108,7 +108,7 @@ public class FlashingService extends LifecycleService implements ProgressListene
             ApplicationStateHandler.updateNotification(INFO, "Flashing in progress. Please wait...");
             initFlashing();
         } else {
-            ApplicationStateHandler.updateState(State.STATE_UNDEFINED);
+            ApplicationStateHandler.updateState(State.STATE_IDLE);
             ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_no_connected));
         }
 

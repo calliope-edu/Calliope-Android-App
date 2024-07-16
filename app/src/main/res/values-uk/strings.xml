@@ -122,6 +122,7 @@
     <string name="title_partial_flashing">Часткове прошивання</string>
     <string name="title_background_flashing">Фонове прошивання</string>
     <string name="title_auto_flashing">Автоматичне прошивання</string>
+    <string name="button_select">Вибрати</string>
     <string name="button_ok">Так</string>
     <string name="summary_rename_files">додається (n), якщо файл існує</string>
     <string name="button_remove">Видалити</string>

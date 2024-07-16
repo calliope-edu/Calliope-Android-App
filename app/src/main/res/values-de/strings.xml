@@ -124,6 +124,7 @@
     <string name="title_partial_flashing">Partielles Flashen</string>
     <string name="title_background_flashing">Hintergrund Flashen</string>
     <string name="title_auto_flashing">Automatisches Flashen</string>
+    <string name="button_select">Auswählen</string>
     <string name="button_ok">Ja</string>
     <string name="summary_rename_files">angehängtes (n), wenn Datei vorhanden ist</string>
     <string name="button_remove">Entfernen</string>
