@@ -14,12 +14,10 @@
     <string name="settings_btn_permission">Налаштування</string>
     <string name="action_btn_permission">Надати дозвіл</string>
 
-    <string name="title_library">Передвстановлені програми</string>
     <string name="title_custom">Кастомний редактор</string>
     <string name="title_scripts">Ваші програми</string>
     <string name="info_make_code">Microsoft MakeCode - це інтерактивна платформа для створення програм та проектів, зокрема, для програмування мікроконтролерів та розробки ігор. Вона надає зручне середовище розробки з використанням графічного програмування, що дає змогу створювати програми без необхідності вручну писати код.</string>
     <string name="info_roberta">Open Roberta Lab - це хмарне інтегроване середовище програмування, яке дозволяє дітям та підліткам легко програмувати різні системи роботів/мікроконтролерів.</string>
-    <string name="info_library">Тут ви знайдете оригінальні програми, які можна змінити або перезавантажити.</string>
     <string name="info_custom">Тут ви можете перейти до кастомного редактору.</string>
     <string name="info_scripts">Тут будуть ваші програми.</string>
 

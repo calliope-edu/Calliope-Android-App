@@ -14,11 +14,11 @@ public enum Editor {
             R.drawable.ic_editors_roberta,
             R.string.info_roberta,
             "https://lab.open-roberta.org?loadSystem=calliope2017"),
-    LIBRARY(
-            R.string.title_library,
-            R.drawable.ic_editors_library,
-            R.string.info_library,
-            "https://calliope.cc/calliope-mini/25programme#25"),
+    BLOCKS(
+            R.string.title_blocks,
+            R.drawable.ic_editors_blocks,
+            R.string.info_blocks,
+            "https://blocks.calliope.cc/"),
     CUSTOM(
             R.string.title_custom,
             R.drawable.ic_editors_custom,

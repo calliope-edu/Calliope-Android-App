@@ -40,7 +40,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/ic_editors_library" />
+        app:srcCompat="@drawable/ic_editors_blocks" />
 
     <TextView
         android:id="@+id/hex_file_version_text_view"
