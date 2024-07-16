@@ -25,15 +25,15 @@ class WebInfoFragment : Fragment() {
 
         // Get the current language of the device
         val locale = Locale.getDefault()
-        val language = locale.language // ISO language code, e.g., "en", "ua", etc.
+        val language = when (locale.language) {
+            "en" -> ""    // English
+            "de" -> "de"  // German
+            "uk" -> "uk"  // Ukrainian
+            else -> ""    // Default or handle other languages as needed
+        }
 
-        // Detect the current theme (dark or light)
-        val uiModeManager = requireContext().getSystemService(Context.UI_MODE_SERVICE) as UiModeManager
-        val currentMode = uiModeManager.currentModeType
-        val theme = if (currentMode == Configuration.UI_MODE_NIGHT_YES) "dark" else "light"
-
-        // Add the locale and theme parameters to the URL
-        val urlWithLocaleAndTheme = "https://app.calliope.cc/android/?locale=$language&theme=$theme"
+        // Add the locale parameters to the URL
+        val urlWithLocaleAndTheme = "https://app.calliope.cc/android/$language"
 
         webView.loadUrl(urlWithLocaleAndTheme)
         return view
