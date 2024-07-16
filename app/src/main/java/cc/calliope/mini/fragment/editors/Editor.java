@@ -23,7 +23,7 @@ public enum Editor {
             R.string.title_custom,
             R.drawable.ic_editors_custom,
             R.string.info_custom,
-            "https://makecode.microbit.org/?androidapp=1");
+            "https://makecode.calliope.cc/?androidapp=1");
 
     private final int titleResId;
     private final int iconResId;
