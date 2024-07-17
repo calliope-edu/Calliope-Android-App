@@ -1,4 +1,5 @@
 {
     "$schema": "https://inlang.com/schema/inlang-message-format",
-    "ok_bright_dachshund_view": "посібник з підключення"
+    "ok_bright_dachshund_view": "посібник з підключення",
+    "slow_vexed_pig_hope": "Цей посібник допоможе вам підключити ваш Calliope mini до додатка та передати програми. Просто дотримуйтесь наведених нижче кроків."
 }

@@ -28,7 +28,7 @@
   <article>
     <header>
       <h2>{m.ok_bright_dachshund_view()}</h2>
-      <p>Diese Anleitung hilft dir, deinen Calliope mini mit der App zu verbinden und Programme zu übertragen. Folge einfach den unten stehenden Schritten.</p>
+      <p>{m.slow_vexed_pig_hope()}</p>
     </header>
   
     <section>
