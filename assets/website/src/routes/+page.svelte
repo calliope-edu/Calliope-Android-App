@@ -32,19 +32,20 @@
     </header>
   
     <section>
-      <h3>1. Den Calliope mini vorbereiten</h3>
+      <h3>Anleitungen und Hilfestellungen, falls du Verbindungsprobleme hast!</h3>
+      <h3>1. Calliope mini vorbereiten</h3>
       <p>Um deinen Calliope mini vorzubereiten, gehe wie folgt vor:</p>
       <ul>
-        <li><strong>Wenn du einen Calliope mini 1 oder 2 besitzt:</strong></li>
+        <li><strong>Gehe wie folgt vor, wenn du einen Calliope mini 1 oder 2 besitzt:</strong></li>
         <ul>
-          <li>Übertrage per USB ein Programm mit <code>one-time-pairing</code> Erweiterung. Nur dann kann die erstmalige kopplung mit dem Android Gerät erfolgen.</li>
+          <li>Übertrage aus MakeCode ein Programm per USB mit der <code>one-time-pairing</code> Erweiterung. Nur dann kann die erstmalige kopplung mit dem Android Gerät erfolgen.</li>
           <li>Bringe den mini mit <span class="highlight">AB + Reset</span> in den Bluetooth-Modus.</li>
         </ul>
       </ul>
       <ul>
         <li><strong>Wenn du einen Calliope mini 3 besitzt:</strong></li>
         <ul>
-          <li>Bringe den mini durch 3-maliges drucken der <span class="highlight">Reset-Taste</span> in den Bluetooth-Modus.</li>
+          <li>Drücke dreimal die <span class="highlight">Reset-Taste</span>, um den in den Bluetooth-Modus zu starten.</li>
         </ul>
       </ul>
       <!-- <div class="image-container">
@@ -55,11 +56,11 @@
   
     <section>
       <h3>2. Verbindung herstellen</h3>
-      <p>Um die Verbindung herzustellen, folge diesen Schritten:</p>
+      <p>Um die Verbindung nun herzustellen, folge diesen Schritten:</p>
       <ol>
-        <li>Tippe auf das Calliope-Symbol (Floating Button).</li>
+        <li>Tippe auf das Calliope mini Icon (Floating Button).</li>
         <li>Wähle "Verbindung".</li>
-        <li>Zeichne in der App das Muster des Calliopes nach.</li>
+        <li>Zeichne in der App das Muster deines Calliope mini nach.</li>
         <li>Tippe auf den grünen Pairing-Button.</li>
         <div class="image-container">
             <img src="{base}/screenshots/pairing-button.png" alt="Pairing Button" />
@@ -72,10 +73,10 @@
         <li><b>Calliope mini 3</b>
             <ol>
                 <li>Es erscheint eine Kopplungsanfrage, bestätige diese.</li>
-                <li>Die Kopplungsanfrage erscheint erneut, bestätige abermals.</li>
+                <li>Die Kopplungsanfrage erscheint erneut, bestätige sie abermals.</li>
             </ol>
         </li>
-        <li>Nach der erfolgreichen Verbindung mit dem Calliope wechselt die Farbe des Calliope-Buttons von Turkis auf Grün.</li>
+        <li>Nach der erfolgreichen Verbindung mit dem Calliope mini wechselt die Farbe des Pairing-Buttons von türkis auf grün.</li>
       </ol>
       <!-- <div class="image-container">
         <img src="path/to/calliope-symbol-image.png" alt="Calliope-Symbol" />
@@ -87,7 +88,7 @@
       <p>Um Programme zu übertragen, beachte Folgendes:</p>
       <ul>
         <li>Die Übertragung wird automatisch gestartet, sobald in einem Editor die Datei geladen wird.</li>
-        <li>Wenn Bluetooth nicht dauerhaft auf dem Calliope aktiv ist, muss der Calliope bei jeder Übertragung mit <span class="highlight">AB + Reset</span> in den Bluetooth-Modus versetzt werden. Das ist bei dem Calliope mini 1 immer, bei dem Calliope mini 2 und 3 bei verwendung bestimmter Erweiterungen (z.b. <span class="highlight">Radio</span>) der Fall.</li>
+        <li>Wenn Bluetooth nicht dauerhaft auf dem Calliope mini aktiv ist, muss der Calliope mini bei jeder Übertragung mit <span class="highlight">A+B und gleichzeitig kurz Reset</span> in den Bluetooth-Modus versetzt werden. Das ist bei dem Calliope mini 1 immer der Fall. Bei dem Calliope mini 2 und 3 bei verwendung bestimmter Erweiterungen (z.b. <span class="highlight">Radio</span>) der Fall.</li>
       </ul>
       <!-- <div class="image-container">
         <img src="path/to/progress-bar-image.png" alt="Fortschrittsbalken" />
@@ -98,7 +99,7 @@
         <h3>FAQ zur Fehlerbehebung</h3>
         <details>
           <summary>Die Verbindung zum Calliope mini schlägt fehl. Was kann ich tun?</summary>
-          <p>Überprüfe, ob der Calliope mini im Bluetooth-Modus ist (A&B + Reset).</p>
+          <p>Überprüfe, ob der Calliope mini im Bluetooth-Modus ist (A+B und gleichzeitig kurz Reset).</p>
         </details>
         <details>
           <summary>Die Kopplungsanfrage wird nicht angezeigt. Was soll ich machen?</summary>
