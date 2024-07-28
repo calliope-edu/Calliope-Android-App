@@ -10,7 +10,7 @@ import java.io.InputStream;
 
 public class App extends Application {
     private static final String FILE_NAME = "one_time_pairing.hex";
-    private static final String LIBRARY_DIR = "LIBRARY";
+    private static final String CUSTOM_DIR = "CUSTOM";
 
     @Override
     public void onCreate() {
@@ -20,7 +20,7 @@ public class App extends Application {
     }
 
     private void copyFileToInternalStorage() {
-        File libraryDir = new File(getFilesDir(), LIBRARY_DIR);
+        File libraryDir = new File(getFilesDir(), CUSTOM_DIR);
         if (!libraryDir.exists()) {
             libraryDir.mkdirs();
         }
