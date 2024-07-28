@@ -6,11 +6,13 @@
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/aqua_200</item>
         <item name="colorPrimaryVariant">@color/aqua_200</item>
-        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorOnPrimary">@color/dark_blue_900</item>
         <!-- Secondary brand color. -->
         <item name="colorSecondary">@color/aqua_200</item>
         <item name="colorSecondaryVariant">@color/aqua_200</item>
-        <item name="colorOnSecondary">@color/black</item>
+        <item name="colorOnSecondary">@color/dark_blue_900</item>
+        <!-- Background color. -->
+        <item name="android:windowBackground">@color/dark_blue_900</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor" >?attr/colorPrimaryVariant</item>
         <!-- Snackbar Style. -->
