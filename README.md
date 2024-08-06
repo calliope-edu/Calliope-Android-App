@@ -1,8 +1,6 @@
 # Calliope-Android-App
 
-This is a android app to flash scripts on the calliope mini with your android device.
-
-It supports direct upload from the calliope MakeCode editor as well as from the Nepo editor.
+App that enables Bluetooth flashing of Hex-files to the Calliope mini on Android devices.
 
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
      alt="Get it on F-Droid"
@@ -12,4 +10,4 @@ It supports direct upload from the calliope MakeCode editor as well as from the 
      height="80">](https://play.google.com/store/apps/details?id=cc.calliope.mini)
 
 ## Sources
-The code for flashing the firmware is mainly based on [Samsungs micro:bit Android App](https://github.com/Samsung/microbit), which uses the [Android DFU-Library by Nordic](https://github.com/NordicSemiconductor/Android-DFU-Library).
+The code for flashing the firmware is mainly on the [Android DFU-Library by Nordic](https://github.com/NordicSemiconductor/Android-DFU-Library).
