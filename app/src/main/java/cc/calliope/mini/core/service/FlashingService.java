@@ -143,8 +143,20 @@ public class FlashingService extends LifecycleService implements ProgressListene
             if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
                 Utils.log(Log.ERROR, TAG, "Bluetooth not enabled");
             } else {
-                BluetoothDevice device = bluetoothAdapter.getRemoteDevice(currentAddress);
-                device.createBond();
+                if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) 
+                        != PackageManager.PERMISSION_GRANTED) {
+                    // Handle the case where permission is not granted
+                    Utils.log(Log.ERROR, TAG, "Bluetooth permission not granted");
+                    Toast.makeText(context, "Bluetooth permission is required to bond with the device", Toast.LENGTH_LONG).show();
+                } else {
+                    try {
+                        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(currentAddress);
+                        device.createBond();
+                    } catch (SecurityException e) {
+                        Utils.log(Log.ERROR, TAG, "SecurityException: " + e.getMessage());
+                        Toast.makeText(context, "Failed to bond with device due to missing permissions", Toast.LENGTH_LONG).show();
+                    }
+                }
             }
         } else {
             Utils.log(Log.ERROR, TAG, "ERROR: " + code + " " + message);
