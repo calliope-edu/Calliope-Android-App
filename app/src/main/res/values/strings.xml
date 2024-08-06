@@ -19,12 +19,12 @@
 
     <string name="title_make_code" translatable="false">MakeCode</string>
     <string name="title_roberta" translatable="false">Open Roberta Lab</string>
-    <string name="title_library">Preinstalled Programs</string>
+    <string name="title_blocks">Calliope mini Blocks</string>
     <string name="title_custom">Custom editor</string>
     <string name="title_scripts">Your programs</string>
     <string name="info_make_code">Microsoft MakeCode is a free, open source platform for creating engaging computer science learning experiences that support a progression path into real-world programming.</string>
     <string name="info_roberta">The Open Roberta Lab is a cloud-based integrated programming environment that enables children and adolescents to program easily different robot/microcontroller systems.</string>
-    <string name="info_library">Here you find the original programs, to change or reload.</string>
+    <string name="info_blocks">Blocks.</string>
     <string name="info_custom">Here you can enter to the custom editor.</string>
     <string name="info_scripts">Your programs will be here.</string>
 
@@ -85,6 +85,7 @@
     <string name="title_dialog_edit_link">Edit link</string>
 
     <string name="button_cancel">Cancel</string>
+    <string name="button_select">Select</string>
     <string name="button_ok">Ok</string>
     <string name="button_rename">Rename</string>
     <string name="button_continue">Continue</string>
@@ -192,7 +193,7 @@
         10437 Berlin<br/>
         Germany<br/>
         E-Mail: <a href="mailto:info@calliope.cc">info@calliope.cc</a><br/>
-        GitHub: <a href="https://github.com/calliope-edu/Calliope-Android-App">https://github.com/calliope-edu/Calliope-Android-App</a>
+        GitHub: <a href="https://github.com/calliope-edu/Calliope-Android-App">github.com/calliope-edu/Calliope-Android-App</a>
         ]]>
     </string>
     <string name="info_mini_conected">Calliope mini %s connected</string>

@@ -91,13 +91,7 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
             }
 
             switch (action) {
-                case LegacyDfuService.BROADCAST_START -> listener.onProgressUpdate(DfuService.PROGRESS_CONNECTING);
                 case LegacyDfuService.BROADCAST_COMPLETED -> listener.onDfuControlComplete();
-                case LegacyDfuService.BROADCAST_CONNECTION_FAILED -> listener.onConnectionFailed();
-                case LegacyDfuService.BROADCAST_ERROR -> {
-                    String message = intent.getStringExtra(LegacyDfuService.EXTRA_ERROR_MESSAGE);
-                    listener.onError(133, message);
-                }
             }
         }
     };
@@ -165,10 +159,7 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
 
         //DfuControlService
         IntentFilter dfuControlServiceFilter = new IntentFilter();
-        dfuControlServiceFilter.addAction(LegacyDfuService.BROADCAST_START);
         dfuControlServiceFilter.addAction(LegacyDfuService.BROADCAST_COMPLETED);
-        dfuControlServiceFilter.addAction(LegacyDfuService.BROADCAST_CONNECTION_FAILED);
-        dfuControlServiceFilter.addAction(LegacyDfuService.BROADCAST_ERROR);
         LocalBroadcastManager.getInstance(context).registerReceiver(dfuControlServiceReceiver, dfuControlServiceFilter);
 
         //PartialFlashingService

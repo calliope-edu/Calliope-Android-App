@@ -14,12 +14,10 @@
     <string name="settings_btn_permission">Einstellungen</string>
     <string name="action_btn_permission">Erlaubnis erteilen</string>
 
-    <string name="title_library">Vorinstallierte Programme</string>
     <string name="title_custom">Eigener Editor</string>
     <string name="title_scripts">Deine Programme</string>
     <string name="info_make_code">MakeCode vermittelt allen Schülern Programmierung mit unterhaltsamen Projekten, sofortigen Ergebnissen mit Block- und Texteditoren für alle Kenntnisstufen.</string>
     <string name="info_roberta">Das Open Roberta Lab ist eine Cloud-basierte integrierte Programmierumgebung, die es Kindern und Jugendlichen ermöglicht, auf einfache Weise verschiedene Roboter/Mikrocontroller-Systeme zu programmieren.</string>
-    <string name="info_library">Hier findest du die Originalprogramme, die verändert oder neu geladen werden können.</string>
     <string name="info_custom">Hier können Sie zum benutzerdefinierten Editor gehen.</string>
     <string name="info_scripts">Hier sind deine Programme.</string>
 
@@ -126,6 +124,7 @@
     <string name="title_partial_flashing">Partielles Flashen</string>
     <string name="title_background_flashing">Hintergrund Flashen</string>
     <string name="title_auto_flashing">Automatisches Flashen</string>
+    <string name="button_select">Auswählen</string>
     <string name="button_ok">Ja</string>
     <string name="summary_rename_files">angehängtes (n), wenn Datei vorhanden ist</string>
     <string name="button_remove">Entfernen</string>

@@ -1,5 +1,7 @@
 package cc.calliope.mini
 
+import android.app.UiModeManager
+import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -8,8 +10,6 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.fragment.app.Fragment
 import java.util.Locale
-import android.app.UiModeManager
-import android.content.Context
 
 class WebInfoFragment : Fragment() {
     companion object {
@@ -25,14 +25,13 @@ class WebInfoFragment : Fragment() {
 
         // Get the current language of the device
         val locale = Locale.getDefault()
-        val language = when (locale.language) {
-            "en" -> ""    // English
-            "de" -> "de"  // German
-            "uk" -> "uk"  // Ukrainian
-            else -> ""    // Default or handle other languages as needed
+        val language = when(locale.language) {
+            "de" -> "de" // German
+            "uk" -> "uk" // Ukrainian
+            else -> ""
         }
 
-        // Add the locale parameters to the URL
+        // Add the locale and theme parameters to the URL
         val urlWithLocaleAndTheme = "https://app.calliope.cc/android/$language"
 
         webView.loadUrl(urlWithLocaleAndTheme)

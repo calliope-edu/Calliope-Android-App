@@ -8,10 +8,7 @@ public enum Home {
             R.string.title_welcome,
             R.drawable.welcome,
             R.string.info_welcome),
-    DEMO(
-            R.string.title_demo,
-            R.drawable.anim_demo,
-            R.string.info_demo),
+
     BATTERY(
             R.string.title_battery,
             R.drawable.anim_battery,

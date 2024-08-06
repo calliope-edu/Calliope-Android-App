@@ -1,6 +1,6 @@
 package cc.calliope.mini.activity;
 
-import static cc.calliope.mini.core.state.State.STATE_UNDEFINED;
+import static cc.calliope.mini.core.state.State.STATE_IDLE;
 
 import android.animation.ObjectAnimator;
 import android.bluetooth.BluetoothAdapter;
@@ -64,7 +64,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     private int popupMenuWidth;
     private int popupMenuHeight;
     private ObjectAnimator rotationAnimator;
-    private int previousState = STATE_UNDEFINED;
+    private int previousState = STATE_IDLE;
 
     ActivityResultLauncher<Intent> bluetoothEnableResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -132,11 +132,11 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
                     patternFab.setColor(R.color.blue_light);
                 }
                 case State.STATE_ERROR -> {
-                    saveState(STATE_UNDEFINED);
+                    saveState(STATE_IDLE);
                     patternFab.setColor(R.color.red);
                 }
-                case State.STATE_UNDEFINED -> {
-                    saveState(STATE_UNDEFINED);
+                case State.STATE_IDLE -> {
+                    saveState(STATE_IDLE);
                     patternFab.setColor(R.color.aqua_200);
                 }
             }
@@ -404,6 +404,6 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
 
     private int restoreState(){
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        return preferences.getInt("APP_STATE", STATE_UNDEFINED);
+        return preferences.getInt("APP_STATE", STATE_IDLE);
     }
 }

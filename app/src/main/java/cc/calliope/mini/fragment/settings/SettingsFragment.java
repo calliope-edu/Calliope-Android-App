@@ -2,6 +2,7 @@ package cc.calliope.mini.fragment.settings;
 
 import android.os.Bundle;
 import android.text.Html;
+import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
 import android.widget.TextView;
 
@@ -26,17 +27,6 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                 contactPreference.setSummary(Html.fromHtml(getString(R.string.summary_contact)));
             }
             contactPreference.setSelectable(false);
-
-            contactPreference.setOnPreferenceClickListener(preference -> true);
-            contactPreference.setOnPreferenceChangeListener((preference, newValue) -> {
-                if (getView() != null) {
-                    TextView summaryView = getView().findViewById(android.R.id.summary);
-                    if (summaryView != null) {
-                        summaryView.setMovementMethod(LinkMovementMethod.getInstance());
-                    }
-                }
-                return true;
-            });
         }
     }
 }

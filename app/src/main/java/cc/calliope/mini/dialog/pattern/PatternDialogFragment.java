@@ -199,7 +199,7 @@ public class PatternDialogFragment extends DialogFragment {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
         SharedPreferences.Editor editor = preferences.edit();
         if(preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "").equals(currentDevice.getAddress())){
-            ApplicationStateHandler.updateState(State.STATE_UNDEFINED);
+            ApplicationStateHandler.updateState(State.STATE_IDLE);
             editor.remove(Constants.CURRENT_DEVICE_ADDRESS);
             editor.remove(Constants.CURRENT_DEVICE_PATTERN);
             editor.apply();
@@ -213,11 +213,9 @@ public class PatternDialogFragment extends DialogFragment {
     }
 
     private void onActionClick(View view){
-        onRemoveClick(view);
-
         if(currentDevice != null && currentDevice.isActual()){
             ApplicationStateHandler.updateState(State.STATE_BUSY);
-            ApplicationStateHandler.updateNotification(Notification.WARNING, "Connecting to the device...");
+            ApplicationStateHandler.updateNotification(Notification.WARNING, R.string.flashing_device_connecting);
 
             //removeBond(currentDevice.getAddress());
             saveCurrentDevice();
@@ -277,25 +275,23 @@ public class PatternDialogFragment extends DialogFragment {
     }
 
     private void setupButtons(boolean isBonded, boolean isActual){
-        Button button = binding.buttonAction;
+        Button action = binding.buttonAction;
+        Button remove = binding.buttonRemove;
+
+        remove.setVisibility(isBonded?View.VISIBLE:View.GONE);
+
         if(isBonded){
-            button.setText(R.string.button_remove);
-            button.setOnClickListener(this::onRemoveClick);
-            button.setBackgroundResource(R.drawable.btn_red);
+            action.setText(R.string.button_select);
+            action.setOnClickListener(this::onActionClick);
+            action.setBackgroundResource(R.drawable.btn_green);
         } else if (isActual) {
-            button.setText("");
-            button.setOnClickListener(this::onActionClick);
-            button.setBackgroundResource(R.drawable.btn_connect_green);
+            action.setText("");
+            action.setOnClickListener(this::onActionClick);
+            action.setBackgroundResource(R.drawable.btn_connect_green);
         } else {
-            button.setText(R.string.button_cancel);
-            button.setOnClickListener(v -> dismiss());
-            button.setBackgroundResource(R.drawable.btn_aqua);
+            action.setText(R.string.button_cancel);
+            action.setOnClickListener(v -> dismiss());
+            action.setBackgroundResource(R.drawable.btn_aqua);
         }
-//        String buttonText = getString(isBonded ? R.string.button_ok : R.string.button_cancel);
-//        binding.buttonRemove.setVisibility(isBonded ? View.VISIBLE : View.GONE);
-//        binding.buttonAction.setBackgroundResource(!isBonded && isActual ? R.drawable.btn_connect_green : R.drawable.btn_aqua);
-//        binding.buttonAction.setText(!isBonded && isActual ? "" : buttonText);
-//        binding.buttonAction.setText(isActual ? "" : buttonText);
-//        binding.buttonAction.setBackgroundResource(isActual ? R.drawable.btn_connect_green : R.drawable.btn_aqua);
     }
 }

@@ -80,7 +80,7 @@ public class OpenHexActivity extends BaseActivity {
 
             binding.flashButton.setOnClickListener(v -> {
                 try {
-                    File file = FileUtils.getFile(this, Editor.LIBRARY.toString(), name);
+                    File file = FileUtils.getFile(this, Editor.BLOCKS.toString(), name);
                     if (file == null) {
                         return;
                     }
