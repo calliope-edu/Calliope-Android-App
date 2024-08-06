@@ -3,6 +3,12 @@
 <img src="metadata/en-US/images/icon.png"
      alt="Calliope App Icon"
      height="80">
+[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
+     alt="Get it on F-Droid"
+     height="80">](https://f-droid.org/packages/cc.calliope.mini/)
+[<img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png"
+     alt="Get it on Google Play"
+     height="80">](https://play.google.com/store/apps/details?id=cc.calliope.mini)
 
 # Calliope mini Android App
 ## Hacking, tinkering, coding - create your programs on the go!
@@ -19,14 +25,8 @@ The **Calliope mini Android App** is designed to make working with the Calliope 
 
 ## Installation
 
-You can install the Calliope Android App from either [F-Droid](https://f-droid.org/packages/cc.calliope.mini/) or [Google Play](https://play.google.com/store/apps/details?id=cc.calliope.mini).
+You can install the Calliope Android App from either [F-Droid](https://f-droid.org/packages/cc.calliope.mini/), [Google Play](https://play.google.com/store/apps/details?id=cc.calliope.mini) or download and install the APK from the [releases](https://github.com/calliope-edu/Calliope-Android-App/releases).
 
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
-     alt="Get it on F-Droid"
-     height="80">](https://f-droid.org/packages/cc.calliope.mini/)
-[<img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png"
-     alt="Get it on Google Play"
-     height="80">](https://play.google.com/store/apps/details?id=cc.calliope.mini)
 
 
 ## Contributing
