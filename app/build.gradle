@@ -11,8 +11,8 @@ android {
         applicationId "cc.calliope.mini"
         minSdk 23
         targetSdk 34
-        versionCode 17
-        versionName '2.0.1'
+        versionCode 18
+        versionName '2.0.2'
         multiDexEnabled true
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
