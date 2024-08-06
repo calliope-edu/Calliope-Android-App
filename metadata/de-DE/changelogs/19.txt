@@ -1,0 +1,2 @@
+- Überarbeitung des Übertragungsprozesses von Hex-Dateien per Bluetooth
+- UI Updates

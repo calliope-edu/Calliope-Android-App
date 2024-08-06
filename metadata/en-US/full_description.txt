@@ -1,0 +1,2 @@
+With the Calliope mini, countless creative possibilities are at your fingertips. Whether you want to build a robot or transmit messages: With just a few clicks, you can create your own programs in no time and get things moving.
+In addition to 25 red and three RGB LEDs and two programmable buttons, the board contains a combined position sensor with motion sensor and compass as well as a Bluetooth module that Calliope mini can use to communicate with other devices.

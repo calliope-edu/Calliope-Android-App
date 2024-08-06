@@ -1,0 +1,2 @@
+Mit dem Calliope mini liegen unzählige kreative Möglichkeiten in deiner Hand. Egal ob du einen Roboter bauen oder Nachrichten übertragen möchtest: Mit wenigen Klicks erstellst du im Nu deine eigenen Programme  und bringst Dinge in Bewegung.
+Neben 25 roten sowie drei RGB-LEDs und zwei programmierbaren Buttons enthält das Board einen kombinierten Lagesensor mit Bewegungssensor und Kompass sowie ein Bluetooth-Modul, mit dem Calliope mini mit anderen Geräten kommunizieren kann.
