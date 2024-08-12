@@ -34,7 +34,6 @@ import java.util.zip.ZipOutputStream;
 import cc.calliope.mini.ProgressCollector;
 import cc.calliope.mini.ProgressListener;
 import cc.calliope.mini.R;
-import cc.calliope.mini.pf.Test;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.utils.FileUtils;
@@ -57,7 +56,6 @@ public class FlashingService extends LifecycleService implements ProgressListene
     private int currentVersion;
     private String currentPath;
     private int progress = -10;
-    private Test testService;
     private boolean isBound = false;
 
     private record HexToDfu(String path, int size) {
@@ -136,6 +134,7 @@ public class FlashingService extends LifecycleService implements ProgressListene
     }
 
 
+    @SuppressWarnings("MissingPermission")
     @Override
     public void onError(int code, String message) {
         if (code == 4110) {
@@ -172,8 +171,7 @@ public class FlashingService extends LifecycleService implements ProgressListene
         ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         for (ActivityManager.RunningServiceInfo service : activityManager.getRunningServices(Integer.MAX_VALUE)) {
             if (LegacyDfuService.class.getName().equals(service.service.getClassName()) ||
-                    DfuService.class.getName().equals(service.service.getClassName()) ||
-                    PartialFlashingService.class.getName().equals(service.service.getClassName())) {
+                    DfuService.class.getName().equals(service.service.getClassName())) {
                 Utils.log(Log.ERROR, TAG, service.service.getClassName() + " is already running.");
                 return true;
             }
@@ -225,7 +223,7 @@ public class FlashingService extends LifecycleService implements ProgressListene
         }
 
         if (Settings.isPartialFlashingEnable(this)) {
-            startPartialFlashing();
+            // TODO: Implement partial flashing
         } else {
             if(currentVersion == MINI_V1) {
                 startDfuControlService();
@@ -235,56 +233,8 @@ public class FlashingService extends LifecycleService implements ProgressListene
         }
     }
 
-    private void startPartialFlashing() {
-        Utils.log(TAG, "Starting PartialFlashing Service...");
-
-        Intent service = new Intent(this, Test.class);
-        service.putExtra("deviceAddress", currentAddress);
-        service.putExtra("filePath", currentPath); // a path or URI must be provided.
-        service.putExtra("hardwareType", currentVersion);
-        startService(service);
-    }
-
-    private final ServiceConnection connection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            Test.LocalBinder binder = (Test.LocalBinder) service;
-            testService = binder.getService();
-            isBound = true;
-
-            testService.getProgressData().observeForever(progress -> {
-                Utils.log(Log.ASSERT, TAG, "Progress: " + progress);
-            });
-
-            testService.getServiceState().observeForever(state -> {
-                Utils.log(Log.ASSERT, TAG, "State: " + state);
-            });
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName arg0) {
-            isBound = false;
-        }
-    };
-
-    public void bindToTestService() {
-        Intent intent = new Intent(this, Test.class);
-        bindService(intent, connection, Context.BIND_AUTO_CREATE);
-    }
-
-    public void unbindFromTestService() {
-        if (isBound) {
-            unbindService(connection);
-            isBound = false;
-        }
-    }
-
     private void startDfuControlService() {
         Utils.log(TAG, "Starting DfuControl Service...");
-
-//        Intent service = new Intent(this, DfuControlService.class);
-//        service.putExtra(StaticExtras.CURRENT_DEVICE_ADDRESS, currentAddress);
-//        startService(service);
         Intent service = new Intent(this, LegacyDfuService.class);
         service.putExtra(Constants.CURRENT_DEVICE_ADDRESS, currentAddress);
         startService(service);

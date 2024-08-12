@@ -112,9 +112,6 @@
             android:name=".core.service.DfuService"
             android:enabled="true" />
         <service
-            android:name=".core.service.PartialFlashingService"
-            android:enabled="true" />
-        <service
             android:name=".core.service.FlashingService"
             android:enabled="true" />
         <service
@@ -122,9 +119,6 @@
             android:enabled="true" />
         <service
             android:name=".core.service.LegacyDfuService"
-            android:enabled="true" />
-        <service
-            android:name=".pf.Test"
             android:enabled="true" />
 
     </application>
