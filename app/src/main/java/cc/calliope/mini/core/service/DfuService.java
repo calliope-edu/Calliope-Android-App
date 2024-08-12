@@ -38,6 +38,7 @@ public class DfuService extends DfuBaseService{
 
     @Override
     public void onCreate() {
+        Utils.log(Log.ASSERT, TAG, "onCreate");
         ApplicationStateHandler.updateState(STATE_BUSY);
         ApplicationStateHandler.updateNotification(Notification.WARNING, getString(R.string.flashing_device_connecting));
         // Enable Notification Channel for Android OREO
