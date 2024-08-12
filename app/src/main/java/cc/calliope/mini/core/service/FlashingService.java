@@ -2,6 +2,7 @@ package cc.calliope.mini.core.service;
 
 import static cc.calliope.mini.core.state.Notification.ERROR;
 import static cc.calliope.mini.core.state.Notification.INFO;
+import static cc.calliope.mini.core.state.State.STATE_IDLE;
 import static cc.calliope.mini.utils.Constants.MINI_V1;
 import static cc.calliope.mini.utils.Constants.MINI_V2;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
@@ -9,15 +10,15 @@ import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 import android.app.ActivityManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.IBinder;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
-import android.content.ServiceConnection;
 import androidx.lifecycle.LifecycleService;
+import androidx.lifecycle.Observer;
 import androidx.preference.PreferenceManager;
 
 import java.io.ByteArrayOutputStream;
@@ -35,6 +36,7 @@ import cc.calliope.mini.ProgressCollector;
 import cc.calliope.mini.ProgressListener;
 import cc.calliope.mini.R;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.utils.FileUtils;
 import cc.calliope.mini.utils.Preference;
@@ -56,25 +58,46 @@ public class FlashingService extends LifecycleService implements ProgressListene
     private int currentVersion;
     private String currentPath;
     private int progress = -10;
-    private boolean isBound = false;
+
+    private static final int CONNECTION_TIMEOUT = 10000; // 10 seconds
+    private Handler handler;
+    private Runnable timeoutRunnable;
 
     private record HexToDfu(String path, int size) {
     }
+
+    private final Observer<State> stateObserver = new Observer<>() {
+        @Override
+        public void onChanged(State state) {
+            if (state == null) {
+                return;
+            }
+
+            int type = state.getType();
+
+            if (type == State.STATE_READY ||
+                type == State.STATE_FLASHING ||
+                type == State.STATE_ERROR ||
+                type == State.STATE_IDLE) {
+                handler.removeCallbacks(timeoutRunnable); // Remove the timeout callback
+            }
+        }
+    };
 
     @Override
     public void onCreate() {
         super.onCreate();
 
+        ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
+
         ProgressCollector progressCollector = new ProgressCollector(this);
         getLifecycle().addObserver(progressCollector);
-
-        //bindToTestService();
     }
 
     @Override
     public void onDestroy() {
-        //unbindFromTestService();
         super.onDestroy();
+        ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver);
     }
 
     @Override
@@ -221,6 +244,23 @@ public class FlashingService extends LifecycleService implements ProgressListene
             Utils.log(Log.WARN, TAG, "Bluetooth not enabled or flashing already in progress. Service will stop.");
             return;
         }
+
+        // Initialize the handler and timeout runnable
+        handler = new Handler(Looper.getMainLooper());
+        timeoutRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if(currentVersion == MINI_V1) {
+                    ApplicationStateHandler.updateNotification(Notification.WARNING, getString(R.string.flashing_timeout_v1));
+                } else {
+                    ApplicationStateHandler.updateNotification(Notification.WARNING, getString(R.string.flashing_timeout_v2));
+                }
+            }
+        };
+
+        // Start the 10 second timeout countdown
+        handler.postDelayed(timeoutRunnable, CONNECTION_TIMEOUT);
+
 
         if (Settings.isPartialFlashingEnable(this)) {
             // TODO: Implement partial flashing

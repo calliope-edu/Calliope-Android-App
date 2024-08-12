@@ -143,4 +143,7 @@
     <string name="mini_version_1">1 або 2</string>
     <string name="mini_version_2">3</string>
     <string name="flashing_version_mismatch">Версії не співпадають. Прошивка неможлива!</string>
+
+    <string name="flashing_timeout_v1">Bluetooth доступний?\nНатисніть AB + Reset.</string>
+    <string name="flashing_timeout_v2">Bluetooth доступний?\nНатисніть тричі Reset.</string>
 </resources>
