@@ -4,7 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.adapter.FragmentStateAdapter;
 
-import cc.calliope.mini.WebInfoFragment;
+import cc.calliope.mini.fragment.WebInfoFragment;
 import cc.calliope.mini.fragment.help.HelpFragment;
 import cc.calliope.mini.utils.Utils;
 

@@ -1,7 +1,5 @@
-package cc.calliope.mini
+package cc.calliope.mini.core.bluetooth
 
-import android.util.Log
-import cc.calliope.mini.utils.Utils
 import no.nordicsemi.android.kotlin.ble.core.ServerDevice
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResult
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResultData

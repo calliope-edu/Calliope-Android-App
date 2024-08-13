@@ -2,7 +2,6 @@ package cc.calliope.mini.core.service;
 
 import static cc.calliope.mini.core.state.Notification.ERROR;
 import static cc.calliope.mini.core.state.Notification.INFO;
-import static cc.calliope.mini.core.state.State.STATE_IDLE;
 import static cc.calliope.mini.utils.Constants.MINI_V1;
 import static cc.calliope.mini.utils.Constants.MINI_V2;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;

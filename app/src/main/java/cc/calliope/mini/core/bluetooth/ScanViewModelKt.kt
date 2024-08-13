@@ -1,4 +1,4 @@
-package cc.calliope.mini
+package cc.calliope.mini.core.bluetooth
 
 import android.app.Application
 import android.util.Log
@@ -18,7 +18,6 @@ import no.nordicsemi.android.kotlin.ble.core.scanner.BleScannerCallbackType
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScannerMatchMode
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScannerSettings
 import no.nordicsemi.android.kotlin.ble.scanner.BleScanner
-import no.nordicsemi.android.kotlin.ble.scanner.aggregator.BleScanResultAggregator
 
 
 class ScanViewModelKt(application: Application) : AndroidViewModel(application) {

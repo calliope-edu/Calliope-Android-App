@@ -219,7 +219,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     }
 
     private void removeFile(FileWrapper file) {
-        String title = getResources().getString(R.string.title_dialog_rename);
+        String title = getResources().getString(R.string.title_dialog_delete);
         String message = String.format(getString(R.string.info_dialog_delete), FilenameUtils.removeExtension(file.getName()));
 
         DialogUtils.showWarningDialog(activity, title, message, () -> {
