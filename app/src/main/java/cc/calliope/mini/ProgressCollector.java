@@ -28,28 +28,6 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
     private final Context context;
     private ProgressListener listener;
 
-    private final BroadcastReceiver bondStateReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            if (device == null) {
-                return;
-            }
-
-            final String action = intent.getAction();
-            if (action == null) {
-                return;
-            }
-
-            // Take action depending on new bond state
-            if (action.equals(ACTION_BOND_STATE_CHANGED)) {
-                final int bondState = intent.getIntExtra(EXTRA_BOND_STATE, ERROR);
-                final int previousBondState = intent.getIntExtra(BluetoothDevice.EXTRA_PREVIOUS_BOND_STATE, ERROR);
-                listener.onBluetoothBondingStateChanged(device, bondState, previousBondState);
-            }
-        }
-    };
-
     private final BroadcastReceiver dfuServiceReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -119,10 +97,6 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
         if (listener == null) {
             return;
         }
-        //BondStateReceiver
-        IntentFilter bondStateFilter = new IntentFilter();
-        bondStateFilter.addAction(ACTION_BOND_STATE_CHANGED);
-        registerReceiver(bondStateReceiver, bondStateFilter);
 
         //DfuService
         IntentFilter dfuServiceFilter = new IntentFilter();
@@ -137,7 +111,6 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
     }
 
     public void unregisterReceivers() {
-        unregisterReceiver(bondStateReceiver);
         LocalBroadcastManager.getInstance(context).unregisterReceiver(dfuServiceReceiver);
         LocalBroadcastManager.getInstance(context).unregisterReceiver(dfuControlServiceReceiver);
     }

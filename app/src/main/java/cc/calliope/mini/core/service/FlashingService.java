@@ -58,7 +58,7 @@ public class FlashingService extends LifecycleService implements ProgressListene
     private String currentPath;
     private int progress = -10;
 
-    private static final int CONNECTION_TIMEOUT = 10000; // 10 seconds
+    private static final int CONNECTION_TIMEOUT = 3000; // 3 seconds
     private Handler handler;
     private Runnable timeoutRunnable;
 
@@ -74,10 +74,8 @@ public class FlashingService extends LifecycleService implements ProgressListene
 
             int type = state.getType();
 
-            if (type == State.STATE_READY ||
-                type == State.STATE_FLASHING ||
-                type == State.STATE_ERROR ||
-                type == State.STATE_IDLE) {
+            if (type == State.STATE_FLASHING ||
+                type == State.STATE_ERROR) {
                 handler.removeCallbacks(timeoutRunnable); // Remove the timeout callback
             }
         }
@@ -145,14 +143,6 @@ public class FlashingService extends LifecycleService implements ProgressListene
     public void onDfuAttempt() {
         Utils.log(Log.ASSERT, TAG, "DFU attempt");
         startDfuControlService();
-    }
-
-    @Override
-    public void onBluetoothBondingStateChanged(BluetoothDevice device, int bondState, int previousBondState) {
-        if (!currentAddress.equals(device.getAddress())) {
-            return;
-        }
-        Utils.log(Log.ASSERT, TAG, "Bond state: " + bondState + " previous: " + previousBondState);
     }
 
 

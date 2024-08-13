@@ -21,7 +21,6 @@ public interface ProgressListener {
     void onDfuAttempt();
     void onDfuControlComplete();
     void onProgressUpdate(int progress);
-    void onBluetoothBondingStateChanged(@NonNull BluetoothDevice device, @BondState int bondState, @BondState int previousBondState);
     void onConnectionFailed();
     void onError(int code, String message);
 }
