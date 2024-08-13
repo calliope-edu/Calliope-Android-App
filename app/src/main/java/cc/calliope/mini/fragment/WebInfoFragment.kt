@@ -1,14 +1,12 @@
-package cc.calliope.mini
+package cc.calliope.mini.fragment
 
-import android.app.UiModeManager
-import android.content.Context
-import android.content.res.Configuration
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.fragment.app.Fragment
+import cc.calliope.mini.R
 import java.util.Locale
 
 class WebInfoFragment : Fragment() {

@@ -31,10 +31,10 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import cc.calliope.mini.DeviceKt;
+import cc.calliope.mini.core.bluetooth.DeviceKt;
 import cc.calliope.mini.core.service.BondingService;
 import cc.calliope.mini.views.PatternMatrixView;
-import cc.calliope.mini.ScanViewModelKt;
+import cc.calliope.mini.core.bluetooth.ScanViewModelKt;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.core.state.ApplicationStateHandler;

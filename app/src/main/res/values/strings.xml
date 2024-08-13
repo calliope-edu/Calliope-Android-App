@@ -210,4 +210,7 @@
     <string name="error_reading_characteristic">Failed to read DFU control characteristic</string>
     <string name="pattern_removed">%s removed</string>
     <string name="pattern_remove_failed">Failed to remove device</string>
+    <string name="flashing_timeout_v1">Bluetooth available?\nPress AB + Reset.</string>
+    <string name="flashing_timeout_v2">Bluetooth available?\nPress three times Reset.</string>
+
 </resources>

@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -90,7 +89,6 @@ public class PatternMatrixView extends View {
         int number = (int) (event.getY() / cellSize);
 
         if (action == MotionEvent.ACTION_DOWN) {
-            Log.i("MAIN", "column: " + column + "; Y: " + number);
             if (column < SIZE && number < SIZE) {
                 if (cell[column][number] && number < SIZE - 1 && (number == 0 || !cell[column][number - 1])) {
                     number++;

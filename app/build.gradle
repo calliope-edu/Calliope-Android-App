@@ -37,7 +37,6 @@ android {
 dependencies {
     implementation 'no.nordicsemi.android.kotlin.ble:scanner:1.1.0'
     implementation 'no.nordicsemi.android:dfu:2.5.0'
-    implementation project(':partial-flashing-lib')
 
     implementation 'commons-io:commons-io:2.16.1'
     implementation 'org.apache.commons:commons-lang3:3.15.0'

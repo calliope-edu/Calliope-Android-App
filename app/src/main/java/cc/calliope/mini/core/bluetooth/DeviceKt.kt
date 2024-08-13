@@ -1,4 +1,4 @@
-package cc.calliope.mini
+package cc.calliope.mini.core.bluetooth
 
 import android.os.Build
 import android.os.SystemClock

@@ -7,9 +7,6 @@ import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.IntentFilter;
 
-
-import org.microbit.android.partialflashing.PartialFlashingBaseService;
-
 import androidx.annotation.NonNull;
 import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.LifecycleOwner;
@@ -96,30 +93,6 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
         }
     };
 
-    private final BroadcastReceiver partialFlashingServiceReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
-            if (action == null) {
-                return;
-            }
-
-            switch (action) {
-                case PartialFlashingBaseService.BROADCAST_PROGRESS -> {
-                    int percent = intent.getIntExtra(PartialFlashingBaseService.EXTRA_PROGRESS, 0);
-                    listener.onProgressUpdate(percent);
-                }
-                case PartialFlashingBaseService.BROADCAST_START ->
-                        listener.onProgressUpdate(DfuService.PROGRESS_STARTING);
-                case PartialFlashingBaseService.BROADCAST_COMPLETE ->
-                        listener.onProgressUpdate(DfuService.PROGRESS_COMPLETED);
-                case PartialFlashingBaseService.BROADCAST_PF_FAILED ->
-                        listener.onError(-1, "Partial Flashing FAILED");
-                case PartialFlashingBaseService.BROADCAST_PF_ATTEMPT_DFU -> listener.onDfuAttempt();
-            }
-        }
-    };
-
     public ProgressCollector(Context context) {
         super(context);
         this.context = context;
@@ -161,21 +134,11 @@ public class ProgressCollector extends ContextWrapper implements DefaultLifecycl
         IntentFilter dfuControlServiceFilter = new IntentFilter();
         dfuControlServiceFilter.addAction(LegacyDfuService.BROADCAST_COMPLETED);
         LocalBroadcastManager.getInstance(context).registerReceiver(dfuControlServiceReceiver, dfuControlServiceFilter);
-
-        //PartialFlashingService
-        IntentFilter partialFlashingServiceFilter = new IntentFilter();
-        partialFlashingServiceFilter.addAction(PartialFlashingBaseService.BROADCAST_PROGRESS);
-        partialFlashingServiceFilter.addAction(PartialFlashingBaseService.BROADCAST_START);
-        partialFlashingServiceFilter.addAction(PartialFlashingBaseService.BROADCAST_COMPLETE);
-        partialFlashingServiceFilter.addAction(PartialFlashingBaseService.BROADCAST_PF_FAILED);
-        partialFlashingServiceFilter.addAction(PartialFlashingBaseService.BROADCAST_PF_ATTEMPT_DFU);
-        LocalBroadcastManager.getInstance(context).registerReceiver(partialFlashingServiceReceiver, partialFlashingServiceFilter);
     }
 
     public void unregisterReceivers() {
         unregisterReceiver(bondStateReceiver);
         LocalBroadcastManager.getInstance(context).unregisterReceiver(dfuServiceReceiver);
         LocalBroadcastManager.getInstance(context).unregisterReceiver(dfuControlServiceReceiver);
-        LocalBroadcastManager.getInstance(context).unregisterReceiver(partialFlashingServiceReceiver);
     }
 }

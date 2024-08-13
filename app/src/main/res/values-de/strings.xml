@@ -144,4 +144,7 @@
     <string name="mini_version_1">1 oder 2</string>
     <string name="mini_version_2">3</string>
     <string name="flashing_version_mismatch">Versionen stimmen nicht überein. Flashen nicht möglich!</string>
+
+    <string name="flashing_timeout_v1">Bluetooth verfügbar?\nDrücken Sie AB + Reset.</string>
+    <string name="flashing_timeout_v2">Bluetooth verfügbar?\nDrücken Sie dreimal Reset.</string>
 </resources>

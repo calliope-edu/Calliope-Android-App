@@ -3,6 +3,8 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools" >
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+
     <!--
     Notification
     -->
@@ -107,13 +109,10 @@
         <activity
             android:name=".activity.SettingsActivity"
             android:exported="false" />
-
         <service
             android:name=".core.service.DfuService"
-            android:enabled="true" />
-        <service
-            android:name=".core.service.PartialFlashingService"
-            android:enabled="true" />
+            android:enabled="true"
+            android:foregroundServiceType="connectedDevice" />
         <service
             android:name=".core.service.FlashingService"
             android:enabled="true" />
@@ -122,9 +121,6 @@
             android:enabled="true" />
         <service
             android:name=".core.service.LegacyDfuService"
-            android:enabled="true" />
-        <service
-            android:name=".pf.Test"
             android:enabled="true" />
 
     </application>
