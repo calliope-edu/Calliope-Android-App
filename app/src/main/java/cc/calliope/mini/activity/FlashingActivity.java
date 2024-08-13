@@ -168,11 +168,6 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
     }
 
     @Override
-    public void onBluetoothBondingStateChanged(@NonNull BluetoothDevice device, int bondState, int previousBondState) {
-
-    }
-
-    @Override
     public void onConnectionFailed() {
 
     }
