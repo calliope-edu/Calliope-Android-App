@@ -5,24 +5,6 @@
   </script>
   
   <style>
-    .highlight {
-      background-color: #e7f3fe;
-      padding: 0.2em 0.5em;
-      border-radius: 0.2em;
-    }
-    .image-container {
-      text-align: center;
-      margin: 1em 0;
-    }
-
-    summary {
-        font-weight: bold;
-        margin-left: -1.1rem;
-    }
-
-    details {
-        padding: 0.5em 1.5em;
-    }
   </style>
   
   <article>
@@ -85,7 +67,8 @@
           {@html m.sunny_novel_tuna_cut()}
         </details>
         <details>
-          {@html m.tough_spare_myna_approve()}
+          {@html 
+            m.tough_spare_myna_approve()}
         </details>
       </section>
   </article>
