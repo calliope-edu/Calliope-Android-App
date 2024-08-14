@@ -88,7 +88,7 @@
       <p>Um Programme zu übertragen, beachte Folgendes:</p>
       <ul>
         <li>Die Übertragung wird automatisch gestartet, sobald in einem Editor die Datei geladen wird.</li>
-        <li>Wenn Bluetooth nicht dauerhaft auf dem Calliope mini aktiv ist, muss der Calliope mini bei jeder Übertragung mit <span class="highlight">A+B und gleichzeitig kurz Reset</span> in den Bluetooth-Modus versetzt werden. Das ist bei dem Calliope mini 1 immer der Fall. Bei dem Calliope mini 2 und 3 bei verwendung bestimmter Erweiterungen (z.b. <span class="highlight">Radio</span>) der Fall.</li>
+        <li>Wenn Bluetooth nicht dauerhaft auf dem Calliope mini aktiv ist, muss der Calliope mini bei jeder Übertragung mit <span class="highlight">A+B und gleichzeitig kurz Reset</span> in den Bluetooth-Modus versetzt werden. Das ist bei dem Calliope mini 1 immer der Fall. Bei dem Calliope mini 2 und 3 bei verwendung bestimmter Erweiterungen (z.B. <span class="highlight">Radio</span>) der Fall.</li>
       </ul>
       <!-- <div class="image-container">
         <img src="path/to/progress-bar-image.png" alt="Fortschrittsbalken" />
