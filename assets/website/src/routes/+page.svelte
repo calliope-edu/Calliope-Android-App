@@ -100,6 +100,7 @@
         <details>
           <summary>Die Verbindung zum Calliope mini schlägt fehl. Was kann ich tun?</summary>
           <p>Überprüfe, ob der Calliope mini im Bluetooth-Modus ist (A+B und gleichzeitig kurz Reset).</p>
+          <p>Entferne den Calliope mini aus den Geräteeinstellungen und probiere es erneut.</p>
         </details>
         <details>
           <summary>Die Kopplungsanfrage wird nicht angezeigt. Was soll ich machen?</summary>
