@@ -1,5 +1,20 @@
 {
     "$schema": "https://inlang.com/schema/inlang-message-format",
     "ok_bright_dachshund_view": "посібник з підключення",
-    "slow_vexed_pig_hope": "Цей посібник допоможе вам підключити ваш Calliope mini до додатка та передати програми. Просто дотримуйтесь наведених нижче кроків."
+    "slow_vexed_pig_hope": "Цей посібник допоможе вам підключити ваш Calliope mini до додатка та передати програми. Просто дотримуйтесь наведених нижче кроків.",
+    "mean_inner_wallaby_pave": "1. Приготуйте Каліопу міні",
+    "mellow_weak_alpaca_pull": "Якщо у вас Calliope mini 1 або 2:",
+    "safe_early_reindeer_spark": "<li>Передайте програму з MakeCode через USB за допомогою розширення <span class=\"highlight\">для одноразового з’єднання</span> . Лише тоді можливе початкове сполучення з пристроєм Android.</li><li> Переведіть mini в режим Bluetooth за допомогою <span class=\"highlight\">AB + Reset</span> .</li>",
+    "yummy_gaudy_cat_mend": "Якщо у вас Calliope mini 3:",
+    "aware_patient_badger_build": "<li>Тричі натисніть <span class=\"highlight\">кнопку Reset</span> , щоб запустити режим Bluetooth.</li>",
+    "fresh_active_meerkat_stir": "2. Встановіть підключення",
+    "dark_aqua_insect_borrow": "<li>Торкніться міні-іконки Calliope (плаваючої кнопки).</li><li> Виберіть «Підключити».</li><li> Намалюйте шаблон Calliope mini у додатку.</li><li> Торкніться зеленої кнопки створення пари.</li>",
+    "sunny_early_gazelle_hope": "<li><b>Калліопа міні 1 і 2</b><ul><li> З’єднання встановлюється без запиту з’єднання.</li></ul></li><li> <b>Калліопа міні 3</b><ul><li> З'явиться запит на створення пари; підтвердити це.</li><li> Знову з’явиться запит на сполучення; підтвердити ще раз.</li></ul></li><li> Після успішного підключення до Calliope mini колір кнопки сполучення зміниться з бірюзового на зелений.</li>",
+    "real_aware_swan_kiss": "3. Програми переказу",
+    "equal_slimy_crocodile_slide": "Щоб перенести програми, зверніть увагу на наступне:",
+    "deft_yummy_fox_launch": "<li>Die Übertragung wird automatisch gestartet, sobald in einem Editor die Datei geladen wird.</li>\r<inlang-LineFeed><li> Якщо Bluetooth не активований на Calliope mini, потрібно, щоб Calliope mini був зареєстрований з <span class=\"highlight\">A+B і gleichzeitig kurz Reset</span> у режимі Bluetooth. Das ist bei dem Calliope mini 1 immer der Fall. Bei dem Calliope mini 2 und 3 bei verwendung bestimmter Erweiterungen (z. B. <span class=\"highlight\">Radio</span> ) der Fall.</li>",
+    "actual_helpful_lionfish_aim": "FAQ Усунення несправностей",
+    "day_lazy_husky_pat": "<summary>Помилка підключення до Calliope mini. що я можу зробити</summary><p> Перевірте, чи Calliope mini перебуває в режимі Bluetooth (A+B і короткочасне скидання).</p><p> Видаліть Calliope mini з налаштувань пристрою та повторіть спробу.</p>",
+    "sunny_novel_tuna_cut": "<summary>Запит на сполучення не відображається. Що мені робити?</summary><p> Перезапустіть Calliope mini і додаток. Спробуйте знову встановити з'єднання. Перевірте, чи запит на створення пари з’являється в сповіщеннях.</p>",
+    "tough_spare_myna_approve": "<summary>Передача програми переривається або не починається. Що може бути причиною?</summary><p> Переконайтеся, що Calliope mini перебуває в режимі Bluetooth і що інші пристрої Bluetooth не заважають з’єднанню.</p>"
 }
