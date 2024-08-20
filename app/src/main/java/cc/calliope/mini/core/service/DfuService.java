@@ -2,7 +2,8 @@ package cc.calliope.mini.core.service;
 
 import static cc.calliope.mini.core.state.State.STATE_BUSY;
 import static cc.calliope.mini.core.state.State.STATE_FLASHING;
-import static cc.calliope.mini.core.state.State.STATE_READY;
+import static cc.calliope.mini.core.state.State.STATE_IDLE;
+
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -102,12 +103,12 @@ public class DfuService extends DfuBaseService{
                         case PROGRESS_COMPLETED -> {
                             String message = getString(R.string.flashing_completed);
                             ApplicationStateHandler.updateNotification(Notification.INFO, message);
-                            ApplicationStateHandler.updateState(STATE_READY);
+                            ApplicationStateHandler.updateState(STATE_IDLE);
                         }
                         case PROGRESS_ABORTED -> {
                             String message = getString(R.string.flashing_aborted);
                             ApplicationStateHandler.updateNotification(Notification.INFO, message);
-                            ApplicationStateHandler.updateState(STATE_READY);
+                            ApplicationStateHandler.updateState(STATE_IDLE);
                         }
                         default -> {
                             ApplicationStateHandler.updateState(STATE_FLASHING);
@@ -126,7 +127,7 @@ public class DfuService extends DfuBaseService{
                     };
 
                     Utils.log(Log.ERROR, TAG, "Error (" + code + "): " + message);
-                    ApplicationStateHandler.updateState(State.STATE_IDLE);
+                    ApplicationStateHandler.updateState(STATE_IDLE);
                     ApplicationStateHandler.updateNotification(Notification.ERROR, R.string.error_connection_failed);
                     ApplicationStateHandler.updateError(code, message);
                 }

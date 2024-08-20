@@ -51,7 +51,6 @@ import cc.calliope.mini.utils.irmHexUtils;
 
 public class FlashingService extends LifecycleService{
     private static final String TAG = "FlashingService";
-    private static boolean isThisServiceRunning = false;
     private static final int NUMBER_OF_RETRIES = 3;
     private static final int REBOOT_TIME = 2000; // time required by the device to reboot, ms
     private String currentAddress;
@@ -61,7 +60,7 @@ public class FlashingService extends LifecycleService{
 
     private State currentState;
 
-    private static final int CONNECTION_TIMEOUT = 5000; // 5 seconds
+    private static final int CONNECTION_TIMEOUT = 3000; // 3 seconds
     private Handler handler;
     private Runnable timeoutRunnable;
 
@@ -98,7 +97,6 @@ public class FlashingService extends LifecycleService{
             }
         }
     };
-
 
     @Override
     public void onCreate() {
@@ -141,28 +139,15 @@ public class FlashingService extends LifecycleService{
         super.onStartCommand(intent, flags, startId);
         Utils.log(Log.DEBUG, TAG, "FlashingService started");
 
-//        if (currentState.getType() != State.STATE_IDLE) {
-//            Utils.log(Log.ASSERT, TAG, "State: " + currentState.getType());
-//            Utils.log(Log.INFO, TAG, "Service is already running.");
-//            return START_NOT_STICKY;
-//        }
-
-        // TODO: are we need it?
-        if (isThisServiceRunning) {
-            Utils.log(Log.INFO, TAG, "Service is already running.");
-        //    return START_STICKY;
-        }
-
-        // TODO: are we need it?
-        if (isServiceRunning()) {
-            Utils.log(Log.INFO, TAG, "Some flashing service is already running.");
-            return START_NOT_STICKY; // Service will not be restarted
+        if (currentState.getType() != State.STATE_IDLE) {
+            Utils.log(Log.WARN, TAG, "Service is already running.");
+            return START_NOT_STICKY;
         }
 
         if(getPath(intent) && getDevice()) {
             int fileVersion = Utils.getFileVersion(currentPath);
             if((fileVersion == 2 && currentVersion == MINI_V1) || (fileVersion == 1 && currentVersion == MINI_V2)){
-                ApplicationStateHandler.updateState(State.STATE_READY);
+                ApplicationStateHandler.updateState(State.STATE_IDLE);
                 ApplicationStateHandler.updateNotification(ERROR, getString(R.string.flashing_version_mismatch));
                 return START_NOT_STICKY;
             }
@@ -174,7 +159,6 @@ public class FlashingService extends LifecycleService{
             ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_no_connected));
         }
 
-        isThisServiceRunning = true;
         return START_NOT_STICKY;
     }
 
@@ -194,19 +178,6 @@ public class FlashingService extends LifecycleService{
                 }
             }
         }
-    }
-
-    // Check if the service is already running
-    private boolean isServiceRunning() {
-        ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : activityManager.getRunningServices(Integer.MAX_VALUE)) {
-            if (LegacyDfuService.class.getName().equals(service.service.getClassName()) ||
-                    DfuService.class.getName().equals(service.service.getClassName())) {
-                Utils.log(Log.ERROR, TAG, service.service.getClassName() + " is already running.");
-                return true;
-            }
-        }
-        return false;
     }
 
     private boolean getPath(Intent intent) {
@@ -265,7 +236,7 @@ public class FlashingService extends LifecycleService{
             }
         };
 
-        // Start the 5 second timeout countdown
+        // Start the N second timeout countdown
         handler.postDelayed(timeoutRunnable, CONNECTION_TIMEOUT);
 
 

@@ -13,6 +13,8 @@ import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.ResultReceiver;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
@@ -29,6 +31,7 @@ import java.util.List;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.ViewCompat;
@@ -39,6 +42,7 @@ import androidx.preference.PreferenceManager;
 
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 
+import cc.calliope.mini.core.bluetooth.CheckService;
 import cc.calliope.mini.popup.PopupAdapter;
 import cc.calliope.mini.popup.PopupItem;
 import cc.calliope.mini.R;
@@ -47,6 +51,7 @@ import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.Progress;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
+import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Permission;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.views.FobParams;
@@ -65,6 +70,9 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     private ObjectAnimator rotationAnimator;
     private int previousState = STATE_IDLE;
 
+    private Handler handler;
+    private Runnable runnable;
+
     ActivityResultLauncher<Intent> bluetoothEnableResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
             }
@@ -77,8 +85,6 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         ApplicationStateHandler.getNotificationLiveData().observe(this, notificationObserver);
         ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
         ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
-
-        ApplicationStateHandler.updateState(restoreState());
     }
 
     private void startRotationAnimation(final View view) {
@@ -118,10 +124,6 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
             }
 
             switch (type) {
-                case State.STATE_READY -> {
-                    saveState(State.STATE_READY);
-                    patternFab.setColor(R.color.green);
-                }
                 case State.STATE_BUSY -> {
                     patternFab.setColor(R.color.yellow_200);
                 }
@@ -129,12 +131,11 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
                     patternFab.setColor(R.color.blue_light);
                 }
                 case State.STATE_ERROR -> {
-                    saveState(STATE_IDLE);
                     patternFab.setColor(R.color.red);
                 }
                 case State.STATE_IDLE -> {
-                    saveState(STATE_IDLE);
                     patternFab.setColor(R.color.aqua_200);
+                    checkDeviceAvailability();
                 }
             }
         }
@@ -178,11 +179,25 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         checkPermission();
         readDisplayMetrics();
         patternFab.setProgress(0);
+
+        // Schedule a task to check the device availability every 10 seconds
+        handler = new Handler();
+        runnable = new Runnable() {
+            @Override
+            public void run() {
+                checkDeviceAvailability();
+                handler.postDelayed(this, 10000);
+            }
+        };
+
+        // Start the initial check
+        handler.post(runnable);
     }
 
     @Override
     public void onPause() {
         super.onPause();
+        handler.removeCallbacks(runnable);
     }
 
     @Override
@@ -393,14 +408,24 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         return false;
     }
 
-    private void saveState(int state){
-        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(this).edit();
-        editor.putInt("APP_STATE", state);
-        editor.apply();
-    }
-
-    private int restoreState(){
+    private void checkDeviceAvailability() {
+        ResultReceiver resultReceiver = new ResultReceiver(new Handler()) {
+            @Override
+            protected void onReceiveResult(int resultCode, Bundle resultData) {
+                super.onReceiveResult(resultCode, resultData);
+                if (resultCode == CheckService.RESULT_OK) {
+                    patternFab.setColor(R.color.green);
+                } else if (resultCode == CheckService.RESULT_CANCELED) {
+                    patternFab.setColor(R.color.aqua_200);
+                }
+            }
+        };
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        return preferences.getInt("APP_STATE", STATE_IDLE);
+        String address = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
+
+        Intent intent = new Intent(this, CheckService.class);
+        intent.putExtra("device_mac_address", address);
+        intent.putExtra("result_receiver", resultReceiver);
+        startService(intent);
     }
 }

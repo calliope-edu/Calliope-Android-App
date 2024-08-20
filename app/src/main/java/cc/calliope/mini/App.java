@@ -25,47 +25,16 @@ public class App extends Application {
     private static final String FILE_NAME = "one_time_pairing.hex";
     private static final String CUSTOM_DIR = "CUSTOM";
 
-    private final BroadcastReceiver dfuServiceReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
-            if (action == null) {
-                return;
-            }
-
-            switch (action) {
-                case DfuService.BROADCAST_PROGRESS -> {
-                    Utils.log(Log.ASSERT, "App", "Progress: " + intent.getIntExtra(EXTRA_DATA, 0));
-                }
-                case DfuService.BROADCAST_ERROR -> {
-                    int code = intent.getIntExtra(EXTRA_DATA, 0);
-                    int type = intent.getIntExtra(DfuBaseService.EXTRA_ERROR_TYPE, 0);
-                    String message = switch (type) {
-                        case DfuBaseService.ERROR_TYPE_COMMUNICATION_STATE ->
-                                GattError.parseConnectionError(code);
-                        case DfuBaseService.ERROR_TYPE_DFU_REMOTE ->
-                                GattError.parseDfuRemoteError(code);
-                        default -> GattError.parse(code);
-                    };
-                    Utils.log(Log.ASSERT, "App", "Error: " + message);
-                }
-            }
-        }
-    };
-
-
     @Override
     public void onCreate() {
         super.onCreate();
         AppContext.initialize(this);
         copyFileToInternalStorage();
-        registerReceivers();
     }
 
     @Override
     public void onTerminate() {
         super.onTerminate();
-        unregisterReceivers();
     }
 
     private void copyFileToInternalStorage() {
@@ -87,16 +56,5 @@ public class App extends Application {
                 Log.e("App", "Error copying file", e);
             }
         }
-    }
-
-    public void registerReceivers() {
-        IntentFilter dfuServiceFilter = new IntentFilter();
-        dfuServiceFilter.addAction(DfuService.BROADCAST_PROGRESS);
-        dfuServiceFilter.addAction(DfuService.BROADCAST_ERROR);
-        LocalBroadcastManager.getInstance(getApplicationContext()).registerReceiver(dfuServiceReceiver, dfuServiceFilter);
-    }
-
-    public void unregisterReceivers() {
-        LocalBroadcastManager.getInstance(getApplicationContext()).unregisterReceiver(dfuServiceReceiver);
     }
 }

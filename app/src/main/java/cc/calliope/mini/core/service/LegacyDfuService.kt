@@ -20,7 +20,6 @@ import android.os.Bundle
 import android.os.IBinder
 import android.os.ResultReceiver
 import android.util.Log
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.Notification.ERROR
 import cc.calliope.mini.core.state.State
@@ -44,10 +43,6 @@ open class LegacyDfuService : Service() {
 
         private val DFU_CONTROL_SERVICE_UUID = Constants.DFU_CONTROL_SERVICE_UUID
         private val DFU_CONTROL_CHARACTERISTIC_UUID = Constants.DFU_CONTROL_CHARACTERISTIC_UUID
-
-        const val BROADCAST_COMPLETED =
-            "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_COMPLETE"
-
     }
 
     private var isComplete = false
@@ -137,7 +132,6 @@ open class LegacyDfuService : Service() {
     }
 
     override fun onBind(intent: Intent): IBinder? {
-        // TODO: Return the communication channel to the service.
         return null
     }
 
@@ -322,10 +316,5 @@ open class LegacyDfuService : Service() {
             gatt.close()
             stopSelf()
         }
-    }
-
-    private fun sendBroadcast(action: String) {
-        val broadcast = Intent(action)
-        LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(broadcast)
     }
 }

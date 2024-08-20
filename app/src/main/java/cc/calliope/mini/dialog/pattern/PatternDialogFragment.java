@@ -31,10 +31,10 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import cc.calliope.mini.core.bluetooth.DeviceKt;
+import cc.calliope.mini.core.bluetooth.Device;
 import cc.calliope.mini.core.service.BondingService;
 import cc.calliope.mini.views.PatternMatrixView;
-import cc.calliope.mini.core.bluetooth.ScanViewModelKt;
+import cc.calliope.mini.core.bluetooth.ScanViewModel;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
@@ -55,7 +55,7 @@ public class PatternDialogFragment extends DialogFragment {
     private final static int DIALOG_HEIGHT = 300; //dp
     private static final String FOB_PARAMS_PARCELABLE = "fob_params_parcelable";
     private DialogPatternBinding binding;
-    private DeviceKt currentDevice;
+    private Device currentDevice;
     private String currentAddress;
     private String currentPattern;
     private Context context;
@@ -116,9 +116,9 @@ public class PatternDialogFragment extends DialogFragment {
         binding.textTitle.setText(currentPattern);
         patternView.setOnPatternChangeListener(this::onPatternChange);
 
-        ScanViewModelKt scanViewModelKt = new ViewModelProvider(this).get(ScanViewModelKt.class);
-        scanViewModelKt.getDevices().observe(this, this::onDevicesDiscovered);
-        scanViewModelKt.startScan();
+        ScanViewModel scanViewModel = new ViewModelProvider(this).get(ScanViewModel.class);
+        scanViewModel.getDevices().observe(this, this::onDevicesDiscovered);
+        scanViewModel.startScan();
 
         binding.buttonAction.setOnClickListener(this::onActionClick);
         binding.buttonRemove.setOnClickListener(this::onRemoveClick);
@@ -253,9 +253,9 @@ public class PatternDialogFragment extends DialogFragment {
         currentPattern = pattern;
     }
 
-    private void onDevicesDiscovered(List<DeviceKt> devices) {
+    private void onDevicesDiscovered(List<Device> devices) {
         currentDevice = null;
-        for (DeviceKt device : devices) {
+        for (Device device : devices) {
             if (currentPattern.equals(device.getPattern())) {
                 currentDevice = device;
             }

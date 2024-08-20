@@ -18,8 +18,8 @@ class Aggregator {
         return results
     }
 
-    fun aggregateDevices(scanItem: BleScanResult): List<DeviceKt> {
+    fun aggregateDevices(scanItem: BleScanResult): List<Device> {
         aggregate(scanItem)
-        return devices.map { DeviceKt(BleScanResults(it.key, it.value)) }
+        return devices.map { Device(BleScanResults(it.key, it.value)) }
     }
 }
