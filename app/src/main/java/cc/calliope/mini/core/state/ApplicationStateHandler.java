@@ -27,6 +27,10 @@ public class ApplicationStateHandler {
         progressLiveData.setProgress(percent);
     }
 
+    public static void updateError(int code, String message){
+        errorLiveData.setError(code, message);
+    }
+
     public static StateLiveData getStateLiveData() {
         return stateLiveData;
     }

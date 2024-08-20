@@ -1,5 +1,6 @@
 package cc.calliope.mini.core.service;
 
+import static android.app.Activity.RESULT_OK;
 import static cc.calliope.mini.core.state.Notification.ERROR;
 import static cc.calliope.mini.core.state.Notification.INFO;
 import static cc.calliope.mini.utils.Constants.MINI_V1;
@@ -12,8 +13,10 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.ResultReceiver;
 import android.util.Log;
 
 import androidx.lifecycle.LifecycleService;
@@ -31,11 +34,10 @@ import java.nio.ByteOrder;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import cc.calliope.mini.ProgressCollector;
-import cc.calliope.mini.ProgressListener;
 import cc.calliope.mini.R;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.core.state.Notification;
+import cc.calliope.mini.core.state.Progress;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.utils.FileUtils;
 import cc.calliope.mini.utils.Preference;
@@ -47,7 +49,7 @@ import no.nordicsemi.android.dfu.DfuServiceInitiator;
 
 import cc.calliope.mini.utils.irmHexUtils;
 
-public class FlashingService extends LifecycleService implements ProgressListener {
+public class FlashingService extends LifecycleService{
     private static final String TAG = "FlashingService";
     private static boolean isThisServiceRunning = false;
     private static final int NUMBER_OF_RETRIES = 3;
@@ -56,9 +58,10 @@ public class FlashingService extends LifecycleService implements ProgressListene
     private String currentPattern;
     private int currentVersion;
     private String currentPath;
-    private int progress = -10;
 
-    private static final int CONNECTION_TIMEOUT = 3000; // 3 seconds
+    private State currentState;
+
+    private static final int CONNECTION_TIMEOUT = 5000; // 5 seconds
     private Handler handler;
     private Runnable timeoutRunnable;
 
@@ -71,7 +74,7 @@ public class FlashingService extends LifecycleService implements ProgressListene
             if (state == null) {
                 return;
             }
-
+            currentState = state;
             int type = state.getType();
 
             if (type == State.STATE_FLASHING ||
@@ -81,20 +84,56 @@ public class FlashingService extends LifecycleService implements ProgressListene
         }
     };
 
+    private final Observer<Progress> progressObserver = new Observer<>() {
+        @Override
+        public void onChanged(Progress progress) {
+            if (progress == null) {
+                return;
+            }
+
+            int value = progress.getValue();
+
+            if (value == Progress.PROGRESS_DISCONNECTING) {
+                stopSelf();
+            }
+        }
+    };
+
+
     @Override
     public void onCreate() {
         super.onCreate();
 
         ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
+        currentState = ApplicationStateHandler.getStateLiveData().getValue();
 
-        ProgressCollector progressCollector = new ProgressCollector(this);
-        getLifecycle().addObserver(progressCollector);
+        ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
+
+        ApplicationStateHandler.getErrorLiveData().observe(this, error -> {
+            if (error != null) {
+                int code = error.getCode();
+                String message = error.getMessage();
+
+                if (code == 4110) {
+                    BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+                    if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
+                        Utils.log(Log.ERROR, TAG, "Bluetooth not enabled");
+                    } else {
+                        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(currentAddress);
+                        device.createBond();
+                    }
+                } else {
+                    Utils.log(Log.ERROR, TAG, "ERROR: " + code + " " + message);
+                }
+            }
+        });
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver);
+        ApplicationStateHandler.getProgressLiveData().removeObserver(progressObserver);
     }
 
     @Override
@@ -102,6 +141,11 @@ public class FlashingService extends LifecycleService implements ProgressListene
         super.onStartCommand(intent, flags, startId);
         Utils.log(Log.DEBUG, TAG, "FlashingService started");
 
+//        if (currentState.getType() != State.STATE_IDLE) {
+//            Utils.log(Log.ASSERT, TAG, "State: " + currentState.getType());
+//            Utils.log(Log.INFO, TAG, "Service is already running.");
+//            return START_NOT_STICKY;
+//        }
 
         // TODO: are we need it?
         if (isThisServiceRunning) {
@@ -134,48 +178,22 @@ public class FlashingService extends LifecycleService implements ProgressListene
         return START_NOT_STICKY;
     }
 
-    @Override
-    public void onDfuControlComplete() {
-        startFlashing();
-    }
+    private class LegacyDfuResultReceiver extends ResultReceiver {
+        public LegacyDfuResultReceiver(Handler handler) {
+            super(handler);
+        }
 
-    @Override
-    public void onDfuAttempt() {
-        Utils.log(Log.ASSERT, TAG, "DFU attempt");
-        startDfuControlService();
-    }
-
-
-    @SuppressWarnings("MissingPermission")
-    @Override
-    public void onError(int code, String message) {
-        if (code == 4110) {
-            BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-            if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
-                Utils.log(Log.ERROR, TAG, "Bluetooth not enabled");
-            } else {
-                BluetoothDevice device = bluetoothAdapter.getRemoteDevice(currentAddress);
-                device.createBond();
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            if (resultCode == RESULT_OK) {
+                boolean isSuccess = resultData.getBoolean("result");
+                if (isSuccess) {
+                    startFlashing();
+                } else {
+                    Utils.log(ERROR, TAG, "DFU failed");
+                }
             }
-        } else {
-            Utils.log(Log.ERROR, TAG, "ERROR: " + code + " " + message);
         }
-    }
-
-    @Override
-    public void onProgressUpdate(int percent){
-        progress = percent;
-        if(percent < 0){
-            Utils.log(Log.ASSERT, TAG, "Progress: " + percent);
-        }
-        if(progress == DfuService.PROGRESS_DISCONNECTING){
-           stopSelf();
-        }
-    }
-
-    @Override
-    public void onConnectionFailed(){
-        Utils.log(Log.ASSERT, TAG, "FlashingBaseService onConnectionFailed");
     }
 
     // Check if the service is already running
@@ -229,7 +247,7 @@ public class FlashingService extends LifecycleService implements ProgressListene
     }
 
     private void initFlashing(){
-        if (!Utils.isBluetoothEnabled() || progress >= 0) {
+        if (!Utils.isBluetoothEnabled()) {
             Utils.log(Log.WARN, TAG, "Bluetooth not enabled or flashing already in progress. Service will stop.");
             return;
         }
@@ -247,7 +265,7 @@ public class FlashingService extends LifecycleService implements ProgressListene
             }
         };
 
-        // Start the 10 second timeout countdown
+        // Start the 5 second timeout countdown
         handler.postDelayed(timeoutRunnable, CONNECTION_TIMEOUT);
 
 
@@ -264,8 +282,13 @@ public class FlashingService extends LifecycleService implements ProgressListene
 
     private void startDfuControlService() {
         Utils.log(TAG, "Starting DfuControl Service...");
+
+        LegacyDfuResultReceiver resultReceiver = new LegacyDfuResultReceiver(new Handler());
+
+        // Start the service
         Intent service = new Intent(this, LegacyDfuService.class);
         service.putExtra(Constants.CURRENT_DEVICE_ADDRESS, currentAddress);
+        service.putExtra("resultReceiver", resultReceiver);
         startService(service);
     }
 

@@ -1,5 +1,8 @@
 package cc.calliope.mini.core.service
 
+import android.app.Activity
+import android.app.Activity.RESULT_OK
+import android.app.PendingIntent
 import android.app.Service
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
@@ -13,10 +16,11 @@ import android.bluetooth.BluetoothStatusCodes
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Bundle
 import android.os.IBinder
+import android.os.ResultReceiver
 import android.util.Log
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import cc.calliope.mini.R
 import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.Notification.ERROR
 import cc.calliope.mini.core.state.State
@@ -41,16 +45,8 @@ open class LegacyDfuService : Service() {
         private val DFU_CONTROL_SERVICE_UUID = Constants.DFU_CONTROL_SERVICE_UUID
         private val DFU_CONTROL_CHARACTERISTIC_UUID = Constants.DFU_CONTROL_CHARACTERISTIC_UUID
 
-//        const val BROADCAST_START =
-//            "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_START"
         const val BROADCAST_COMPLETED =
             "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_COMPLETE"
-//        const val BROADCAST_CONNECTION_FAILED =
-//            "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_CONNECTION_FAILED"
-//        const val BROADCAST_ERROR =
-//            "cc.calliope.mini.core.service.LegacyDfuService.BROADCAST_ERROR"
-//        const val EXTRA_ERROR_MESSAGE =
-//            "cc.calliope.mini.core.service.LegacyDfuService.EXTRA_ERROR_MESSAGE"
 
     }
 
@@ -60,11 +56,12 @@ open class LegacyDfuService : Service() {
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
 
+    private var resultReceiver: ResultReceiver? = null
+
     @SuppressWarnings("MissingPermission")
     private val gattCallback = object : BluetoothGattCallback() {
 
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-            Utils.log(Log.DEBUG, TAG, "onConnectionStateChange: $newState")
             when (status) {
                 GATT_SUCCESS -> {
                     when (newState) {
@@ -91,8 +88,6 @@ open class LegacyDfuService : Service() {
         }
 
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-            Utils.log(Log.DEBUG, TAG, "onServicesDiscovered: $status")
-
             if (status == GATT_SUCCESS) {
                 getDfuControlService(gatt)
             } else {
@@ -126,8 +121,6 @@ open class LegacyDfuService : Service() {
         }
 
         override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic?, status: Int) {
-            Utils.log(Log.DEBUG, TAG, "onCharacteristicWrite(status: $status)")
-
             if (status == GATT_SUCCESS) {
                 Utils.log(Log.DEBUG, TAG, "Flash command written successfully")
                 isComplete = true
@@ -148,8 +141,20 @@ open class LegacyDfuService : Service() {
         return null
     }
 
+    @Suppress("DEPRECATION")
+    private fun getParcelableExtra(intent: Intent?, name: String): ResultReceiver? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent?.getParcelableExtra(name, ResultReceiver::class.java)
+        } else {
+            intent?.getParcelableExtra(name)
+        }
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Utils.log(TAG, "Legacy DFU Service started")
+
+        // Get the pending intent from the intent
+        resultReceiver = getParcelableExtra(intent,"resultReceiver")
 
         if (!Permission.isAccessGranted(this, *Permission.BLUETOOTH_PERMISSIONS)) {
                 Utils.log(Log.ERROR, TAG, "BLUETOOTH permission no granted")
@@ -166,14 +171,13 @@ open class LegacyDfuService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Utils.log(TAG, "Legacy DFU Service destroyed")
         serviceJob.cancel()
-        if(isComplete) {
-            sendBroadcast(BROADCAST_COMPLETED)
-        }else {
-            ApplicationStateHandler.updateState(State.STATE_IDLE)
-            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_no_connected))
-        }
+
+        val bundle = Bundle()
+        bundle.putBoolean("result", isComplete)
+        resultReceiver?.send(RESULT_OK, bundle)
+
+        Utils.log(TAG, "Legacy DFU Service destroyed")
     }
 
     private fun reConnect(address: String?) {

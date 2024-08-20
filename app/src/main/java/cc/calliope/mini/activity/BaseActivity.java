@@ -39,7 +39,6 @@ import androidx.preference.PreferenceManager;
 
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 
-import cc.calliope.mini.ProgressCollector;
 import cc.calliope.mini.popup.PopupAdapter;
 import cc.calliope.mini.popup.PopupItem;
 import cc.calliope.mini.R;
@@ -80,8 +79,6 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
 
         ApplicationStateHandler.updateState(restoreState());
-        ProgressCollector progressCollector = new ProgressCollector(this);
-        getLifecycle().addObserver(progressCollector);
     }
 
     private void startRotationAnimation(final View view) {
@@ -162,7 +159,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     private final Observer<Progress> progressObserver = new Observer<>() {
         @Override
         public void onChanged(Progress progress) {
-            patternFab.setProgress(progress.getPercent());
+            patternFab.setProgress(progress.getValue());
         }
     };
 

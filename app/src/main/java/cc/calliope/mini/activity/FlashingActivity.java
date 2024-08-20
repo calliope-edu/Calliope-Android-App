@@ -1,7 +1,5 @@
 package cc.calliope.mini.activity;
 
-
-import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -12,8 +10,6 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import cc.calliope.mini.core.service.FlashingService;
-import cc.calliope.mini.ProgressCollector;
-import cc.calliope.mini.ProgressListener;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityDfuBinding;
 import cc.calliope.mini.utils.Preference;
@@ -23,7 +19,7 @@ import no.nordicsemi.android.dfu.DfuProgressListener;
 import no.nordicsemi.android.dfu.DfuProgressListenerAdapter;
 import no.nordicsemi.android.dfu.DfuServiceListenerHelper;
 
-public class FlashingActivity extends AppCompatActivity implements ProgressListener {
+public class FlashingActivity extends AppCompatActivity {
     private static final int DELAY_TO_FINISH_ACTIVITY = 5000; // delay to finish activity after flashing
     private ActivityDfuBinding binding;
     private TextView title;
@@ -44,9 +40,6 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
         progressBar = binding.progressBar;
 
         binding.retryButton.setOnClickListener(this::onRetryClicked);
-
-        ProgressCollector progressCollector = new ProgressCollector(this);
-        getLifecycle().addObserver(progressCollector);
     }
 
     @Override
@@ -148,32 +141,5 @@ public class FlashingActivity extends AppCompatActivity implements ProgressListe
 
     private void finishActivity() {
         timerHandler.postDelayed(deferredFinish, DELAY_TO_FINISH_ACTIVITY);
-    }
-
-    @Override
-    public void onDfuAttempt() {
-
-    }
-
-    @Override
-    public void onDfuControlComplete() {
-
-    }
-
-    @Override
-    public void onProgressUpdate(int progress) {
-//        status.setText(R.string.flashing_uploading);
-//        progressBar.setProgress(progress);
-//        title.setText(String.format(getString(R.string.flashing_percent), progress));
-    }
-
-    @Override
-    public void onConnectionFailed() {
-
-    }
-
-    @Override
-    public void onError(int code, String message) {
-
     }
 }
