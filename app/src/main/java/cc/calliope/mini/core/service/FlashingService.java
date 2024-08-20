@@ -58,7 +58,7 @@ public class FlashingService extends LifecycleService{
     private int currentVersion;
     private String currentPath;
 
-    private State currentState;
+    private State currentState = new State(State.STATE_IDLE);
 
     private static final int CONNECTION_TIMEOUT = 3000; // 3 seconds
     private Handler handler;

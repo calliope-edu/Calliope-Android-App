@@ -58,8 +58,6 @@ import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.views.MovableFloatingActionButton;
 
 public abstract class BaseActivity extends AppCompatActivity implements DialogInterface.OnDismissListener{
-    private static final int SNACKBAR_DURATION = 10000; // how long to display the snackbar message.
-    private static boolean requestWasSent = false;
     private MovableFloatingActionButton patternFab;
     private ConstraintLayout rootView;
     private int screenWidth;
@@ -68,10 +66,11 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     private int popupMenuWidth;
     private int popupMenuHeight;
     private ObjectAnimator rotationAnimator;
-    private int previousState = STATE_IDLE;
 
     private Handler handler;
     private Runnable runnable;
+
+    private State currentState = new State(STATE_IDLE);
 
     ActivityResultLauncher<Intent> bluetoothEnableResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -82,8 +81,10 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        ApplicationStateHandler.getNotificationLiveData().observe(this, notificationObserver);
+        // Initialize the application state handler
+        ApplicationStateHandler.updateState(State.STATE_IDLE);
         ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
+        ApplicationStateHandler.getNotificationLiveData().observe(this, notificationObserver);
         ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
     }
 
@@ -112,18 +113,18 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
                 return;
             }
 
-            int type = state.getType();
-
-            if (type != previousState) {
-                if (type == State.STATE_BUSY) {
-                    startRotationAnimation(patternFab);
-                } else if (previousState == State.STATE_BUSY) {
+            if (currentState.getType() != state.getType()) {
+                if (currentState.getType() == State.STATE_BUSY) {
+                    // Stop the rotation animation when the state changes from busy to something else
                     stopRotationAnimation(patternFab);
+                } else if (state.getType() == State.STATE_BUSY) {
+                    // Start the rotation animation when the state changes to busy
+                    startRotationAnimation(patternFab);
                 }
-                previousState = type;
             }
+            currentState = state;
 
-            switch (type) {
+            switch (state.getType()) {
                 case State.STATE_BUSY -> {
                     patternFab.setColor(R.color.yellow_200);
                 }
@@ -175,7 +176,6 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     @Override
     public void onResume() {
         super.onResume();
-        requestWasSent = false;
         checkPermission();
         readDisplayMetrics();
         patternFab.setProgress(0);
@@ -274,7 +274,6 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     }
 
     public void startBluetoothEnableActivity(View view) {
-        requestWasSent = true;
         Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
         bluetoothEnableResultLauncher.launch(enableBtIntent);
     }
@@ -409,6 +408,10 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     }
 
     private void checkDeviceAvailability() {
+        if (currentState.getType() != State.STATE_IDLE) {
+            return;
+        }
+
         ResultReceiver resultReceiver = new ResultReceiver(new Handler()) {
             @Override
             protected void onReceiveResult(int resultCode, Bundle resultData) {
@@ -420,6 +423,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
                 }
             }
         };
+
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         String address = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
 
