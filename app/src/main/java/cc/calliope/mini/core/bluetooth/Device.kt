@@ -44,4 +44,16 @@ class Device(bleScanResults: BleScanResults) {
     private fun nanosecondsToSeconds(nanoseconds: Long): Double {
         return nanoseconds / 1_000_000_000.0
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || javaClass != other.javaClass) return false
+
+        val device = other as Device
+        return getAddress() == device.getAddress()
+    }
+
+    override fun toString(): String {
+        return "Device(address=${getAddress()}, name=${getName()}, pattern=${getPattern()}, isBonded=${isBonded()}, isActual=${isActual()})"
+    }
 }

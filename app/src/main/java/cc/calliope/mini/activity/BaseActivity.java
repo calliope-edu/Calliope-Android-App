@@ -31,7 +31,6 @@ import java.util.List;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.ViewCompat;
@@ -43,6 +42,9 @@ import androidx.preference.PreferenceManager;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 
 import cc.calliope.mini.core.bluetooth.CheckService;
+import cc.calliope.mini.core.bluetooth.Device;
+import cc.calliope.mini.core.bluetooth.ScanService;
+import cc.calliope.mini.core.state.ScanResults;
 import cc.calliope.mini.popup.PopupAdapter;
 import cc.calliope.mini.popup.PopupItem;
 import cc.calliope.mini.R;
@@ -86,6 +88,17 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
         ApplicationStateHandler.getNotificationLiveData().observe(this, notificationObserver);
         ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
+
+        ScanResults.getStateLiveData().observe(this, new Observer<List<Device>>() {
+            @Override
+            public void onChanged(List<Device> devices) {
+                if (devices != null) {
+                    for (Device device : devices) {
+                        Utils.log(Log.ASSERT, "SA", "Device: " + device);
+                    }
+                }
+            }
+        });
     }
 
     private void startRotationAnimation(final View view) {
@@ -192,12 +205,16 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
 
         // Start the initial check
         handler.post(runnable);
+
+        //startScanService();
     }
 
     @Override
     public void onPause() {
         super.onPause();
         handler.removeCallbacks(runnable);
+
+        //stopScanService();
     }
 
     @Override
@@ -408,7 +425,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     }
 
     private void checkDeviceAvailability() {
-        if (currentState.getType() != State.STATE_IDLE) {
+        if (currentState.getType() != State.STATE_IDLE || hasOpenedPatternDialog()) {
             return;
         }
 
@@ -431,5 +448,15 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         intent.putExtra("device_mac_address", address);
         intent.putExtra("result_receiver", resultReceiver);
         startService(intent);
+    }
+
+    private void startScanService() {
+        Intent intent = new Intent(this, ScanService.class);
+        startService(intent);
+    }
+
+    private void stopScanService() {
+        Intent intent = new Intent(this, ScanService.class);
+        stopService(intent);
     }
 }

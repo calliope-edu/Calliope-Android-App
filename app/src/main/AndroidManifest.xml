@@ -125,6 +125,9 @@
         <service
             android:name=".core.bluetooth.CheckService"
             android:enabled="true" />
+        <service
+            android:name=".core.bluetooth.ScanService"
+            android:enabled="true" />
 
     </application>
 </manifest>

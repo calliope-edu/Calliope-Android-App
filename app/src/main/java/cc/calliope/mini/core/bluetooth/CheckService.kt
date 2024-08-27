@@ -62,7 +62,18 @@ class CheckService : Service() {
     private fun startScanning(macAddress: String, duration: Long, resultReceiver: ResultReceiver?) {
         val aggregator = BleScanResultAggregator()
         val scanner = BleScanner(applicationContext)
-        val filters = emptyList<BleScanFilter>()
+        val filters = listOf(
+            BleScanFilter(
+                null,
+                null,
+                macAddress,
+                null,
+                null,
+                null,
+                null,
+                null
+            )
+        )
         val settings = BleScannerSettings(
             BleScanMode.SCAN_MODE_BALANCED,
             0L,
@@ -78,8 +89,7 @@ class CheckService : Service() {
             val scanJob = scanner.scan(filters, settings)
                 .map { aggregator.aggregateDevices(it) }
                 .onEach { devices ->
-                    val device = devices.find { it.address == macAddress }
-                    if (device != null) {
+                    if (devices.isNotEmpty()) {
                         Utils.log(TAG, "Device with MAC: $macAddress is available.")
                         resultReceiver?.send(RESULT_OK, null)
                         stopSelf()
