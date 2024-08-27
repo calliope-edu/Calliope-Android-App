@@ -47,10 +47,10 @@ class CheckService : Service() {
         isRunning = true // Встановлюємо стан сервісу як "запущений"
 
         val deviceMacAddress = intent?.getStringExtra("device_mac_address")
-        val scanDuration = intent?.getLongExtra("scan_duration", 5000L) ?: 5000L // Значення за замовчуванням - 5 секунд
+        val scanDuration = intent?.getLongExtra("scan_duration", 10000L) ?: 10000L // Значення за замовчуванням - 10 секунд
         val resultReceiver = getResultReceiver(intent)
 
-        if (deviceMacAddress != null) {
+        if (!deviceMacAddress.isNullOrEmpty()) {
             startScanning(deviceMacAddress, scanDuration, resultReceiver)
         } else {
             stopSelf()
