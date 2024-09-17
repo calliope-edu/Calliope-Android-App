@@ -12,6 +12,7 @@ public class ApplicationStateHandler {
     private static final MutableLiveData<Notification> notificationLiveData = new MutableLiveData<>();
     private static final MutableLiveData<Progress> progressLiveData = new MutableLiveData<>();
     private static final MutableLiveData<Error> errorLiveData = new MutableLiveData<>();
+    private static final MutableLiveData<Boolean> isDeviceAvailable = new MutableLiveData<>();
 
     public static void updateState(@State.StateType int type){
         stateLiveData.setValue(new State(type));
@@ -34,6 +35,10 @@ public class ApplicationStateHandler {
         errorLiveData.postValue(new Error(code, message));
     }
 
+    public static void updateDeviceAvailability(boolean isAvailable){
+        isDeviceAvailable.postValue(isAvailable);
+    }
+
     public static LiveData<State> getStateLiveData() {
         return stateLiveData;
     }
@@ -53,5 +58,9 @@ public class ApplicationStateHandler {
     private static String getString(int stringId){
         Context context = AppContext.getInstance().getContext();
         return context.getString(stringId);
+    }
+
+    public static LiveData<Boolean> getDeviceAvailabilityLiveData() {
+        return isDeviceAvailable;
     }
 }

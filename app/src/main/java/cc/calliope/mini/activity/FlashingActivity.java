@@ -1,5 +1,7 @@
 package cc.calliope.mini.activity;
 
+import static cc.calliope.mini.core.state.Notification.ERROR;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
@@ -11,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.R;
+import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.databinding.ActivityDfuBinding;
 import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Constants;
@@ -133,6 +136,11 @@ public class FlashingActivity extends AppCompatActivity {
     };
 
     private void onRetryClicked(View view) {
+        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()){
+            ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
+            return;
+        }
+
         view.setVisibility(View.INVISIBLE);
         Intent serviceIntent = new Intent(this, FlashingService.class);
         serviceIntent.putExtra(Constants.EXTRA_FILE_PATH, Preference.getString(this, Constants.CURRENT_FILE_PATH, ""));

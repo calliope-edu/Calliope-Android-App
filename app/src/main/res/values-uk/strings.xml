@@ -80,7 +80,7 @@
     <string name="subject_dialog_share">Поділитися файлом…</string>
     <string name="text_dialog_share">Calliope mini firmware</string>
 
-    <string name="error_no_connected">Calliope Calliope mini не під\\`єднано</string>
+    <string name="error_no_connected">Calliope Calliope mini не під\`єднано</string>
     <string name="error_snackbar_name_exists">Файл з такою назвою існує</string>
     <string name="error_snackbar_no_internet">Немає доступу до інтернету</string>
     <string name="error_snackbar_download_error">Помилка завантаження</string>

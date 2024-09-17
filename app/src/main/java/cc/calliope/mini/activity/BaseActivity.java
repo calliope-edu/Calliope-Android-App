@@ -43,7 +43,6 @@ import com.google.android.material.snackbar.BaseTransientBottomBar;
 
 import cc.calliope.mini.core.bluetooth.CheckService;
 import cc.calliope.mini.core.bluetooth.Device;
-import cc.calliope.mini.core.bluetooth.ScanService;
 import cc.calliope.mini.core.state.ScanResults;
 import cc.calliope.mini.popup.PopupAdapter;
 import cc.calliope.mini.popup.PopupItem;
@@ -73,6 +72,9 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     private Runnable runnable;
 
     private State currentState = new State(STATE_IDLE);
+
+    // Declare a flag to track if the device availability check is already running
+    private boolean isDeviceCheckRunning = false;
 
     ActivityResultLauncher<Intent> bluetoothEnableResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -198,23 +200,23 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         runnable = new Runnable() {
             @Override
             public void run() {
-                checkDeviceAvailability();
-                handler.postDelayed(this, 10000);
+                if (!isDeviceCheckRunning) {
+                    isDeviceCheckRunning = true;  // Set the flag to true to indicate the check is running
+                    checkDeviceAvailability();
+                    isDeviceCheckRunning = false; // Reset the flag after the check is done
+                }
+                handler.postDelayed(this, 10000); // Schedule the next check
             }
         };
 
         // Start the initial check
         handler.post(runnable);
-
-        //startScanService();
     }
 
     @Override
     public void onPause() {
         super.onPause();
         handler.removeCallbacks(runnable);
-
-        //stopScanService();
     }
 
     @Override
@@ -435,8 +437,10 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
                 super.onReceiveResult(resultCode, resultData);
                 if (resultCode == CheckService.RESULT_OK) {
                     patternFab.setColor(R.color.green);
+                    ApplicationStateHandler.updateDeviceAvailability(true);
                 } else if (resultCode == CheckService.RESULT_CANCELED) {
                     patternFab.setColor(R.color.aqua_200);
+                    ApplicationStateHandler.updateDeviceAvailability(false);
                 }
             }
         };
@@ -448,15 +452,5 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         intent.putExtra("device_mac_address", address);
         intent.putExtra("result_receiver", resultReceiver);
         startService(intent);
-    }
-
-    private void startScanService() {
-        Intent intent = new Intent(this, ScanService.class);
-        startService(intent);
-    }
-
-    private void stopScanService() {
-        Intent intent = new Intent(this, ScanService.class);
-        stopService(intent);
     }
 }

@@ -60,9 +60,9 @@ public class FlashingService extends LifecycleService{
 
     private State currentState = new State(State.STATE_IDLE);
 
-    private static final int CONNECTION_TIMEOUT = 3000; // 3 seconds
-    private Handler handler;
-    private Runnable timeoutRunnable;
+//    private static final int CONNECTION_TIMEOUT = 30000; // 3 seconds
+//    private Handler handler;
+//    private Runnable timeoutRunnable;
 
     private record HexToDfu(String path, int size) {
     }
@@ -74,12 +74,12 @@ public class FlashingService extends LifecycleService{
                 return;
             }
             currentState = state;
-            int type = state.getType();
-
-            if (type == State.STATE_FLASHING ||
-                type == State.STATE_ERROR) {
-                handler.removeCallbacks(timeoutRunnable); // Remove the timeout callback
-            }
+//            int type = state.getType();
+//
+//            if (type == State.STATE_FLASHING ||
+//                type == State.STATE_ERROR) {
+//                handler.removeCallbacks(timeoutRunnable); // Remove the timeout callback
+//            }
         }
     };
 
@@ -98,6 +98,7 @@ public class FlashingService extends LifecycleService{
         }
     };
 
+    @SuppressWarnings("MissingPermission")
     @Override
     public void onCreate() {
         super.onCreate();
@@ -222,22 +223,22 @@ public class FlashingService extends LifecycleService{
             Utils.log(Log.WARN, TAG, "Bluetooth not enabled or flashing already in progress. Service will stop.");
             return;
         }
-
-        // Initialize the handler and timeout runnable
-        handler = new Handler(Looper.getMainLooper());
-        timeoutRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if(currentVersion == MINI_V1) {
-                    ApplicationStateHandler.updateNotification(Notification.WARNING, getString(R.string.flashing_timeout_v1));
-                } else {
-                    ApplicationStateHandler.updateNotification(Notification.WARNING, getString(R.string.flashing_timeout_v2));
-                }
-            }
-        };
-
-        // Start the N second timeout countdown
-        handler.postDelayed(timeoutRunnable, CONNECTION_TIMEOUT);
+//
+//        // Initialize the handler and timeout runnable
+//        handler = new Handler(Looper.getMainLooper());
+//        timeoutRunnable = new Runnable() {
+//            @Override
+//            public void run() {
+//                if(currentVersion == MINI_V1) {
+//                    ApplicationStateHandler.updateNotification(Notification.WARNING, getString(R.string.flashing_timeout_v1));
+//                } else {
+//                    ApplicationStateHandler.updateNotification(Notification.WARNING, getString(R.string.flashing_timeout_v2));
+//                }
+//            }
+//        };
+//
+//        // Start the N second timeout countdown
+//        handler.postDelayed(timeoutRunnable, CONNECTION_TIMEOUT);
 
 
         if (Settings.isPartialFlashingEnable(this)) {

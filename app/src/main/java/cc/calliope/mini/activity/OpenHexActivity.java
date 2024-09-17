@@ -143,6 +143,11 @@ public class OpenHexActivity extends BaseActivity {
             return;
         }
 
+        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()){
+            ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
+            return;
+        }
+
         final Intent intent = new Intent(this, FlashingActivity.class);
         startActivity(intent);
 

@@ -29,25 +29,24 @@ class CheckService : Service() {
     private val job = Job()
     private val serviceScope = CoroutineScope(Dispatchers.Main + job)
 
-    // Статична змінна для перевірки, чи сервіс вже запущений
     companion object {
         const val TAG = "CheckService"
         const val RESULT_OK = 1
         const val RESULT_CANCELED = 0
-        private var isRunning = false // Змінна для відстеження стану сервісу
+        private var isRunning = false
+        const val SCAN_DURATION = 8000L // Duration of scanning in milliseconds
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Перевірка, чи сервіс вже запущений
         if (isRunning) {
             Utils.log(TAG, "Service is already running. Ignoring new start request.")
             return START_NOT_STICKY
         }
 
-        isRunning = true // Встановлюємо стан сервісу як "запущений"
+        isRunning = true
 
         val deviceMacAddress = intent?.getStringExtra("device_mac_address")
-        val scanDuration = intent?.getLongExtra("scan_duration", 10000L) ?: 10000L // Значення за замовчуванням - 10 секунд
+        val scanDuration = intent?.getLongExtra("scan_duration", SCAN_DURATION) ?: SCAN_DURATION
         val resultReceiver = getResultReceiver(intent)
 
         if (!deviceMacAddress.isNullOrEmpty()) {
@@ -95,21 +94,21 @@ class CheckService : Service() {
                         stopSelf()
                     }
                 }
-                .launchIn(this) // Запуск сканування
+                .launchIn(this)
 
-            // Завершення сервісу після закінчення часу сканування
+            // Stop scanning after the specified duration
             delay(duration)
             Utils.log(TAG, "Device with MAC: $macAddress is not available.")
             resultReceiver?.send(RESULT_CANCELED, null)
-            scanJob.cancel() // Зупиняємо сканування
-            stopSelf() // Зупиняємо сервіс
+            scanJob.cancel() // Stop scanning
+            stopSelf() // Stop the service
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         job.cancel()
-        isRunning = false // Сервіс завершив роботу, змінюємо стан
+        isRunning = false
     }
 
     override fun onBind(intent: Intent?): IBinder? {
