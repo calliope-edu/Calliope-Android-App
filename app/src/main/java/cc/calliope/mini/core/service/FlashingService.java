@@ -294,6 +294,8 @@ public class FlashingService extends LifecycleService{
         Utils.log(Log.DEBUG, TAG, "Size: " + hexSize);
 
         if (hexSize == -1) {
+            Utils.log(Log.ERROR, TAG, "Failed to convert HEX to DFU");
+            ApplicationStateHandler.updateNotification(ERROR, "Failed to convert HEX to DFU");
             return;
         }
 
