@@ -16,7 +16,7 @@ public enum Editor {
             "https://lab.open-roberta.org?loadSystem=calliope2017"),
     BLOCKS(
             R.string.title_blocks,
-            R.drawable.ic_editors_blocks,
+            R.mipmap.icon_abgerundet,
             R.string.info_blocks,
             "https://blocks.calliope.cc/"),
     CUSTOM(

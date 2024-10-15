@@ -1,6 +1,9 @@
 package cc.calliope.mini.fragment.editors;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -13,12 +16,18 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.browser.customtabs.CustomTabColorSchemeParams;
+import androidx.browser.customtabs.CustomTabsIntent;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.navigation.NavController;
 import androidx.navigation.NavDirections;
 import androidx.navigation.Navigation;
 
 import cc.calliope.mini.R;
+import cc.calliope.mini.WebBluetoothFragment;
 import cc.calliope.mini.databinding.FragmentEditorsBinding;
 import cc.calliope.mini.utils.Settings;
 import cc.calliope.mini.utils.Utils;
@@ -36,11 +45,15 @@ public class EditorsFragment extends Fragment {
     private void setupEditorViews() {
         setupEditorView(binding.clRow1, Editor.MAKECODE);
         setupEditorView(binding.clRow2, Editor.ROBERTA);
-        setupEditorView(binding.clRow3, Editor.CUSTOM);
-        binding.clRow4.setVisibility(View.GONE);
+        setupEditorView(binding.clRow3, Editor.BLOCKS);
+        setupEditorView(binding.clRow4, Editor.CUSTOM);
     }
 
     private void setupEditorView(View view, Editor editor) {
+        if (editor == null && view == null) {
+            return;
+        }
+
         setupClickAnimation(view);
         view.setOnClickListener(v -> openEditor(v, editor));
 
@@ -57,26 +70,68 @@ public class EditorsFragment extends Fragment {
         binding = null;
     }
 
-    private void openEditor(View view, Editor editor){
+    private void openEditor(View view, Editor editor) {
         Activity activity = getActivity();
-        if (activity == null){
+        if (activity == null) {
             return;
         }
 
         if (Utils.isNetworkConnected(activity)) {
-            String url = editor.getUrl();
-            if (editor == Editor.CUSTOM) {
-                url = Settings.getCustomLink(getContext());
+            if (editor == Editor.BLOCKS) {
+                openWebPage(editor.getUrl());
+            } else {
+                String url = editor.getUrl();
+                if (editor == Editor.CUSTOM) {
+                    url = Settings.getCustomLink(getContext());
+                }
+                showWebFragment(url, editor.toString());
             }
-            showWebFragment(url, editor.toString());
         } else {
             Utils.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_no_internet)).show();
         }
     }
 
+    private void openWebPage(String url) {
+        Activity activity = getActivity();
+        if (activity == null) {
+            return;
+        }
+
+        CustomTabColorSchemeParams colorSchemeParams = new CustomTabColorSchemeParams.Builder()
+                .setToolbarColor(ContextCompat.getColor(activity, R.color.aqua_200))
+                .build();
+
+        CustomTabsIntent customTabsIntent = new CustomTabsIntent.Builder()
+                .setShowTitle(true)
+                .setDefaultColorSchemeParams(colorSchemeParams)
+                .build();
+
+        String chromePackageName = "com.android.chrome";
+        customTabsIntent.intent.setPackage(chromePackageName);
+
+        if (isPackageInstalled(chromePackageName, activity.getPackageManager())) {
+            customTabsIntent.launchUrl(activity, Uri.parse(url));
+        } else {
+            Intent playStoreIntent = new Intent(Intent.ACTION_VIEW);
+            playStoreIntent.setData(Uri.parse("market://details?id=com.android.chrome"));
+            activity.startActivity(playStoreIntent);
+        }
+    }
+
+    private boolean isPackageInstalled(String packageName, PackageManager packageManager) {
+        //TODO: Check if the package is installed
+        return true;
+//        try {
+//            packageManager.getPackageInfo(packageName, PackageManager.GET_ACTIVITIES);
+//            return true;
+//        } catch (PackageManager.NameNotFoundException e) {
+//            return false;
+//        }
+    }
+
     private void showWebFragment(String url, String editorName) {
         Activity activity = getActivity();
-        if (activity == null){
+        if (activity == null) {
             return;
         }
 
