@@ -13,7 +13,7 @@ public enum Editor {
             R.string.title_roberta,
             R.drawable.ic_editors_roberta,
             R.string.info_roberta,
-            "https://lab.open-roberta.org?loadSystem=calliope2017"),
+            "https://lab.open-roberta.org/?loadSystem=calliopev3"),
     BLOCKS(
             R.string.title_blocks,
             R.mipmap.icon_abgerundet,
