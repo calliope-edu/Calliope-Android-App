@@ -3,9 +3,11 @@ package cc.calliope.mini.core.service;
 import static android.app.Activity.RESULT_OK;
 import static cc.calliope.mini.core.state.Notification.ERROR;
 import static cc.calliope.mini.core.state.Notification.INFO;
-import static cc.calliope.mini.utils.Constants.MINI_V1;
 import static cc.calliope.mini.utils.Constants.MINI_V2;
+import static cc.calliope.mini.utils.Constants.MINI_V3;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
+import static cc.calliope.mini.utils.FileVersion.VERSION_2;
+import static cc.calliope.mini.utils.FileVersion.VERSION_3;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -24,16 +26,10 @@ import androidx.lifecycle.Observer;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -46,14 +42,13 @@ import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.core.state.Progress;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.utils.FileUtils;
+import cc.calliope.mini.utils.FileVersion;
 import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Settings;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
-import no.nordicsemi.android.dfu.DfuBaseService;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
 
-import cc.calliope.mini.utils.irmHexUtils;
 
 public class FlashingService extends LifecycleService{
     private static final String TAG = "FlashingService";
@@ -61,7 +56,7 @@ public class FlashingService extends LifecycleService{
     private static final int REBOOT_TIME = 2000; // time required by the device to reboot, ms
     private String currentAddress;
     private String currentPattern;
-    private int currentVersion;
+    private int boardVersion;
     private String currentPath;
 
     private State currentState = new State(State.STATE_IDLE);
@@ -73,8 +68,6 @@ public class FlashingService extends LifecycleService{
 //    private Handler handler;
 //    private Runnable timeoutRunnable;
 
-    private record HexToDfu(byte[] data, String path, int size) {
-    }
 
     private final Observer<State> stateObserver = new Observer<>() {
         @Override
@@ -160,8 +153,8 @@ public class FlashingService extends LifecycleService{
         }
 
         if(getPath(intent) && getDevice()) {
-            int fileVersion = Utils.getFileVersion(currentPath);
-            if((fileVersion == 2 && currentVersion == MINI_V1) || (fileVersion == 1 && currentVersion == MINI_V2)){
+            FileVersion fileVersion = FileUtils.getFileVersion(currentPath);
+            if((fileVersion == VERSION_3 && boardVersion == MINI_V2) || (fileVersion == VERSION_2 && boardVersion == MINI_V3)){
                 ApplicationStateHandler.updateState(State.STATE_IDLE);
                 ApplicationStateHandler.updateNotification(ERROR, getString(R.string.flashing_version_mismatch));
                 return START_NOT_STICKY;
@@ -215,7 +208,7 @@ public class FlashingService extends LifecycleService{
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         currentAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
         currentPattern = preferences.getString(Constants.CURRENT_DEVICE_PATTERN, "ZUZUZ");
-        currentVersion = preferences.getInt(Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
+        boardVersion = preferences.getInt(Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
 
         if (!isValidBluetoothMAC(currentAddress)) {
             Utils.log(Log.ERROR, TAG, "Device address is incorrect. Service will stop.");
@@ -223,7 +216,7 @@ public class FlashingService extends LifecycleService{
             return false;
         }
 
-        if (currentVersion == UNIDENTIFIED) {
+        if (boardVersion == UNIDENTIFIED) {
             Utils.log(Log.ERROR, TAG, "Device version is incorrect. Service will stop.");
             stopSelf();
             return false;
@@ -259,7 +252,7 @@ public class FlashingService extends LifecycleService{
         if (Settings.isPartialFlashingEnable(this)) {
             startPartialFlashing();
         } else {
-            if(currentVersion == MINI_V1) {
+            if(boardVersion == MINI_V2) {
                 startDfuControlService();
             } else {
                 startFlashing();
@@ -328,77 +321,59 @@ public class FlashingService extends LifecycleService{
     private void startFlashing() {
         Utils.log(Log.INFO, TAG, "Starting DFU Service...");
 
-        HexToDfu hexToDFU = universalHexToDFU(currentPath, currentVersion);
-        String hexPath = hexToDFU.path;
-        int hexSize = hexToDFU.size;
-        byte[] hexData = hexToDFU.data;
 
-        byte[] hexData2 = getCalliopeV3Bin();
-        try {
-            File hexToFlash = new File(this.getCacheDir() + "/application.bin");
-            if (hexToFlash.exists()) {
-                hexToFlash.delete();
-            }
-            hexToFlash.createNewFile();
 
-            FileOutputStream outputStream = new FileOutputStream(hexToFlash);
-            outputStream.write(hexData2);
-            outputStream.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
-        String hexPath2 = this.getCacheDir() + "/application.bin";
-        int hexSize2 = hexData2.length;
 
-        InitPacket initPacket = new InitPacket(hexSize2);
-        byte[] intP = initPacket.encode();
 
-        try {
-            File hexToFlash = new File(this.getCacheDir() + "/application.dat");
-            if (hexToFlash.exists()) {
-                hexToFlash.delete();
-            }
-            hexToFlash.createNewFile();
 
-            FileOutputStream outputStream = new FileOutputStream(hexToFlash);
-            outputStream.write(intP);
-            outputStream.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
-        String initPacketPath = this.getCacheDir() + "/application.dat";
 
-        Utils.log(Log.DEBUG, TAG, "Path: " + hexPath);
-        Utils.log(Log.DEBUG, TAG, "Size: " + hexSize);
 
-        if (hexSize == -1) {
-            Utils.log(Log.ERROR, TAG, "Failed to convert HEX to DFU");
-            //ApplicationStateHandler.updateNotification(ERROR, "Failed to convert HEX to DFU");
-            //return;
-        }
-
-        if (currentVersion == MINI_V1) {
-            new DfuServiceInitiator(currentAddress)
-                    .setDeviceName(currentPattern)
-                    .setPrepareDataObjectDelay(300L)
-                    .setNumberOfRetries(NUMBER_OF_RETRIES)
-                    .setRebootTime(REBOOT_TIME)
-                    .setForceDfu(true)
-                    .setKeepBond(true)
-                    .setMbrSize(0x1000)
-                    .setBinOrHex(DfuBaseService.TYPE_APPLICATION, hexPath)
-                    .start(this, DfuService.class);
+        if (boardVersion == MINI_V2) {
+//            new DfuServiceInitiator(currentAddress)
+//                    .setDeviceName(currentPattern)
+//                    .setPrepareDataObjectDelay(300L)
+//                    .setNumberOfRetries(NUMBER_OF_RETRIES)
+//                    .setRebootTime(REBOOT_TIME)
+//                    .setForceDfu(true)
+//                    .setKeepBond(true)
+//                    .setMbrSize(0x1000)
+//                    .setBinOrHex(DfuBaseService.TYPE_APPLICATION, hexPath1)
+//                    .start(this, DfuService.class);
         } else {
-            //String initPacketPath;
-            String zipPath;
+            String firmwarePath = getCacheDir() + File.separator + "application.bin";
+            String initPacketPath =  getCacheDir() + File.separator + "application.dat";
+            byte[] firmware = getCalliopeV3Bin();
 
+            if (firmware == null) {
+                Utils.log(Log.ERROR, TAG, "Failed to convert HEX to DFU");
+                ApplicationStateHandler.updateNotification(ERROR, "Failed to convert HEX to DFU");
+                return;
+            }
+
+
+            if (!FileUtils.writeFile(firmwarePath, firmware)){
+                return;
+            }
+
+            int hexSize2 = firmware.length;
+
+            InitPacket initPacket = new InitPacket(hexSize2);
+            byte[] intData = initPacket.encode();
+
+
+            if (!FileUtils.writeFile(initPacketPath, intData)){
+                return;
+            }
+
+            Utils.log(Log.DEBUG, TAG, "Path: " + firmwarePath);
+            Utils.log(Log.DEBUG, TAG, "Size: " + hexSize2);
+
+            String zipPath;
             try {
-                //initPacketPath = createDFUInitPacket(hexSize2);
-                zipPath = createDFUZip(initPacketPath, hexPath2);
+                zipPath = createDFUZip(initPacketPath, firmwarePath);
             } catch (IOException e) {
-                Utils.log(Log.ERROR, TAG, "Failed to create init packet");
                 e.printStackTrace();
                 return;
             }
@@ -417,136 +392,8 @@ public class FlashingService extends LifecycleService{
                     .setPacketsReceiptNotificationsEnabled(true)
                     .setUnsafeExperimentalButtonlessServiceInSecureDfuEnabled(true)
                     .setZip(zipPath)
-                    //.setBinOrHex(DfuBaseService.TYPE_APPLICATION, hexPath2)
-                    //.setInitFile(initPacketPath)
                     .start(this, DfuService.class);
         }
-    }
-
-    private HexToDfu universalHexToDFU(String inputPath, int hardwareType) {
-        Utils.log(Log.VERBOSE, TAG, "universalHexToDFU");
-        try {
-            FileInputStream fis = new FileInputStream(inputPath);
-            int fileSize = Integer.valueOf(FileUtils.getFileSize(inputPath));
-            byte[] bs = new byte[fileSize];
-            int i = 0;
-            i = fis.read(bs);
-
-            Utils.log(Log.VERBOSE, TAG, "universalHexToDFU - read file");
-
-            irmHexUtils irmHexUtil = new irmHexUtils();
-            int hexBlock = hardwareType == MINI_V1
-                    ? irmHexUtils.irmHexBlock01
-                    : irmHexUtils.irmHexBlock03;
-            if ( !irmHexUtil.universalHexToApplicationHex( bs, hexBlock)) {
-                return new HexToDfu(null, null,-1);
-            }
-            byte [] dataHex = irmHexUtil.resultHex;
-            int application_size = irmHexUtil.resultDataSize;
-            Utils.log(Log.VERBOSE, TAG, "universalHexToDFU - Finished parsing HEX");
-
-            try {
-                File hexToFlash = new File(this.getCacheDir() + "/application.hex");
-                if (hexToFlash.exists()) {
-                    hexToFlash.delete();
-                }
-                hexToFlash.createNewFile();
-
-                FileOutputStream outputStream = new FileOutputStream(hexToFlash);
-                outputStream.write(dataHex);
-                outputStream.flush();
-
-                // Should return from here
-                Utils.log(Log.VERBOSE, TAG, hexToFlash.getAbsolutePath());
-
-                Utils.log(Log.VERBOSE, TAG, "universalHexToDFU - Finished");
-                return new HexToDfu(dataHex, hexToFlash.getAbsolutePath(), application_size);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-        } catch (FileNotFoundException e) {
-            Log.e(TAG, "File not found.");
-            e.printStackTrace();
-        } catch (IOException e) {
-            Log.e(TAG, "IO Exception.");
-            e.printStackTrace();
-        }
-
-        // Should not reach this
-        return new HexToDfu(null, null, -1);
-    }
-
-    private String createDFUInitPacket(int hexLength) throws IOException, NoSuchAlgorithmException {
-        ByteArrayOutputStream outputInitPacket;
-        outputInitPacket = new ByteArrayOutputStream();
-
-        Utils.log(Log.VERBOSE, TAG, "DFU App Length: " + hexLength);
-
-        outputInitPacket.write("microbit_app".getBytes()); // "microbit_app"
-        outputInitPacket.write(new byte[]{0x1, 0, 0, 0});  // Init packet version
-        outputInitPacket.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(hexLength).array());  // App size
-        outputInitPacket.write(new byte[]{0, 0, 0, 0x0});  // Hash Size. 0: Ignore Hash
-        outputInitPacket.write(new byte[]{
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0
-        }); // Hash
-
-        // Write to temp file
-        File initPacket = new File(this.getCacheDir() + "/application.dat");
-        if (initPacket.exists()) {
-            initPacket.delete();
-        }
-        initPacket.createNewFile();
-
-        FileOutputStream outputStream;
-        outputStream = new FileOutputStream(initPacket);
-        outputStream.write(outputInitPacket.toByteArray());
-        outputStream.flush();
-
-        // Should return from here
-        return initPacket.getAbsolutePath();
-    }
-
-    private String createDFUInitPacket(int hexLength, byte[] firmwareData) throws IOException, NoSuchAlgorithmException {
-        ByteArrayOutputStream outputInitPacket = new ByteArrayOutputStream();
-
-        // Записуємо "microbit_app"
-        outputInitPacket.write("microbit_app".getBytes());
-
-        // Записуємо версію ініціалізаційного пакету (4 байти)
-        outputInitPacket.write(new byte[]{0x1, 0, 0, 0});
-
-        // Записуємо розмір додатку у форматі little-endian (4 байти)
-        outputInitPacket.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(hexLength).array());
-
-        // **Нові кроки починаються тут**
-
-        // Обчислюємо SHA-256 хеш прошивки
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hash = digest.digest(firmwareData);
-
-        // Записуємо розмір хеша у форматі little-endian (4 байти)
-        outputInitPacket.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(hash.length).array());
-
-        // Записуємо сам хеш
-        outputInitPacket.write(hash);
-
-        // Записуємо ініціалізаційний пакет у файл
-        File initPacket = new File(this.getCacheDir(), "application.dat");
-        if (initPacket.exists()) {
-            initPacket.delete();
-        }
-        initPacket.createNewFile();
-
-        try (FileOutputStream outputStream = new FileOutputStream(initPacket)) {
-            outputStream.write(outputInitPacket.toByteArray());
-            outputStream.flush();
-        }
-
-        return initPacket.getAbsolutePath();
     }
 
     /**
@@ -585,7 +432,6 @@ public class FlashingService extends LifecycleService{
 
         }
 
-        // close the ZipOutputStream
         zipOutputStream.close();
 
         return getCacheDir() + "/update.zip";
@@ -606,7 +452,7 @@ public class FlashingService extends LifecycleService{
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
             if (action != null && action.equals(BROADCAST_PF_ATTEMPT_DFU)) {
-                if(currentVersion == MINI_V1) {
+                if(boardVersion == MINI_V2) {
                     startDfuControlService();
                 } else {
                     startFlashing();
