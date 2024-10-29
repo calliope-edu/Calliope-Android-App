@@ -18,7 +18,7 @@
             android:title="@string/title_partial_flashing"
             android:summary="@string/summary_partial_flashing"
             android:defaultValue="false"
-            android:enabled="true"
+            android:enabled="false"
             app:iconSpaceReserved="false"/>
 
         <CheckBoxPreference

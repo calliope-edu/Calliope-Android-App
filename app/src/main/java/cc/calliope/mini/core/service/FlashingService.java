@@ -8,6 +8,7 @@ import static cc.calliope.mini.utils.Constants.MINI_V3;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 import static cc.calliope.mini.utils.FileVersion.VERSION_2;
 import static cc.calliope.mini.utils.FileVersion.VERSION_3;
+import static no.nordicsemi.android.dfu.DfuBaseService.TYPE_APPLICATION;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -47,6 +48,7 @@ import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Settings;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
+import kotlin.Unit;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
 
 
@@ -289,19 +291,19 @@ public class FlashingService extends LifecycleService{
         }
     }
 
-    public byte[] getCalliopeV3Bin() {
+    public byte[] getCalliopeBin(int dataTypeParam, long startAddress, long endAddress) {
         HexParser parser = new HexParser(currentPath);
         List<Byte> bin = new ArrayList<>();
         parser.parse((address, data, dataType, isUniversal) -> {
-            if (address >= 0x1C000 && address < 0x77000 && (dataType == 2 || !isUniversal)) {
+            if (address >= startAddress && address < endAddress && (dataType == dataTypeParam || !isUniversal)) {
                 for (byte b : data) {
                     bin.add(b);
                 }
             }
-            return null;
+            return Unit.INSTANCE;
         });
 
-        // Android DFU library requires the firmware to be word-aligned.
+        // Android DFU library requires the firmware to be word-aligned
         int totalDataSize = bin.size();
         if (totalDataSize % 4 != 0) {
             int paddingSize = 4 - (totalDataSize % 4);
@@ -317,20 +319,42 @@ public class FlashingService extends LifecycleService{
         return binArray;
     }
 
+    public byte[] getCalliopeV2Bin() {
+        return getCalliopeBin(1, 0x18000L, 0x3C000L);
+    }
+
+    public byte[] getCalliopeV3Bin() {
+        return getCalliopeBin(2, 0x1C000L, 0x77000L);
+    }
+
     @SuppressWarnings("deprecation")
     private void startFlashing() {
         Utils.log(Log.INFO, TAG, "Starting DFU Service...");
         if (boardVersion == MINI_V2) {
-//            new DfuServiceInitiator(currentAddress)
-//                    .setDeviceName(currentPattern)
-//                    .setPrepareDataObjectDelay(300L)
-//                    .setNumberOfRetries(NUMBER_OF_RETRIES)
-//                    .setRebootTime(REBOOT_TIME)
-//                    .setForceDfu(true)
-//                    .setKeepBond(true)
-//                    .setMbrSize(0x1000)
-//                    .setBinOrHex(DfuBaseService.TYPE_APPLICATION, hexPath1)
-//                    .start(this, DfuService.class);
+            byte[] firmware = getCalliopeV2Bin();
+            String firmwarePath = getCacheDir() + File.separator + "application.bin";
+
+            if (firmware == null) {
+                Utils.log(Log.ERROR, TAG, "Failed to convert HEX to DFU");
+                ApplicationStateHandler.updateNotification(ERROR, "Failed to convert HEX to DFU");
+                return;
+            }
+
+            if (!FileUtils.writeFile(firmwarePath, firmware)){
+                Utils.log(Log.ERROR, TAG, "Failed to write firmware to file");
+                ApplicationStateHandler.updateNotification(ERROR, "Failed to write firmware to file");
+                return;
+            }
+            new DfuServiceInitiator(currentAddress)
+                    .setDeviceName(currentPattern)
+                    .setPrepareDataObjectDelay(300L)
+                    .setNumberOfRetries(NUMBER_OF_RETRIES)
+                    .setRebootTime(REBOOT_TIME)
+                    .setForceDfu(true)
+                    .setKeepBond(true)
+                    .setMbrSize(0x1000)
+                    .setBinOrHex(TYPE_APPLICATION, firmwarePath)
+                    .start(this, DfuService.class);
         } else {
             byte[] firmware = getCalliopeV3Bin();
             String firmwarePath = getCacheDir() + File.separator + "application.bin";
