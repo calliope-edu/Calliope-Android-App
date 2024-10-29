@@ -2,9 +2,19 @@ package cc.calliope.mini
 
 import java.io.File
 
-class HexParser(private val url: String) {
+class HexParser(private val path: String) {
+    private fun calculateChecksum(address: UShort, type: Int, data: ByteArray): UByte {
+        var crc: UInt = data.size.toUByte() +
+                (address.toUInt() shr 8).toUByte() +
+                ((address.toUInt() and 0xFFu) + type.toUInt()).toUByte()
+        for (b in data) {
+            crc = (crc + b.toUByte()).toUByte().toUInt()
+        }
+        return ((0x100u - crc) and 0xFFu).toUByte()
+    }
+
     fun parse(handleDataEntry: (Long, ByteArray, Int, Boolean) -> Unit) {
-        val file = File(url)
+        val file = File(path)
         val reader = file.bufferedReader()
 
         var isUniversal = false
@@ -14,7 +24,7 @@ class HexParser(private val url: String) {
         reader.useLines { lines ->
             lines.forEach { line ->
                 var beginIndex = 0
-                var endIndex = beginIndex + 1
+                var endIndex = 1
 
                 if (line.isEmpty() || line[beginIndex] != ':') return@forEach
                 beginIndex = endIndex
@@ -36,10 +46,19 @@ class HexParser(private val url: String) {
                 val payload = line.substring(beginIndex, endIndex)
                 beginIndex = endIndex
 
+                endIndex = beginIndex + 2
+                if (endIndex > line.length) return@forEach
+                val checksum = line.substring(beginIndex, endIndex).toUIntOrNull(16)?.toUByte() ?: return@forEach
+
+                val data = payload.hexStringToByteArray()
+                val calculatedChecksum = calculateChecksum(addressLo.toUShort(), type, data)
+                if (checksum != calculatedChecksum) {
+                    return@forEach
+                }
+
                 when (type) {
                     0, 13 -> { // Data
                         val position = addressHi + addressLo
-                        val data = payload.hexStringToByteArray()
                         if (data.size == length.toInt()) {
                             handleDataEntry(position.toLong(), data, dataType, isUniversal)
                         }

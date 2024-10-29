@@ -320,16 +320,6 @@ public class FlashingService extends LifecycleService{
     @SuppressWarnings("deprecation")
     private void startFlashing() {
         Utils.log(Log.INFO, TAG, "Starting DFU Service...");
-
-
-
-
-
-
-
-
-
-
         if (boardVersion == MINI_V2) {
 //            new DfuServiceInitiator(currentAddress)
 //                    .setDeviceName(currentPattern)
@@ -342,9 +332,9 @@ public class FlashingService extends LifecycleService{
 //                    .setBinOrHex(DfuBaseService.TYPE_APPLICATION, hexPath1)
 //                    .start(this, DfuService.class);
         } else {
+            byte[] firmware = getCalliopeV3Bin();
             String firmwarePath = getCacheDir() + File.separator + "application.bin";
             String initPacketPath =  getCacheDir() + File.separator + "application.dat";
-            byte[] firmware = getCalliopeV3Bin();
 
             if (firmware == null) {
                 Utils.log(Log.ERROR, TAG, "Failed to convert HEX to DFU");
@@ -352,23 +342,22 @@ public class FlashingService extends LifecycleService{
                 return;
             }
 
-
             if (!FileUtils.writeFile(firmwarePath, firmware)){
+                Utils.log(Log.ERROR, TAG, "Failed to write firmware to file");
+                ApplicationStateHandler.updateNotification(ERROR, "Failed to write firmware to file");
                 return;
             }
 
-            int hexSize2 = firmware.length;
-
-            InitPacket initPacket = new InitPacket(hexSize2);
+            InitPacket initPacket = new InitPacket(firmware.length);
             byte[] intData = initPacket.encode();
-
-
             if (!FileUtils.writeFile(initPacketPath, intData)){
+                Utils.log(Log.ERROR, TAG, "Failed to write init packet to file");
+                ApplicationStateHandler.updateNotification(ERROR, "Failed to write init packet to file");
                 return;
             }
 
             Utils.log(Log.DEBUG, TAG, "Path: " + firmwarePath);
-            Utils.log(Log.DEBUG, TAG, "Size: " + hexSize2);
+            Utils.log(Log.DEBUG, TAG, "Size: " + firmware.length);
 
             String zipPath;
             try {
@@ -380,6 +369,7 @@ public class FlashingService extends LifecycleService{
 
             if (zipPath == null) {
                 Utils.log(Log.ERROR, TAG, "Failed to create ZIP");
+                ApplicationStateHandler.updateNotification(ERROR, "Failed to create ZIP");
                 return;
             }
 
