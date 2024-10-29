@@ -43,3 +43,25 @@
 body, h1, h2, h3, h4, h5, h6 {
   font-family: "Roboto Mono", monospace;
 }
+
+
+
+
+.highlight {
+  background-color: #e7f3fe;
+  padding: 0.2em 0.5em;
+  border-radius: 0.2em;
+}
+.image-container {
+  text-align: center;
+  margin: 1em 0;
+}
+
+summary {
+    font-weight: bold;
+    margin-left: -1.1rem;
+}
+
+details {
+    padding: 0.5em 1.5em;
+}

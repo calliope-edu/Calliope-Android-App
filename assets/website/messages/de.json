@@ -1,5 +1,20 @@
 {
     "$schema": "https://inlang.com/schema/inlang-message-format",
     "ok_bright_dachshund_view": "Verbindungsanleitung",
-    "slow_vexed_pig_hope": "Diese Anleitung hilft dir, deinen Calliope mini mit der App zu verbinden und Programme zu übertragen. Folge einfach den unten stehenden Schritten."
+    "slow_vexed_pig_hope": "Diese Anleitung hilft dir, deinen Calliope mini mit der App zu verbinden und Programme zu übertragen. Folge einfach den unten stehenden Schritten.",
+    "mean_inner_wallaby_pave": "1. Calliope mini vorbereiten",
+    "mellow_weak_alpaca_pull": "Wenn du einen Calliope mini 1 oder 2 besitzt:",
+    "safe_early_reindeer_spark": "<li>Übertrage aus MakeCode ein Programm per USB mit der <span class=\"highlight\">one-time-pairing</span> Erweiterung. Nur dann kann die erstmalige Kopplung mit dem Android-Gerät erfolgen.</li>\n<li>Bringe den mini mit <span class=\"highlight\">AB + Reset</span> in den Bluetooth-Modus.</li>",
+    "yummy_gaudy_cat_mend": "Wenn du einen Calliope mini 3 besitzt:",
+    "aware_patient_badger_build": "<li>Drücke dreimal die <span class=\"highlight\">Reset-Taste</span>, um den Bluetooth-Modus zu starten.</li>",
+    "fresh_active_meerkat_stir": "2. Verbindung herstellen",
+    "dark_aqua_insect_borrow": "<li>Tippe auf das Calliope mini Icon (Floating Button).</li>\n<li>Wähle \"Verbindung\".</li>\n<li>Zeichne in der App das Muster deines Calliope mini nach.</li>\n<li>Tippe auf den grünen Pairing-Button.</li>",
+    "sunny_early_gazelle_hope": "<li><b>Calliope mini 1 und 2</b>\n             <ul>\n                 <li>Die Verbindung wird ohne Kopplungsanfrage hergestellt.</li>\n             </ul>\n         </li>\n         <li><b>Calliope mini 3</b>\n             <ul>\n                 <li>Es erscheint eine Kopplungsanfrage, bestätige diese.</li>\n                 <li>Die Kopplungsanfrage erscheint erneut, bestätige sie abermals.</li>\n             </ul>\n         </li>\n         <li>Nach der erfolgreichen Verbindung mit dem Calliope mini wechselt die Farbe des Pairing-Buttons von türkis auf grün.</li>",
+    "real_aware_swan_kiss": "3. Programme übertragen",
+    "equal_slimy_crocodile_slide": "Um Programme zu übertragen, beachte Folgendes:",
+    "deft_yummy_fox_launch": "<li>Die Übertragung wird automatisch gestartet, sobald in einem Editor die Datei geladen wird.</li>\n<li>Wenn Bluetooth nicht dauerhaft auf dem Calliope mini aktiv ist, muss der Calliope mini bei jeder Übertragung mit <span class=\"highlight\">A+B und gleichzeitig kurz Reset</span> in den Bluetooth-Modus versetzt werden. Das ist bei dem Calliope mini 1 immer der Fall. Bei dem Calliope mini 2 und 3 bei verwendung bestimmter Erweiterungen (z. B. <span class=\"highlight\">Radio</span>) der Fall.</li>",
+    "actual_helpful_lionfish_aim": "FAQ zur Fehlerbehebung",
+    "day_lazy_husky_pat": "<summary>Die Verbindung zum Calliope mini schlägt fehl. Was kann ich tun?</summary>\n          <p>Überprüfe, ob der Calliope mini im Bluetooth-Modus ist (A+B und gleichzeitig kurz Reset).</p>\n          <p>Entferne den Calliope mini aus den Geräteeinstellungen und probiere es erneut.</p>",
+    "sunny_novel_tuna_cut": "<summary>Die Kopplungsanfrage wird nicht angezeigt. Was soll ich machen?</summary>\n          <p>Starte den Calliope mini und die App neu. Versuche erneut, die Verbindung herzustellen. Achte darauf, ob in den Beanchrichtigungen eine Kopplungsanfrage auftaucht.</p>",
+    "tough_spare_myna_approve": "<summary>Die Übertragung des Programms bricht ab oder startet nicht. Woran könnte das liegen?</summary>\n          <p>Stelle sicher, dass der Calliope mini sich im Bluetooth-Modus befindet und keine anderen Bluetooth-Geräte die Verbindung stören.</p>"
 }
