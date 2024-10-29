@@ -7,20 +7,21 @@ import static cc.calliope.mini.utils.Constants.MINI_V1;
 import static cc.calliope.mini.utils.Constants.MINI_V2;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 
-import android.app.ActivityManager;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
 import android.os.ResultReceiver;
 import android.util.Log;
 
 import androidx.lifecycle.LifecycleService;
 import androidx.lifecycle.Observer;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
 
 import java.io.ByteArrayOutputStream;
@@ -31,12 +32,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import cc.calliope.mini.HexParser;
+import cc.calliope.mini.InitPacket;
 import cc.calliope.mini.R;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
-import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.Progress;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.utils.FileUtils;
@@ -60,11 +66,14 @@ public class FlashingService extends LifecycleService{
 
     private State currentState = new State(State.STATE_IDLE);
 
+    public static final String BROADCAST_PF_ATTEMPT_DFU = "org.microbit.android.partialflashing.broadcast.BROADCAST_PF_ATTEMPT_DFU";
+
+
 //    private static final int CONNECTION_TIMEOUT = 30000; // 3 seconds
 //    private Handler handler;
 //    private Runnable timeoutRunnable;
 
-    private record HexToDfu(String path, int size) {
+    private record HexToDfu(byte[] data, String path, int size) {
     }
 
     private final Observer<State> stateObserver = new Observer<>() {
@@ -126,6 +135,10 @@ public class FlashingService extends LifecycleService{
                 }
             }
         });
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BROADCAST_PF_ATTEMPT_DFU);
+        LocalBroadcastManager.getInstance(this).registerReceiver(progressReceiver, filter);
     }
 
     @Override
@@ -133,6 +146,7 @@ public class FlashingService extends LifecycleService{
         super.onDestroy();
         ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver);
         ApplicationStateHandler.getProgressLiveData().removeObserver(progressObserver);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(progressReceiver);
     }
 
     @Override
@@ -241,8 +255,9 @@ public class FlashingService extends LifecycleService{
 //        handler.postDelayed(timeoutRunnable, CONNECTION_TIMEOUT);
 
 
+
         if (Settings.isPartialFlashingEnable(this)) {
-            // TODO: Implement partial flashing
+            startPartialFlashing();
         } else {
             if(currentVersion == MINI_V1) {
                 startDfuControlService();
@@ -281,6 +296,33 @@ public class FlashingService extends LifecycleService{
         }
     }
 
+    public byte[] getCalliopeV3Bin() {
+        HexParser parser = new HexParser(currentPath);
+        List<Byte> bin = new ArrayList<>();
+        parser.parse((address, data, dataType, isUniversal) -> {
+            if (address >= 0x1C000 && address < 0x77000 && (dataType == 2 || !isUniversal)) {
+                for (byte b : data) {
+                    bin.add(b);
+                }
+            }
+            return null;
+        });
+
+        // Android DFU library requires the firmware to be word-aligned.
+        int totalDataSize = bin.size();
+        if (totalDataSize % 4 != 0) {
+            int paddingSize = 4 - (totalDataSize % 4);
+            for (int i = 0; i < paddingSize; i++) {
+                bin.add((byte) 0xFF);
+            }
+        }
+
+        byte[] binArray = new byte[bin.size()];
+        for (int i = 0; i < bin.size(); i++) {
+            binArray[i] = bin.get(i);
+        }
+        return binArray;
+    }
 
     @SuppressWarnings("deprecation")
     private void startFlashing() {
@@ -289,14 +331,52 @@ public class FlashingService extends LifecycleService{
         HexToDfu hexToDFU = universalHexToDFU(currentPath, currentVersion);
         String hexPath = hexToDFU.path;
         int hexSize = hexToDFU.size;
+        byte[] hexData = hexToDFU.data;
+
+        byte[] hexData2 = getCalliopeV3Bin();
+        try {
+            File hexToFlash = new File(this.getCacheDir() + "/application.bin");
+            if (hexToFlash.exists()) {
+                hexToFlash.delete();
+            }
+            hexToFlash.createNewFile();
+
+            FileOutputStream outputStream = new FileOutputStream(hexToFlash);
+            outputStream.write(hexData2);
+            outputStream.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        String hexPath2 = this.getCacheDir() + "/application.bin";
+        int hexSize2 = hexData2.length;
+
+        InitPacket initPacket = new InitPacket(hexSize2);
+        byte[] intP = initPacket.encode();
+
+        try {
+            File hexToFlash = new File(this.getCacheDir() + "/application.dat");
+            if (hexToFlash.exists()) {
+                hexToFlash.delete();
+            }
+            hexToFlash.createNewFile();
+
+            FileOutputStream outputStream = new FileOutputStream(hexToFlash);
+            outputStream.write(intP);
+            outputStream.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        String initPacketPath = this.getCacheDir() + "/application.dat";
 
         Utils.log(Log.DEBUG, TAG, "Path: " + hexPath);
         Utils.log(Log.DEBUG, TAG, "Size: " + hexSize);
 
         if (hexSize == -1) {
             Utils.log(Log.ERROR, TAG, "Failed to convert HEX to DFU");
-            ApplicationStateHandler.updateNotification(ERROR, "Failed to convert HEX to DFU");
-            return;
+            //ApplicationStateHandler.updateNotification(ERROR, "Failed to convert HEX to DFU");
+            //return;
         }
 
         if (currentVersion == MINI_V1) {
@@ -311,12 +391,12 @@ public class FlashingService extends LifecycleService{
                     .setBinOrHex(DfuBaseService.TYPE_APPLICATION, hexPath)
                     .start(this, DfuService.class);
         } else {
-            String initPacketPath;
+            //String initPacketPath;
             String zipPath;
 
             try {
-                initPacketPath = createDFUInitPacket(hexSize);
-                zipPath = createDFUZip(initPacketPath, hexPath);
+                //initPacketPath = createDFUInitPacket(hexSize2);
+                zipPath = createDFUZip(initPacketPath, hexPath2);
             } catch (IOException e) {
                 Utils.log(Log.ERROR, TAG, "Failed to create init packet");
                 e.printStackTrace();
@@ -337,6 +417,8 @@ public class FlashingService extends LifecycleService{
                     .setPacketsReceiptNotificationsEnabled(true)
                     .setUnsafeExperimentalButtonlessServiceInSecureDfuEnabled(true)
                     .setZip(zipPath)
+                    //.setBinOrHex(DfuBaseService.TYPE_APPLICATION, hexPath2)
+                    //.setInitFile(initPacketPath)
                     .start(this, DfuService.class);
         }
     }
@@ -357,7 +439,7 @@ public class FlashingService extends LifecycleService{
                     ? irmHexUtils.irmHexBlock01
                     : irmHexUtils.irmHexBlock03;
             if ( !irmHexUtil.universalHexToApplicationHex( bs, hexBlock)) {
-                return new HexToDfu(null, -1);
+                return new HexToDfu(null, null,-1);
             }
             byte [] dataHex = irmHexUtil.resultHex;
             int application_size = irmHexUtil.resultDataSize;
@@ -371,14 +453,14 @@ public class FlashingService extends LifecycleService{
                 hexToFlash.createNewFile();
 
                 FileOutputStream outputStream = new FileOutputStream(hexToFlash);
-                outputStream.write( dataHex);
+                outputStream.write(dataHex);
                 outputStream.flush();
 
                 // Should return from here
                 Utils.log(Log.VERBOSE, TAG, hexToFlash.getAbsolutePath());
 
                 Utils.log(Log.VERBOSE, TAG, "universalHexToDFU - Finished");
-                return new HexToDfu(hexToFlash.getAbsolutePath(), application_size);
+                return new HexToDfu(dataHex, hexToFlash.getAbsolutePath(), application_size);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -392,10 +474,10 @@ public class FlashingService extends LifecycleService{
         }
 
         // Should not reach this
-        return new HexToDfu(null, -1);
+        return new HexToDfu(null, null, -1);
     }
 
-    private String createDFUInitPacket(int hexLength) throws IOException {
+    private String createDFUInitPacket(int hexLength) throws IOException, NoSuchAlgorithmException {
         ByteArrayOutputStream outputInitPacket;
         outputInitPacket = new ByteArrayOutputStream();
 
@@ -425,6 +507,45 @@ public class FlashingService extends LifecycleService{
         outputStream.flush();
 
         // Should return from here
+        return initPacket.getAbsolutePath();
+    }
+
+    private String createDFUInitPacket(int hexLength, byte[] firmwareData) throws IOException, NoSuchAlgorithmException {
+        ByteArrayOutputStream outputInitPacket = new ByteArrayOutputStream();
+
+        // Записуємо "microbit_app"
+        outputInitPacket.write("microbit_app".getBytes());
+
+        // Записуємо версію ініціалізаційного пакету (4 байти)
+        outputInitPacket.write(new byte[]{0x1, 0, 0, 0});
+
+        // Записуємо розмір додатку у форматі little-endian (4 байти)
+        outputInitPacket.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(hexLength).array());
+
+        // **Нові кроки починаються тут**
+
+        // Обчислюємо SHA-256 хеш прошивки
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hash = digest.digest(firmwareData);
+
+        // Записуємо розмір хеша у форматі little-endian (4 байти)
+        outputInitPacket.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(hash.length).array());
+
+        // Записуємо сам хеш
+        outputInitPacket.write(hash);
+
+        // Записуємо ініціалізаційний пакет у файл
+        File initPacket = new File(this.getCacheDir(), "application.dat");
+        if (initPacket.exists()) {
+            initPacket.delete();
+        }
+        initPacket.createNewFile();
+
+        try (FileOutputStream outputStream = new FileOutputStream(initPacket)) {
+            outputStream.write(outputInitPacket.toByteArray());
+            outputStream.flush();
+        }
+
         return initPacket.getAbsolutePath();
     }
 
@@ -469,4 +590,28 @@ public class FlashingService extends LifecycleService{
 
         return getCacheDir() + "/update.zip";
     }
+
+    private void startPartialFlashing(){
+        Context context = getApplicationContext();
+
+        final Intent service = new Intent(context, PartialFlashingService.class);
+        service.putExtra("deviceAddress", currentAddress);
+        service.putExtra("filepath", currentPath);
+
+        context.startService(service);
+    }
+
+    private final BroadcastReceiver progressReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+            if (action != null && action.equals(BROADCAST_PF_ATTEMPT_DFU)) {
+                if(currentVersion == MINI_V1) {
+                    startDfuControlService();
+                } else {
+                    startFlashing();
+                }
+            }
+        }
+    };
 }

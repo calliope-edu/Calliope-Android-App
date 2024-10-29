@@ -125,6 +125,9 @@
         <service
             android:name=".core.bluetooth.CheckService"
             android:enabled="true" />
+        <service
+            android:name=".core.service.PartialFlashingService"
+            android:enabled="true" />
 
     </application>
 </manifest>

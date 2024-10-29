@@ -39,6 +39,8 @@ public class DfuService extends DfuBaseService{
 
     @Override
     public void onCreate() {
+        super.onCreate();
+
         ApplicationStateHandler.updateState(STATE_BUSY);
         ApplicationStateHandler.updateNotification(Notification.WARNING, getString(R.string.flashing_device_connecting));
         // Enable Notification Channel for Android OREO
@@ -50,15 +52,14 @@ public class DfuService extends DfuBaseService{
         dfuServiceFilter.addAction(BROADCAST_PROGRESS);
         dfuServiceFilter.addAction(BROADCAST_ERROR);
         LocalBroadcastManager.getInstance(this).registerReceiver(progressReceiver, dfuServiceFilter);
-
-        super.onCreate();
     }
 
     @Override
     public void onDestroy() {
+        super.onDestroy();
+
         //ApplicationStateHandler.updateState(STATE_READY);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(progressReceiver);
-        super.onDestroy();
     }
 
     @Override
