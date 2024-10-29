@@ -49,7 +49,7 @@ public class EditorsFragment extends Fragment {
     private void setupEditorViews() {
         setupEditorView(binding.clRow1, Editor.MAKECODE);
         setupEditorView(binding.clRow2, Editor.ROBERTA);
-        setupEditorView(binding.clRow3, Editor.BLOCKS);
+        setupEditorView(binding.clRow3, Editor.PYTHON);
         setupEditorView(binding.clRow4, Editor.CUSTOM);
     }
 
@@ -81,30 +81,30 @@ public class EditorsFragment extends Fragment {
         }
 
         if (Utils.isNetworkConnected(activity)) {
-            if (editor == Editor.BLOCKS) {
-                openWebPage(editor.getUrl_v2());
+//            if (editor == Editor.BLOCKS) {
+//                openWebPage(editor.getUrl_v2());
+//            } else {
+            int boardVersion;
+            Context context = getContext();
+            if (context == null) {
+                boardVersion = UNIDENTIFIED;
             } else {
-                int boardVersion;
-                Context context = getContext();
-                if (context == null) {
-                    boardVersion = UNIDENTIFIED;
-                } else {
-                    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-                    boardVersion = preferences.getInt(Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
-                }
-
-                String url;
-                if (boardVersion == MINI_V2){
-                    url = editor.getUrl_v2();
-                } else {
-                    url = editor.getUrl_v3();
-                }
-
-                if (editor == Editor.CUSTOM) {
-                    url = Settings.getCustomLink(getContext());
-                }
-                showWebFragment(url, editor.toString());
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+                boardVersion = preferences.getInt(Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
             }
+
+            String url;
+            if (boardVersion == MINI_V2) {
+                url = editor.getUrl_v2();
+            } else {
+                url = editor.getUrl_v3();
+            }
+
+            if (editor == Editor.CUSTOM) {
+                url = Settings.getCustomLink(getContext());
+            }
+            showWebFragment(url, editor.toString());
+//            }
         } else {
             Utils.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_no_internet)).show();
         }

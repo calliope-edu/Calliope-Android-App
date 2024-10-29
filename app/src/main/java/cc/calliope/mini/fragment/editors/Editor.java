@@ -16,12 +16,18 @@ public enum Editor {
             R.string.info_roberta,
             "https://lab.open-roberta.org/?loadSystem=calliope2017",
             "https://lab.open-roberta.org/?loadSystem=calliopev3"),
-    BLOCKS(
-            R.string.title_blocks,
-            R.mipmap.icon_abgerundet,
-            R.string.info_blocks,
-            "https://blocks.calliope.cc/",
-            "https://blocks.calliope.cc/"),
+//    BLOCKS(
+//            R.string.title_blocks,
+//            R.mipmap.icon_abgerundet,
+//            R.string.info_blocks,
+//            "https://blocks.calliope.cc/",
+//            "https://blocks.calliope.cc/"),
+    PYTHON(
+            R.string.title_python,
+            R.drawable.python_logo,
+            R.string.info_python,
+            "https://python.calliope.cc/",
+            "https://python.calliope.cc/"),
     CUSTOM(
             R.string.title_custom,
             R.drawable.ic_editors_custom,
