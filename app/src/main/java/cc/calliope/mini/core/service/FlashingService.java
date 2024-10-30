@@ -130,10 +130,6 @@ public class FlashingService extends LifecycleService{
                 }
             }
         });
-
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(BROADCAST_PF_ATTEMPT_DFU);
-        LocalBroadcastManager.getInstance(this).registerReceiver(progressReceiver, filter);
     }
 
     @Override
@@ -141,7 +137,6 @@ public class FlashingService extends LifecycleService{
         super.onDestroy();
         ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver);
         ApplicationStateHandler.getProgressLiveData().removeObserver(progressObserver);
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(progressReceiver);
     }
 
     @Override
@@ -252,7 +247,7 @@ public class FlashingService extends LifecycleService{
 
 
         if (Settings.isPartialFlashingEnable(this)) {
-            startPartialFlashing();
+
         } else {
             if(boardVersion == MINI_V2) {
                 startDfuControlService();
@@ -450,28 +445,4 @@ public class FlashingService extends LifecycleService{
 
         return getCacheDir() + "/update.zip";
     }
-
-    private void startPartialFlashing(){
-        Context context = getApplicationContext();
-
-        final Intent service = new Intent(context, PartialFlashingService.class);
-        service.putExtra("deviceAddress", currentAddress);
-        service.putExtra("filepath", currentPath);
-
-        context.startService(service);
-    }
-
-    private final BroadcastReceiver progressReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
-            if (action != null && action.equals(BROADCAST_PF_ATTEMPT_DFU)) {
-                if(boardVersion == MINI_V2) {
-                    startDfuControlService();
-                } else {
-                    startFlashing();
-                }
-            }
-        }
-    };
 }

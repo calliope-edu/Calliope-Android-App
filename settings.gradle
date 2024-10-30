@@ -14,4 +14,3 @@ dependencyResolutionManagement {
 }
 rootProject.name = "Calliope mini"
 include ':app'
-include ':android-partial-flashing-lib'
