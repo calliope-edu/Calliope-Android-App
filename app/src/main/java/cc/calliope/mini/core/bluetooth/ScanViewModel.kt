@@ -20,10 +20,10 @@ import no.nordicsemi.android.kotlin.ble.core.scanner.BleScannerSettings
 import no.nordicsemi.android.kotlin.ble.scanner.BleScanner
 
 
-class ScanViewModelKt(application: Application) : AndroidViewModel(application) {
+class ScanViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _devices = MutableLiveData<List<DeviceKt>>()
-    val devices: LiveData<List<DeviceKt>> get() = _devices
+    private val _devices = MutableLiveData<List<Device>>()
+    val devices: LiveData<List<Device>> get() = _devices
 
     @SuppressWarnings("MissingPermission")
     fun startScan() {

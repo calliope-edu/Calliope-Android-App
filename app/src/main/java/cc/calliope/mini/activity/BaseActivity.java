@@ -13,6 +13,8 @@ import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.ResultReceiver;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
@@ -39,7 +41,9 @@ import androidx.preference.PreferenceManager;
 
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 
-import cc.calliope.mini.ProgressCollector;
+import cc.calliope.mini.core.bluetooth.CheckService;
+import cc.calliope.mini.core.bluetooth.Device;
+import cc.calliope.mini.core.state.ScanResults;
 import cc.calliope.mini.popup.PopupAdapter;
 import cc.calliope.mini.popup.PopupItem;
 import cc.calliope.mini.R;
@@ -48,14 +52,13 @@ import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.Progress;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
+import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Permission;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.views.FobParams;
 import cc.calliope.mini.views.MovableFloatingActionButton;
 
 public abstract class BaseActivity extends AppCompatActivity implements DialogInterface.OnDismissListener{
-    private static final int SNACKBAR_DURATION = 10000; // how long to display the snackbar message.
-    private static boolean requestWasSent = false;
     private MovableFloatingActionButton patternFab;
     private ConstraintLayout rootView;
     private int screenWidth;
@@ -64,7 +67,14 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     private int popupMenuWidth;
     private int popupMenuHeight;
     private ObjectAnimator rotationAnimator;
-    private int previousState = STATE_IDLE;
+
+    private Handler handler;
+    private Runnable runnable;
+
+    private State currentState = new State(STATE_IDLE);
+
+    // Declare a flag to track if the device availability check is already running
+    private boolean isDeviceCheckRunning = false;
 
     ActivityResultLauncher<Intent> bluetoothEnableResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -75,13 +85,22 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        ApplicationStateHandler.getNotificationLiveData().observe(this, notificationObserver);
+        // Initialize the application state handler
+        ApplicationStateHandler.updateState(State.STATE_IDLE);
         ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
+        ApplicationStateHandler.getNotificationLiveData().observe(this, notificationObserver);
         ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
 
-        ApplicationStateHandler.updateState(restoreState());
-        ProgressCollector progressCollector = new ProgressCollector(this);
-        getLifecycle().addObserver(progressCollector);
+        ScanResults.getStateLiveData().observe(this, new Observer<List<Device>>() {
+            @Override
+            public void onChanged(List<Device> devices) {
+                if (devices != null) {
+                    for (Device device : devices) {
+                        Utils.log(Log.ASSERT, "SA", "Device: " + device);
+                    }
+                }
+            }
+        });
     }
 
     private void startRotationAnimation(final View view) {
@@ -109,22 +128,18 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
                 return;
             }
 
-            int type = state.getType();
-
-            if (type != previousState) {
-                if (type == State.STATE_BUSY) {
-                    startRotationAnimation(patternFab);
-                } else if (previousState == State.STATE_BUSY) {
+            if (currentState.getType() != state.getType()) {
+                if (currentState.getType() == State.STATE_BUSY) {
+                    // Stop the rotation animation when the state changes from busy to something else
                     stopRotationAnimation(patternFab);
+                } else if (state.getType() == State.STATE_BUSY) {
+                    // Start the rotation animation when the state changes to busy
+                    startRotationAnimation(patternFab);
                 }
-                previousState = type;
             }
+            currentState = state;
 
-            switch (type) {
-                case State.STATE_READY -> {
-                    saveState(State.STATE_READY);
-                    patternFab.setColor(R.color.green);
-                }
+            switch (state.getType()) {
                 case State.STATE_BUSY -> {
                     patternFab.setColor(R.color.yellow_200);
                 }
@@ -132,12 +147,11 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
                     patternFab.setColor(R.color.blue_light);
                 }
                 case State.STATE_ERROR -> {
-                    saveState(STATE_IDLE);
                     patternFab.setColor(R.color.red);
                 }
                 case State.STATE_IDLE -> {
-                    saveState(STATE_IDLE);
                     patternFab.setColor(R.color.aqua_200);
+                    checkDeviceAvailability();
                 }
             }
         }
@@ -162,7 +176,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     private final Observer<Progress> progressObserver = new Observer<>() {
         @Override
         public void onChanged(Progress progress) {
-            patternFab.setProgress(progress.getPercent());
+            patternFab.setProgress(progress.getValue());
         }
     };
 
@@ -177,15 +191,32 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     @Override
     public void onResume() {
         super.onResume();
-        requestWasSent = false;
         checkPermission();
         readDisplayMetrics();
         patternFab.setProgress(0);
+
+        // Schedule a task to check the device availability every 10 seconds
+        handler = new Handler();
+        runnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!isDeviceCheckRunning) {
+                    isDeviceCheckRunning = true;  // Set the flag to true to indicate the check is running
+                    checkDeviceAvailability();
+                    isDeviceCheckRunning = false; // Reset the flag after the check is done
+                }
+                handler.postDelayed(this, 10000); // Schedule the next check
+            }
+        };
+
+        // Start the initial check
+        handler.post(runnable);
     }
 
     @Override
     public void onPause() {
         super.onPause();
+        handler.removeCallbacks(runnable);
     }
 
     @Override
@@ -262,7 +293,6 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     }
 
     public void startBluetoothEnableActivity(View view) {
-        requestWasSent = true;
         Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
         bluetoothEnableResultLauncher.launch(enableBtIntent);
     }
@@ -396,14 +426,31 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
         return false;
     }
 
-    private void saveState(int state){
-        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(this).edit();
-        editor.putInt("APP_STATE", state);
-        editor.apply();
-    }
+    private void checkDeviceAvailability() {
+        if (currentState.getType() != State.STATE_IDLE || hasOpenedPatternDialog()) {
+            return;
+        }
 
-    private int restoreState(){
+        ResultReceiver resultReceiver = new ResultReceiver(new Handler()) {
+            @Override
+            protected void onReceiveResult(int resultCode, Bundle resultData) {
+                super.onReceiveResult(resultCode, resultData);
+                if (resultCode == CheckService.RESULT_OK) {
+                    patternFab.setColor(R.color.green);
+                    ApplicationStateHandler.updateDeviceAvailability(true);
+                } else if (resultCode == CheckService.RESULT_CANCELED) {
+                    patternFab.setColor(R.color.aqua_200);
+                    ApplicationStateHandler.updateDeviceAvailability(false);
+                }
+            }
+        };
+
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        return preferences.getInt("APP_STATE", STATE_IDLE);
+        String address = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
+
+        Intent intent = new Intent(this, CheckService.class);
+        intent.putExtra("device_mac_address", address);
+        intent.putExtra("result_receiver", resultReceiver);
+        startService(intent);
     }
 }

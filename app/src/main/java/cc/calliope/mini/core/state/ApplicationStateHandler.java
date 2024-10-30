@@ -2,49 +2,65 @@ package cc.calliope.mini.core.state;
 
 import android.content.Context;
 
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import cc.calliope.mini.AppContext;
 
 public class ApplicationStateHandler {
 
-    private static final StateLiveData stateLiveData = new StateLiveData();
-    private static final NotificationLiveData notificationLiveData = new NotificationLiveData();
-    private static final ProgressLiveData progressLiveData = new ProgressLiveData();
-    private static final ErrorLiveData errorLiveData = new ErrorLiveData();
+    private static final MutableLiveData<State> stateLiveData = new MutableLiveData<>();
+    private static final MutableLiveData<Notification> notificationLiveData = new MutableLiveData<>();
+    private static final MutableLiveData<Progress> progressLiveData = new MutableLiveData<>();
+    private static final MutableLiveData<Error> errorLiveData = new MutableLiveData<>();
+    private static final MutableLiveData<Boolean> isDeviceAvailable = new MutableLiveData<>();
 
     public static void updateState(@State.StateType int type){
-        stateLiveData.setState(type);
+        stateLiveData.setValue(new State(type));
     }
 
     public static void updateNotification(@Notification.NotificationType int type, String message){
-        notificationLiveData.setNotification(type, message);
+        notificationLiveData.postValue(new Notification(type, message));
     }
 
     public static void updateNotification(@Notification.NotificationType int type, int stringId){
-        notificationLiveData.setNotification(type, getString(stringId));
+        String message = getString(stringId);
+        notificationLiveData.postValue(new Notification(type, message));
     }
 
     public static void updateProgress(int percent){
-        progressLiveData.setProgress(percent);
+        progressLiveData.postValue(new Progress(percent));
     }
 
-    public static StateLiveData getStateLiveData() {
+    public static void updateError(int code, String message){
+        errorLiveData.postValue(new Error(code, message));
+    }
+
+    public static void updateDeviceAvailability(boolean isAvailable){
+        isDeviceAvailable.postValue(isAvailable);
+    }
+
+    public static LiveData<State> getStateLiveData() {
         return stateLiveData;
     }
 
-    public static NotificationLiveData getNotificationLiveData() {
+    public static LiveData<Notification> getNotificationLiveData() {
         return notificationLiveData;
     }
 
-    public static ProgressLiveData getProgressLiveData() {
+    public static LiveData<Progress> getProgressLiveData() {
         return progressLiveData;
     }
 
-    public static ErrorLiveData getErrorLiveData() {
+    public static LiveData<Error> getErrorLiveData() {
         return errorLiveData;
     }
 
     private static String getString(int stringId){
         Context context = AppContext.getInstance().getContext();
         return context.getString(stringId);
+    }
+
+    public static LiveData<Boolean> getDeviceAvailabilityLiveData() {
+        return isDeviceAvailable;
     }
 }

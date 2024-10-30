@@ -80,7 +80,7 @@ public class OpenHexActivity extends BaseActivity {
 
             binding.flashButton.setOnClickListener(v -> {
                 try {
-                    File file = FileUtils.getFile(this, Editor.BLOCKS.toString(), name);
+                    File file = FileUtils.getFile(this, Editor.CUSTOM.toString(), name);
                     if (file == null) {
                         return;
                     }
@@ -140,6 +140,11 @@ public class OpenHexActivity extends BaseActivity {
     private void startDFUActivity(File file) {
         if(!Utils.isBluetoothEnabled()){
             ApplicationStateHandler.updateNotification(ERROR, R.string.error_snackbar_bluetooth_disabled);
+            return;
+        }
+
+        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()){
+            ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
             return;
         }
 

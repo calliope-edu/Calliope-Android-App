@@ -21,12 +21,12 @@ public class Constants {
      * <a href="https://calliope-mini.github.io/v20/">Version 2.0</a>
      * <a href="https://calliope-mini.github.io/v21/">Version 2.1</a>
      */
-    public static final int MINI_V1 = 1;
+    public static final int MINI_V2 = 1;
     /**
      * New version
      */
-    public static final int MINI_V2 = 2;
-    @IntDef({UNIDENTIFIED, MINI_V1, MINI_V2})
+    public static final int MINI_V3 = 2;
+    @IntDef({UNIDENTIFIED, MINI_V2, MINI_V3})
     @Retention(RetentionPolicy.SOURCE)
     public @interface HardwareVersion {
     }

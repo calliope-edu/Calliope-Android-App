@@ -161,6 +161,11 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
             return;
         }
 
+        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()){
+            ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
+            return;
+        }
+
         if(!Settings.isBackgroundFlashingEnable(activity)){
             final Intent intent = new Intent(activity, FlashingActivity.class);
             intent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
