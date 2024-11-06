@@ -122,6 +122,8 @@
         <service
             android:name=".core.service.LegacyDfuService"
             android:enabled="true" />
-
+        <service
+            android:name=".core.bluetooth.CheckService"
+            android:enabled="true" />
     </application>
 </manifest>

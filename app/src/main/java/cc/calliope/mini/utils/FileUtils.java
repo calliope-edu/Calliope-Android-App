@@ -7,7 +7,10 @@ import android.webkit.URLUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 
 public class FileUtils {
@@ -72,4 +75,47 @@ public class FileUtils {
         return file.exists() ? Long.toString(file.length()) : "0";
     }
 
+    public static FileVersion getFileVersion(String filePath) {
+        String[] lines = new String[2];
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            lines[0] = br.readLine();
+            lines[1] = br.readLine();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return FileVersion.UNDEFINED;
+        }
+
+        for (FileVersion fv : FileVersion.values()) {
+            if (fv == FileVersion.UNDEFINED) {
+                continue;
+            }
+            int lineIndex = fv.getLineNumber() - 1;
+            if (lineIndex >= 0 && lineIndex < lines.length) {
+                String line = lines[lineIndex];
+                if (line != null && line.startsWith(fv.getPattern())) {
+                    return fv;
+                }
+            }
+        }
+
+        return FileVersion.UNDEFINED;
+    }
+
+    public static boolean writeFile(String path, byte[] data) {
+        try {
+            File hexToFlash = new File(path);
+            if (hexToFlash.exists()) {
+                hexToFlash.delete();
+            }
+            hexToFlash.createNewFile();
+
+            FileOutputStream outputStream = new FileOutputStream(hexToFlash);
+            outputStream.write(data);
+            outputStream.flush();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

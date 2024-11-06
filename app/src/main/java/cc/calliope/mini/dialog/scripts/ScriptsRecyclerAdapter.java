@@ -16,6 +16,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import cc.calliope.mini.FileWrapper;
 import cc.calliope.mini.R;
+import cc.calliope.mini.utils.FileUtils;
+import cc.calliope.mini.utils.FileVersion;
 import cc.calliope.mini.utils.Utils;
 
 public class ScriptsRecyclerAdapter extends RecyclerView.Adapter<ScriptsRecyclerAdapter.ViewHolder> {
@@ -131,14 +133,22 @@ public class ScriptsRecyclerAdapter extends RecyclerView.Adapter<ScriptsRecycler
         void setItem(FileWrapper file) {
             String name = FilenameUtils.removeExtension(file.getName());
             String date = Utils.dateFormat(file.lastModified());
-            int version = Utils.getFileVersion(file.getAbsolutePath());
+            FileVersion version = FileUtils.getFileVersion(file.getAbsolutePath());
 
-            if(version == 1){
-                this.version.setText("v1,2");
-            }else if(version == 2) {
-                this.version.setText("v3");
-            }else {
-                this.version.setText("v1,2,3");
+            switch (version) {
+                case UNIVERSAL:
+                    this.version.setText("v1,2,3");
+                    break;
+                case VERSION_2:
+                    this.version.setText("v1,2");
+                    break;
+                case VERSION_3:
+                    this.version.setText("v3");
+                    break;
+                case UNDEFINED:
+                default:
+                    this.version.setText("error");
+                    break;
             }
 
             this.name.setText(name);

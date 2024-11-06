@@ -317,6 +317,11 @@ public class WebFragment extends Fragment implements DownloadListener {
             return;
         }
 
+        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()){
+            ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
+            return;
+        }
+
         if(!Settings.isBackgroundFlashingEnable(getActivity())){
             final Intent intent = new Intent(getActivity(), FlashingActivity.class);
             intent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());

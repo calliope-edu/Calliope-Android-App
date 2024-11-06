@@ -29,6 +29,6 @@ public class Settings extends Preference{
     }
 
     public static String getCustomLink(Context context){
-        return getString(context, PREF_KEY_CUSTOM_LINK, Editor.CUSTOM.getUrl());
+        return getString(context, PREF_KEY_CUSTOM_LINK, Editor.CUSTOM.getUrl_v2());
     }
 }

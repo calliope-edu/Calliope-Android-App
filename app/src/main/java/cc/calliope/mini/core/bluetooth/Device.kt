@@ -6,7 +6,7 @@ import no.nordicsemi.android.kotlin.ble.core.ServerDevice
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResultData
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResults
 
-class DeviceKt(bleScanResults: BleScanResults) {
+class Device(bleScanResults: BleScanResults) {
     companion object {
         private val RELEVANT_LIMIT: Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) 5 else 10 // Секунди
     }
@@ -43,5 +43,17 @@ class DeviceKt(bleScanResults: BleScanResults) {
 
     private fun nanosecondsToSeconds(nanoseconds: Long): Double {
         return nanoseconds / 1_000_000_000.0
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || javaClass != other.javaClass) return false
+
+        val device = other as Device
+        return getAddress() == device.getAddress()
+    }
+
+    override fun toString(): String {
+        return "Device(address=${getAddress()}, name=${getName()}, pattern=${getPattern()}, isBonded=${isBonded()}, isActual=${isActual()})"
     }
 }
