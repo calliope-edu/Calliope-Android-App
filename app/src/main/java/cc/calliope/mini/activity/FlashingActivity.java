@@ -2,34 +2,30 @@ package cc.calliope.mini.activity;
 
 import static cc.calliope.mini.core.state.Notification.ERROR;
 import static cc.calliope.mini.core.state.State.STATE_FLASHING;
-import static cc.calliope.mini.core.state.State.STATE_IDLE;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.lifecycle.Observer;
 
+import cc.calliope.mini.core.service.DfuService;
 import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.core.state.Notification;
+import cc.calliope.mini.core.state.Progress;
 import cc.calliope.mini.databinding.ActivityDfuBinding;
 import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.views.BoardProgressBar;
-import no.nordicsemi.android.dfu.DfuProgressListener;
-import no.nordicsemi.android.dfu.DfuProgressListenerAdapter;
-import no.nordicsemi.android.dfu.DfuServiceListenerHelper;
+import cc.calliope.mini.core.state.Error;
 
 public class FlashingActivity extends AppCompatActivity {
+    private static final String TAG = "FlashingActivity";
     private static final int DELAY_TO_FINISH_ACTIVITY = 5000; // delay to finish activity after flashing
     private ActivityDfuBinding binding;
     private TextView title;
@@ -38,13 +34,71 @@ public class FlashingActivity extends AppCompatActivity {
     private final Handler timerHandler = new Handler();
     private final Runnable deferredFinish = this::finish;
 
-    public static final String BROADCAST_PROGRESS = "org.microbit.android.partialflashing.broadcast.BROADCAST_PROGRESS";
-    public static final String BROADCAST_START = "org.microbit.android.partialflashing.broadcast.BROADCAST_START";
-    public static final String BROADCAST_COMPLETE = "org.microbit.android.partialflashing.broadcast.BROADCAST_COMPLETE";
-    public static final String EXTRA_PROGRESS = "org.microbit.android.partialflashing.extra.EXTRA_PROGRESS";
-    public static final String BROADCAST_PF_FAILED = "org.microbit.android.partialflashing.broadcast.BROADCAST_PF_FAILED";
-    public static final String BROADCAST_PF_ATTEMPT_DFU = "org.microbit.android.partialflashing.broadcast.BROADCAST_PF_ATTEMPT_DFU";
+    private final Observer<Notification> notificationObserver = new Observer<>() {
+        @Override
+        public void onChanged(Notification notification) {
+            status.setText(notification.getMessage());
+        }
+    };
 
+    private final Observer<Progress> progressObserver = new Observer<>() {
+        @Override
+        public void onChanged(Progress progress) {
+            if (progress == null) {
+                return;
+            }
+
+            int percent = progress.getValue();
+
+            switch (percent) {
+                case DfuService.PROGRESS_COMPLETED:
+                    status.setText(R.string.flashing_completed);
+                    finishActivity();
+                    break;
+                case DfuService.PROGRESS_CONNECTING:
+                    status.setText(R.string.flashing_device_connecting);
+                    break;
+                case DfuService.PROGRESS_STARTING:
+                    status.setText(R.string.flashing_process_starting);
+                    break;
+                case DfuService.PROGRESS_ENABLING_DFU_MODE:
+                    status.setText(R.string.flashing_enabling_dfu_mode);
+                    break;
+                case DfuService.PROGRESS_VALIDATING:
+                    status.setText(R.string.flashing_firmware_validating);
+                    break;
+                case DfuService.PROGRESS_DISCONNECTING:
+                    status.setText(R.string.flashing_device_disconnecting);
+                    break;
+                case DfuService.PROGRESS_ABORTED:
+                    status.setText(R.string.flashing_aborted);
+                    break;
+                default:
+                    if (percent >= 0 && percent <= 100) {
+                        status.setText(R.string.flashing_uploading);
+                        title.setText(String.format(getString(R.string.flashing_percent), percent));
+                    }
+                    break;
+            }
+            progressBar.setProgress(percent);
+        }
+    };
+
+    private final Observer<Error> errorObserver = new Observer<>() {
+        @Override
+        public void onChanged(Error error) {
+            if (error == null) {
+                return;
+            }
+            if (error.getCode() == 4110) {
+                return;
+            }
+            progressBar.setProgress(DfuService.PROGRESS_ABORTED);
+            //binding.retryButton.setVisibility(View.VISIBLE);
+            status.setText(String.format(getString(R.string.flashing_error), error.getCode(), error.getMessage()));
+            finishActivity();
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,112 +111,42 @@ public class FlashingActivity extends AppCompatActivity {
         title = binding.titleTextView;
         progressBar = binding.progressBar;
 
-        binding.retryButton.setOnClickListener(this::onRetryClicked);
+        ApplicationStateHandler.updateState(STATE_FLASHING);
+        ApplicationStateHandler.getErrorLiveData().observe(this, errorObserver);
+        ApplicationStateHandler.getNotificationLiveData().observe(this, notificationObserver);
+        ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
 
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(BROADCAST_PROGRESS);
-        filter.addAction(BROADCAST_START);
-        filter.addAction(BROADCAST_COMPLETE);
-        filter.addAction(BROADCAST_PF_FAILED);
-        filter.addAction(BROADCAST_PF_ATTEMPT_DFU);
-        LocalBroadcastManager.getInstance(this).registerReceiver(progressReceiver, filter);
+        binding.retryButton.setOnClickListener(this::onRetryClicked);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        ApplicationStateHandler.getNotificationLiveData().removeObserver(notificationObserver);
+        ApplicationStateHandler.getErrorLiveData().removeObserver(errorObserver);
+        ApplicationStateHandler.getProgressLiveData().removeObserver(progressObserver);
         binding = null;
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(progressReceiver);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        DfuServiceListenerHelper.registerProgressListener(this, dfuProgressListener);
+        //DfuServiceListenerHelper.registerProgressListener(this, dfuProgressListener);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        DfuServiceListenerHelper.unregisterProgressListener(this, dfuProgressListener);
+        //DfuServiceListenerHelper.unregisterProgressListener(this, dfuProgressListener);
     }
 
-    private final DfuProgressListener dfuProgressListener = new DfuProgressListenerAdapter() {
-        @Override
-        public void onDeviceConnecting(@NonNull String deviceAddress) {
-            status.setText(R.string.flashing_device_connecting);
-        }
-
-        @Override
-        public void onDeviceConnected(@NonNull String deviceAddress) {
-            status.setText(R.string.flashing_device_connected);
-        }
-
-        @Override
-        public void onDfuProcessStarting(@NonNull String deviceAddress) {
-            status.setText(R.string.flashing_process_starting);
-        }
-
-        @Override
-        public void onDfuProcessStarted(@NonNull String deviceAddress) {
-            status.setText(R.string.flashing_process_started);
-        }
-
-        @Override
-        public void onEnablingDfuMode(@NonNull String deviceAddress) {
-            status.setText(R.string.flashing_enabling_dfu_mode);
-        }
-
-        @Override
-        public void onProgressChanged(@NonNull String deviceAddress, int percent, float speed, float avgSpeed, int currentPart, int partsTotal) {
-            if(percent >= 0 && percent <= 100) {
-                status.setText(R.string.flashing_uploading);
-                progressBar.setProgress(percent);
-                title.setText(String.format(getString(R.string.flashing_percent), percent));
-            }
-        }
-
-        @Override
-        public void onFirmwareValidating(@NonNull String deviceAddress) {
-            status.setText(R.string.flashing_firmware_validating);
-        }
-
-        @Override
-        public void onDeviceDisconnecting(String deviceAddress) {
-            status.setText(R.string.flashing_device_disconnecting);
-        }
-
-        @Override
-        public void onDeviceDisconnected(@NonNull String deviceAddress) {
-            status.setText(R.string.flashing_device_disconnected);
-        }
-
-        @Override
-        public void onDfuCompleted(@NonNull String deviceAddress) {
-            status.setText(R.string.flashing_completed);
-            finishActivity();
-        }
-
-        @Override
-        public void onDfuAborted(@NonNull String deviceAddress) {
-            status.setText(R.string.flashing_aborted);
-            finishActivity();
-        }
-
-        @Override
-        public void onError(@NonNull String deviceAddress, int error, int errorType, String message) {
-            if (error == 4110) {
-                return;
-            }
-            progressBar.setProgress(0);
-            binding.retryButton.setVisibility(View.VISIBLE);
-            status.setText(String.format(getString(R.string.flashing_error), error, message));
-            finishActivity();
-        }
-    };
+    @Override
+    public void onBackPressed() {
+        finish();
+    }
 
     private void onRetryClicked(View view) {
-        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()){
+        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()) {
             ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
             return;
         }
@@ -176,41 +160,4 @@ public class FlashingActivity extends AppCompatActivity {
     private void finishActivity() {
         timerHandler.postDelayed(deferredFinish, DELAY_TO_FINISH_ACTIVITY);
     }
-
-    private final BroadcastReceiver progressReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
-            if (action == null) {
-                return;
-            }
-
-            switch (action) {
-                case BROADCAST_PROGRESS -> {
-                    int progress = intent.getIntExtra(EXTRA_PROGRESS, 0);
-                    status.setText(R.string.flashing_uploading);
-                    progressBar.setProgress(progress);
-                    title.setText(String.format(getString(R.string.flashing_percent), progress));
-                }
-                case BROADCAST_START -> {
-                    progressBar.setProgress(0);
-                    status.setText("BROADCAST_START");
-                }
-                case BROADCAST_COMPLETE -> {
-                    progressBar.setProgress(0);
-                    status.setText("BROADCAST_COMPLETE");
-                    finishActivity();
-                }
-                case BROADCAST_PF_FAILED -> {
-                    progressBar.setProgress(0);
-                    status.setText("BROADCAST_PF_FAILED");
-                    finishActivity();
-                }
-                case BROADCAST_PF_ATTEMPT_DFU -> {
-                    progressBar.setProgress(0);
-                    status.setText("BROADCAST_PF_ATTEMPT_DFU");
-                }
-            }
-        }
-    };
 }

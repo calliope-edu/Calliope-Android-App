@@ -1,6 +1,7 @@
 package cc.calliope.mini.core.service;
 
 import static cc.calliope.mini.core.state.State.STATE_BUSY;
+import static cc.calliope.mini.core.state.State.STATE_ERROR;
 import static cc.calliope.mini.core.state.State.STATE_FLASHING;
 import static cc.calliope.mini.core.state.State.STATE_IDLE;
 
@@ -128,7 +129,7 @@ public class DfuService extends DfuBaseService{
                     };
 
                     Utils.log(Log.ERROR, TAG, "Error (" + code + "): " + message);
-                    ApplicationStateHandler.updateState(STATE_IDLE);
+                    ApplicationStateHandler.updateState(STATE_ERROR);
                     ApplicationStateHandler.updateNotification(Notification.ERROR, R.string.error_connection_failed);
                     ApplicationStateHandler.updateError(code, message);
                 }

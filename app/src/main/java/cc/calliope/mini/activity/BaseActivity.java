@@ -427,7 +427,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     }
 
     private void checkDeviceAvailability() {
-        if (currentState.getType() != State.STATE_IDLE || hasOpenedPatternDialog()) {
+        if (currentState.getType() == State.STATE_BUSY || currentState.getType() == State.STATE_FLASHING || hasOpenedPatternDialog()) {
             return;
         }
 
