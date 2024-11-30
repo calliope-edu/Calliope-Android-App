@@ -8,14 +8,8 @@ import static cc.calliope.mini.utils.Constants.MINI_V3;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 import static cc.calliope.mini.utils.FileVersion.VERSION_2;
 import static cc.calliope.mini.utils.FileVersion.VERSION_3;
-import static no.nordicsemi.android.dfu.DfuBaseService.TYPE_APPLICATION;
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
@@ -24,15 +18,12 @@ import android.util.Log;
 
 import androidx.lifecycle.LifecycleService;
 import androidx.lifecycle.Observer;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -48,11 +39,10 @@ import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Settings;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
-import kotlin.Unit;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
 
 
-public class FlashingService extends LifecycleService{
+public class FlashingService extends LifecycleService {
     private static final String TAG = "FlashingService";
     private static final int NUMBER_OF_RETRIES = 3;
     private static final int REBOOT_TIME = 2000; // time required by the device to reboot, ms
@@ -63,14 +53,6 @@ public class FlashingService extends LifecycleService{
 
     private State currentState = new State(State.STATE_IDLE);
 
-    public static final String BROADCAST_PF_ATTEMPT_DFU = "org.microbit.android.partialflashing.broadcast.BROADCAST_PF_ATTEMPT_DFU";
-
-
-//    private static final int CONNECTION_TIMEOUT = 30000; // 3 seconds
-//    private Handler handler;
-//    private Runnable timeoutRunnable;
-
-
     private final Observer<State> stateObserver = new Observer<>() {
         @Override
         public void onChanged(State state) {
@@ -78,12 +60,6 @@ public class FlashingService extends LifecycleService{
                 return;
             }
             currentState = state;
-//            int type = state.getType();
-//
-//            if (type == State.STATE_FLASHING ||
-//                type == State.STATE_ERROR) {
-//                handler.removeCallbacks(timeoutRunnable); // Remove the timeout callback
-//            }
         }
     };
 
@@ -116,18 +92,18 @@ public class FlashingService extends LifecycleService{
             if (error != null) {
                 int code = error.getCode();
                 String message = error.getMessage();
+                Utils.log(Log.ERROR, TAG, "ERROR: " + code + " " + message);
+                //               stopSelf();
 
-                if (code == 4110) {
-                    BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-                    if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
-                        Utils.log(Log.ERROR, TAG, "Bluetooth not enabled");
-                    } else {
-                        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(currentAddress);
-                        device.createBond();
-                    }
-                } else {
-                    Utils.log(Log.ERROR, TAG, "ERROR: " + code + " " + message);
-                }
+//                if (code == 4110) {
+//                    BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+//                    if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
+//                        Utils.log(Log.ERROR, TAG, "Bluetooth not enabled");
+//                    } else {
+//                        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(currentAddress);
+//                        device.createBond();
+//                    }
+//                }
             }
         });
     }
@@ -149,9 +125,9 @@ public class FlashingService extends LifecycleService{
             return START_NOT_STICKY;
         }
 
-        if(getPath(intent) && getDevice()) {
+        if (getPath(intent) && getDevice()) {
             FileVersion fileVersion = FileUtils.getFileVersion(currentPath);
-            if((fileVersion == VERSION_3 && boardVersion == MINI_V2) || (fileVersion == VERSION_2 && boardVersion == MINI_V3)){
+            if ((fileVersion == VERSION_3 && boardVersion == MINI_V2) || (fileVersion == VERSION_2 && boardVersion == MINI_V3)) {
                 ApplicationStateHandler.updateState(State.STATE_IDLE);
                 ApplicationStateHandler.updateNotification(ERROR, getString(R.string.flashing_version_mismatch));
                 return START_NOT_STICKY;
@@ -177,7 +153,7 @@ public class FlashingService extends LifecycleService{
             if (resultCode == RESULT_OK) {
                 boolean isSuccess = resultData.getBoolean("result");
                 if (isSuccess) {
-                    startFlashing();
+                    startDfu();
                 } else {
                     Utils.log(ERROR, TAG, "DFU failed");
                 }
@@ -187,7 +163,7 @@ public class FlashingService extends LifecycleService{
 
     private boolean getPath(Intent intent) {
         String path = intent.getStringExtra(Constants.EXTRA_FILE_PATH);
-        if(path != null && !path.isEmpty()){
+        if (path != null && !path.isEmpty()) {
             currentPath = path;
         }
         if (currentPath == null || currentPath.isEmpty()) {
@@ -222,44 +198,25 @@ public class FlashingService extends LifecycleService{
         return true;
     }
 
-    private void initFlashing(){
+    private void initFlashing() {
         if (!Utils.isBluetoothEnabled()) {
             Utils.log(Log.WARN, TAG, "Bluetooth not enabled or flashing already in progress. Service will stop.");
             return;
         }
-//
-//        // Initialize the handler and timeout runnable
-//        handler = new Handler(Looper.getMainLooper());
-//        timeoutRunnable = new Runnable() {
-//            @Override
-//            public void run() {
-//                if(currentVersion == MINI_V1) {
-//                    ApplicationStateHandler.updateNotification(Notification.WARNING, getString(R.string.flashing_timeout_v1));
-//                } else {
-//                    ApplicationStateHandler.updateNotification(Notification.WARNING, getString(R.string.flashing_timeout_v2));
-//                }
-//            }
-//        };
-//
-//        // Start the N second timeout countdown
-//        handler.postDelayed(timeoutRunnable, CONNECTION_TIMEOUT);
-
-
 
         if (Settings.isPartialFlashingEnable(this)) {
-
+            // TODO: Implement partial flashing
         } else {
-            if(boardVersion == MINI_V2) {
+            if (boardVersion == MINI_V2) {
                 startDfuControlService();
             } else {
-                startFlashing();
+                startDfu();
             }
         }
     }
 
     private void startDfuControlService() {
         Utils.log(TAG, "Starting DfuControl Service...");
-
         LegacyDfuResultReceiver resultReceiver = new LegacyDfuResultReceiver(new Handler());
 
         // Start the service
@@ -286,163 +243,121 @@ public class FlashingService extends LifecycleService{
         }
     }
 
-    public byte[] getCalliopeBin(int dataTypeParam, long startAddress, long endAddress) {
+    private String prepareFirmwareZip() {
+        // Prepare firmware file
         HexParser parser = new HexParser(currentPath);
-        List<Byte> bin = new ArrayList<>();
-        parser.parse((address, data, dataType, isUniversal) -> {
-            if (address >= startAddress && address < endAddress && (dataType == dataTypeParam || !isUniversal)) {
-                for (byte b : data) {
-                    bin.add(b);
-                }
-            }
-            return Unit.INSTANCE;
-        });
+        byte[] firmware = parser.getCalliopeBin(boardVersion);
 
-        // Android DFU library requires the firmware to be word-aligned
-        int totalDataSize = bin.size();
-        if (totalDataSize % 4 != 0) {
-            int paddingSize = 4 - (totalDataSize % 4);
-            for (int i = 0; i < paddingSize; i++) {
-                bin.add((byte) 0xFF);
-            }
+        String firmwarePath = getCacheDir() + File.separator + "application.bin";
+        if (!FileUtils.writeFile(firmwarePath, firmware)) {
+            Utils.log(Log.ERROR, TAG, "Failed to write firmware to file");
+            ApplicationStateHandler.updateNotification(ERROR, "Failed to write firmware to file");
+            return null;
         }
 
-        byte[] binArray = new byte[bin.size()];
-        for (int i = 0; i < bin.size(); i++) {
-            binArray[i] = bin.get(i);
+        // Prepare init packet
+        InitPacket initPacket = new InitPacket(boardVersion);
+        byte[] initData = initPacket.encode(firmware);
+
+        String initPacketPath = getCacheDir() + File.separator + "application.dat";
+        if (!FileUtils.writeFile(initPacketPath, initData)) {
+            Utils.log(Log.ERROR, TAG, "Failed to write init packet to file");
+            ApplicationStateHandler.updateNotification(ERROR, "Failed to write init packet to file");
+            return null;
         }
-        return binArray;
-    }
 
-    public byte[] getCalliopeV2Bin() {
-        return getCalliopeBin(1, 0x18000L, 0x3C000L);
-    }
-
-    public byte[] getCalliopeV3Bin() {
-        return getCalliopeBin(2, 0x1C000L, 0x77000L);
-    }
-
-    @SuppressWarnings("deprecation")
-    private void startFlashing() {
-        Utils.log(Log.INFO, TAG, "Starting DFU Service...");
-        if (boardVersion == MINI_V2) {
-            byte[] firmware = getCalliopeV2Bin();
-            String firmwarePath = getCacheDir() + File.separator + "application.bin";
-
-            if (firmware == null) {
-                Utils.log(Log.ERROR, TAG, "Failed to convert HEX to DFU");
-                ApplicationStateHandler.updateNotification(ERROR, "Failed to convert HEX to DFU");
-                return;
-            }
-
-            if (!FileUtils.writeFile(firmwarePath, firmware)){
-                Utils.log(Log.ERROR, TAG, "Failed to write firmware to file");
-                ApplicationStateHandler.updateNotification(ERROR, "Failed to write firmware to file");
-                return;
-            }
-            new DfuServiceInitiator(currentAddress)
-                    .setDeviceName(currentPattern)
-                    .setPrepareDataObjectDelay(300L)
-                    .setNumberOfRetries(NUMBER_OF_RETRIES)
-                    .setRebootTime(REBOOT_TIME)
-                    .setForceDfu(true)
-                    .setKeepBond(true)
-                    .setMbrSize(0x1000)
-                    .setBinOrHex(TYPE_APPLICATION, firmwarePath)
-                    .start(this, DfuService.class);
-        } else {
-            byte[] firmware = getCalliopeV3Bin();
-            String firmwarePath = getCacheDir() + File.separator + "application.bin";
-            String initPacketPath =  getCacheDir() + File.separator + "application.dat";
-
-            if (firmware == null) {
-                Utils.log(Log.ERROR, TAG, "Failed to convert HEX to DFU");
-                ApplicationStateHandler.updateNotification(ERROR, "Failed to convert HEX to DFU");
-                return;
-            }
-
-            if (!FileUtils.writeFile(firmwarePath, firmware)){
-                Utils.log(Log.ERROR, TAG, "Failed to write firmware to file");
-                ApplicationStateHandler.updateNotification(ERROR, "Failed to write firmware to file");
-                return;
-            }
-
-            InitPacket initPacket = new InitPacket(firmware.length);
-            byte[] intData = initPacket.encode();
-            if (!FileUtils.writeFile(initPacketPath, intData)){
-                Utils.log(Log.ERROR, TAG, "Failed to write init packet to file");
-                ApplicationStateHandler.updateNotification(ERROR, "Failed to write init packet to file");
-                return;
-            }
-
-            Utils.log(Log.DEBUG, TAG, "Path: " + firmwarePath);
-            Utils.log(Log.DEBUG, TAG, "Size: " + firmware.length);
-
-            String zipPath;
-            try {
-                zipPath = createDFUZip(initPacketPath, firmwarePath);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return;
-            }
-
-            if (zipPath == null) {
-                Utils.log(Log.ERROR, TAG, "Failed to create ZIP");
-                ApplicationStateHandler.updateNotification(ERROR, "Failed to create ZIP");
-                return;
-            }
-
-            new DfuServiceInitiator(currentAddress)
-                    .setDeviceName(currentPattern)
-                    .setPrepareDataObjectDelay(300L)
-                    .setNumberOfRetries(NUMBER_OF_RETRIES)
-                    .setRebootTime(REBOOT_TIME)
-                    .setKeepBond(true)
-                    .setPacketsReceiptNotificationsEnabled(true)
-                    .setUnsafeExperimentalButtonlessServiceInSecureDfuEnabled(true)
-                    .setZip(zipPath)
-                    .start(this, DfuService.class);
+        // Create ZIP
+        String zipPath = createZip(initPacketPath, firmwarePath);
+        if (zipPath == null) {
+            Utils.log(Log.ERROR, TAG, "Failed to create ZIP");
+            ApplicationStateHandler.updateNotification(ERROR, "Failed to create ZIP");
         }
+        return zipPath;
     }
 
-    /**
-     * Create zip for DFU
-     */
-    private String createDFUZip(String... srcFiles) throws IOException {
-        byte[] buffer = new byte[1024];
+    private void startDfu(){
+        String zipPath = prepareFirmwareZip();
+        if (zipPath == null) {
+            ApplicationStateHandler.updateNotification(ERROR, "Failed to prepare firmware ZIP");
+            Utils.log(ERROR, TAG, "Failed to prepare firmware ZIP");
+            return;
+        }
 
-        File zipFile = new File(getCacheDir() + "/update.zip");
-        if (zipFile.exists()) {
-            if (zipFile.delete()) {
-                if (!zipFile.createNewFile()) {
-                    return null;
-                }
-            } else {
+        new DfuServiceInitiator(currentAddress)
+                .setDeviceName(currentPattern)
+                .setPrepareDataObjectDelay(300L)
+                .setNumberOfRetries(NUMBER_OF_RETRIES)
+                .setRebootTime(REBOOT_TIME)
+                .setKeepBond(true)
+                .setZip(zipPath)
+                .start(this, DfuService.class);
+    }
+
+    private File initializeZipFile(String path) {
+        File zipFile = new File(path);
+        try {
+            if (zipFile.exists() && !zipFile.delete()) {
+                System.err.println("Failed to delete existing file: " + path);
                 return null;
             }
+
+            if (!zipFile.createNewFile()) {
+                System.err.println("Failed to create new file: " + path);
+                return null;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
         }
 
-        FileOutputStream fileOutputStream = new FileOutputStream(getCacheDir() + "/update.zip");
-        ZipOutputStream zipOutputStream = new ZipOutputStream(fileOutputStream);
+        return zipFile;
+    }
 
-        for (String file : srcFiles) {
+    private boolean addFilesToZip(File zipFile, String... srcFiles) {
+        byte[] buffer = new byte[1024];
 
-            File srcFile = new File(file);
-            FileInputStream fileInputStream = new FileInputStream(srcFile);
-            zipOutputStream.putNextEntry(new ZipEntry(srcFile.getName()));
+        try (FileOutputStream fileOutputStream = new FileOutputStream(zipFile);
+             ZipOutputStream zipOutputStream = new ZipOutputStream(fileOutputStream)) {
 
-            int length;
-            while ((length = fileInputStream.read(buffer)) > 0) {
-                zipOutputStream.write(buffer, 0, length);
+            for (String file : srcFiles) {
+                File srcFile = new File(file);
+
+                if (!srcFile.exists()) {
+                    System.err.println("Source file does not exist: " + file);
+                    continue;
+                }
+
+                try (FileInputStream fileInputStream = new FileInputStream(srcFile)) {
+                    zipOutputStream.putNextEntry(new ZipEntry(srcFile.getName()));
+
+                    int length;
+                    while ((length = fileInputStream.read(buffer)) > 0) {
+                        zipOutputStream.write(buffer, 0, length);
+                    }
+
+                    zipOutputStream.closeEntry();
+                }
             }
 
-            zipOutputStream.closeEntry();
-            fileInputStream.close();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 
+    private String createZip(String... srcFiles) {
+        String path = getCacheDir() + "/update.zip";
+
+        File zipFile = initializeZipFile(path);
+        if (zipFile == null) {
+            return null;
         }
 
-        zipOutputStream.close();
+        if (!addFilesToZip(zipFile, srcFiles)) {
+            return null;
+        }
 
-        return getCacheDir() + "/update.zip";
+        return path;
     }
 }

@@ -101,7 +101,7 @@ public class FileUtils {
         return FileVersion.UNDEFINED;
     }
 
-    public static boolean writeFile(String path, byte[] data) {
+    public static boolean writeFile2(String path, byte[] data) {
         try {
             File hexToFlash = new File(path);
             if (hexToFlash.exists()) {
@@ -117,5 +117,26 @@ public class FileUtils {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public static boolean writeFile(String path, byte[] data)  {
+        File file = new File(path);
+
+        if (file.exists() && !file.delete()) {
+            Utils.log(Log.ERROR, "FileUtils", "Failed to delete existing file: " + path);
+            return false;
+        }
+
+        try (FileOutputStream outputStream = new FileOutputStream(file)) {
+            if (file.createNewFile()) {
+                Utils.log(Log.WARN, "FileUtils", "The named file already exists: " + path);
+            }
+            outputStream.write(data);
+            outputStream.flush();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }
