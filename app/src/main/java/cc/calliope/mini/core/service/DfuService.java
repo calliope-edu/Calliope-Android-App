@@ -128,7 +128,7 @@ public class DfuService extends DfuBaseService{
                         default -> GattError.parse(code);
                     };
 
-                    Utils.log(Log.ERROR, TAG, "Error (" + code + "): " + message);
+                    Log.e(TAG, "Error (" + code + "): " + message);
                     ApplicationStateHandler.updateState(STATE_ERROR);
                     ApplicationStateHandler.updateNotification(Notification.ERROR, R.string.error_connection_failed);
                     ApplicationStateHandler.updateError(code, message);

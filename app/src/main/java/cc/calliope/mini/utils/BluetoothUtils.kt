@@ -9,43 +9,43 @@ class BluetoothUtils {
         const val TAG = "BluetoothUtils"
         @JvmStatic
         fun removeBond(device: BluetoothDevice): Boolean {
-            Utils.log(Log.DEBUG, TAG, "Unpairing device...")
+            Log.d(TAG, "Unpairing device...")
             return try {
                 val removeBondMethod = device.javaClass.getMethod("removeBond")
                 val result = removeBondMethod.invoke(device) as Boolean
-                Utils.log(Log.DEBUG, TAG, "Unpairing result: $result")
+                Log.d(TAG, "Unpairing result: $result")
                 result
             } catch (e: Exception) {
-                Utils.log(Log.ERROR, TAG, "An exception occurred while unpairing device. $e")
+                Log.e(TAG, "An exception occurred while unpairing device. $e")
                 false
             }
         }
 
         @JvmStatic
         fun clearServicesCache(gatt: BluetoothGatt) {
-            Utils.log(Log.INFO, TAG, "Refreshing device cache...")
+            Log.i(TAG, "Refreshing device cache...")
             try {
                 val refresh = gatt.javaClass.getMethod("refresh")
                 val success = refresh.invoke(gatt) as Boolean
-                Utils.log(Log.DEBUG, TAG, "Refreshing result: $success")
+                Log.d(TAG, "Refreshing result: $success")
             } catch (e: Exception) {
-                Utils.log(Log.ERROR, TAG, "An exception occurred while refreshing device. $e"
+                Log.e(TAG, "An exception occurred while refreshing device. $e"
                 )
             }
         }
 
         fun isValidBluetoothMAC(macAddress: String?): Boolean {
             if (macAddress == null) {
-                Utils.log(Log.ERROR, TAG, "MAC address is null")
+                Log.e(TAG, "MAC address is null")
                 return false
             }
 
             val regex = "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$"
             return if (macAddress.matches(regex.toRegex())) {
-                Utils.log(Log.DEBUG, TAG, "Valid Bluetooth MAC address: $macAddress")
+                Log.d(TAG, "Valid Bluetooth MAC address: $macAddress")
                 true
             } else {
-                Utils.log(Log.WARN, TAG, "Invalid Bluetooth MAC address: $macAddress")
+                Log.w(TAG, "Invalid Bluetooth MAC address: $macAddress")
                 false
             }
         }

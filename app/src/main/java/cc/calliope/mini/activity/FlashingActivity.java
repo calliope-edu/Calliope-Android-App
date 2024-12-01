@@ -1,6 +1,7 @@
 package cc.calliope.mini.activity;
 
 import static cc.calliope.mini.core.state.Notification.ERROR;
+import static cc.calliope.mini.core.state.State.STATE_ERROR;
 import static cc.calliope.mini.core.state.State.STATE_FLASHING;
 
 import android.content.Intent;
@@ -18,6 +19,7 @@ import cc.calliope.mini.R;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.Progress;
+import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.databinding.ActivityDfuBinding;
 import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Constants;
@@ -25,7 +27,6 @@ import cc.calliope.mini.views.BoardProgressBar;
 import cc.calliope.mini.core.state.Error;
 
 public class FlashingActivity extends AppCompatActivity {
-    private static final String TAG = "FlashingActivity";
     private static final int DELAY_TO_FINISH_ACTIVITY = 5000; // delay to finish activity after flashing
     private ActivityDfuBinding binding;
     private TextView title;
@@ -84,19 +85,19 @@ public class FlashingActivity extends AppCompatActivity {
         }
     };
 
-    private final Observer<Error> errorObserver = new Observer<>() {
-        @Override
-        public void onChanged(Error error) {
-            if (error == null) {
-                return;
-            }
-            if (error.getCode() == 4110) {
-                return;
+    private final Observer<State> stateObserver = state -> {
+        if (state == null) {
+            return;
+        }
+
+        if (state.getType() == STATE_ERROR) {
+            Error error = ApplicationStateHandler.getErrorLiveData().getValue();
+            if (error != null) {
+                status.setText(String.format(getString(R.string.flashing_error), error.getCode(), error.getMessage()));
             }
             progressBar.setProgress(DfuService.PROGRESS_ABORTED);
-            //binding.retryButton.setVisibility(View.VISIBLE);
-            status.setText(String.format(getString(R.string.flashing_error), error.getCode(), error.getMessage()));
-            finishActivity();
+            binding.retryButton.setVisibility(View.VISIBLE);
+            //finishActivity();
         }
     };
 
@@ -112,9 +113,9 @@ public class FlashingActivity extends AppCompatActivity {
         progressBar = binding.progressBar;
 
         ApplicationStateHandler.updateState(STATE_FLASHING);
-        ApplicationStateHandler.getErrorLiveData().observe(this, errorObserver);
         ApplicationStateHandler.getNotificationLiveData().observe(this, notificationObserver);
         ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
+        ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
 
         binding.retryButton.setOnClickListener(this::onRetryClicked);
     }
@@ -123,8 +124,8 @@ public class FlashingActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         ApplicationStateHandler.getNotificationLiveData().removeObserver(notificationObserver);
-        ApplicationStateHandler.getErrorLiveData().removeObserver(errorObserver);
         ApplicationStateHandler.getProgressLiveData().removeObserver(progressObserver);
+        ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver);
         binding = null;
     }
 
@@ -153,7 +154,6 @@ public class FlashingActivity extends AppCompatActivity {
 
         view.setVisibility(View.INVISIBLE);
         Intent serviceIntent = new Intent(this, FlashingService.class);
-        serviceIntent.putExtra(Constants.EXTRA_FILE_PATH, Preference.getString(this, Constants.CURRENT_FILE_PATH, ""));
         startService(serviceIntent);
     }
 

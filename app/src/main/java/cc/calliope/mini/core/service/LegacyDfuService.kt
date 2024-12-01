@@ -65,17 +65,17 @@ open class LegacyDfuService : Service() {
                     }
                 }
                 GATT_DISCONNECTED_BY_DEVICE -> {
-                    Utils.log(Log.WARN, TAG, "Disconnected by device")
+                    Log.w(TAG, "Disconnected by device")
                     reConnect(gatt.device.address)
                 }
                 else -> {
                     if(attempts < numbAttempts) {
-                        Utils.log(Log.WARN, TAG, "Connection failed. Attempt: $attempts")
+                        Log.w(TAG, "Connection failed. Attempt: $attempts")
                         reConnect(gatt.device.address)
                         attempts++
                     } else {
                         val message: String = getString(GattStatus.get(status).message)
-                        Utils.log(Log.ERROR, TAG, "Connection failed. Attempts: $attempts. Error: $status $message")
+                        Log.e(TAG, "Connection failed. Attempts: $attempts. Error: $status $message")
                         stopService(gatt)
                     }
                 }
@@ -87,13 +87,12 @@ open class LegacyDfuService : Service() {
                 getDfuControlService(gatt)
             } else {
                 gatt.disconnect()
-                Utils.log(Log.WARN, TAG, "Services discovered not success")
+                Log.w(TAG, "Services discovered not success")
             }
         }
 
         override fun onServiceChanged(gatt: BluetoothGatt) {
             super.onServiceChanged(gatt)
-            Utils.log(Log.ASSERT, TAG, "onServiceChanged")
         }
 
         @Suppress("DEPRECATION")
@@ -107,20 +106,20 @@ open class LegacyDfuService : Service() {
 
         override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray, status: Int) {
             if (status == GATT_SUCCESS) {
-                Utils.log(Log.DEBUG, TAG, "Characteristic read: ${characteristic.uuid} Value: ${value.let { it.contentToString() }}")
+                Log.d(TAG, "Characteristic read: ${characteristic.uuid} Value: ${value.let { it.contentToString() }}")
                 writeCharacteristic(gatt, characteristic)
             } else {
-                Utils.log(Log.WARN, TAG, "Characteristic read failed: ${characteristic.uuid}")
+                Log.w(TAG, "Characteristic read failed: ${characteristic.uuid}")
                 gatt.disconnect()
             }
         }
 
         override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic?, status: Int) {
             if (status == GATT_SUCCESS) {
-                Utils.log(Log.DEBUG, TAG, "Flash command written successfully")
+                Log.d(TAG, "Flash command written successfully")
                 isComplete = true
             } else {
-                Utils.log(Log.ERROR, TAG, "Error writing characteristic: $status")
+                Log.e(TAG, "Error writing characteristic: $status")
             }
             gatt.disconnect()
         }
@@ -128,7 +127,7 @@ open class LegacyDfuService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        Utils.log(Log.DEBUG, TAG, "Service created")
+        Log.d(TAG, "Service created")
     }
 
     override fun onBind(intent: Intent): IBinder? {
@@ -145,13 +144,13 @@ open class LegacyDfuService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Utils.log(TAG, "Legacy DFU Service started")
+        Log.d(TAG, "Legacy DFU Service started")
 
         // Get the pending intent from the intent
         resultReceiver = getParcelableExtra(intent,"resultReceiver")
 
         if (!Permission.isAccessGranted(this, *Permission.BLUETOOTH_PERMISSIONS)) {
-                Utils.log(Log.ERROR, TAG, "BLUETOOTH permission no granted")
+                Log.e(TAG, "BLUETOOTH permission no granted")
                 stopSelf()
                 return START_NOT_STICKY
         }
@@ -171,11 +170,11 @@ open class LegacyDfuService : Service() {
         bundle.putBoolean("result", isComplete)
         resultReceiver?.send(RESULT_OK, bundle)
 
-        Utils.log(TAG, "Legacy DFU Service destroyed")
+        Log.d(TAG, "Legacy DFU Service destroyed")
     }
 
     private fun reConnect(address: String?) {
-        Utils.log(Log.DEBUG, TAG, "Reconnecting to the device...")
+        Log.d(TAG, "Reconnecting to the device...")
         serviceScope.launch {
             delay(2000)
             connect(address)
@@ -184,7 +183,7 @@ open class LegacyDfuService : Service() {
 
     @SuppressWarnings("MissingPermission")
     private fun connect(address: String?) {
-        Utils.log(Log.DEBUG, TAG, "Connecting to the device...")
+        Log.d(TAG, "Connecting to the device...")
 
         val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val adapter: BluetoothAdapter? = bluetoothManager.adapter
@@ -198,7 +197,7 @@ open class LegacyDfuService : Service() {
 
         val device = adapter.getRemoteDevice(address)
         if (device == null) {
-            Utils.log(Log.ERROR, TAG, "Device is null")
+            Log.e(TAG, "Device is null")
             ApplicationStateHandler.updateNotification(ERROR, "Device is null")
             stopSelf()
             return
@@ -222,11 +221,11 @@ open class LegacyDfuService : Service() {
     private fun handleConnectedState(gatt: BluetoothGatt) {
         val bondState = gatt.device.bondState
         if (bondState == BluetoothDevice.BOND_BONDING) {
-            Utils.log(Log.WARN, TAG, "Waiting for bonding to complete")
+            Log.w(TAG, "Waiting for bonding to complete")
         } else {
             BluetoothUtils.clearServicesCache(gatt)
             serviceScope.launch {
-                Utils.log(Log.DEBUG, TAG, "Wait for 2000 millis before service discovery")
+                Log.d(TAG, "Wait for 2000 millis before service discovery")
                 delay(2000)
                 startServiceDiscovery(gatt)
             }
@@ -238,7 +237,7 @@ open class LegacyDfuService : Service() {
         var result = false
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
             serviceScope.launch {
-                Utils.log(Log.DEBUG, TAG, "Wait for 1600 millis before service discovery")
+                Log.d(TAG, "Wait for 1600 millis before service discovery")
                 delay(1600)
                 result = gatt.discoverServices()
             }
@@ -247,7 +246,7 @@ open class LegacyDfuService : Service() {
         }
 
         if (!result) {
-            Utils.log(Log.ERROR, TAG, "discoverServices failed to start")
+            Log.e(TAG, "discoverServices failed to start")
         }
     }
 
@@ -256,12 +255,12 @@ open class LegacyDfuService : Service() {
         val dfuControlService = gatt.getService(DFU_CONTROL_SERVICE_UUID)
         if (dfuControlService == null) {
             if (attempts < numbAttempts) {
-                Utils.log(Log.WARN, TAG, "Cannot find DFU legacy service. Attempt: $attempts")
+                Log.w(TAG, "Cannot find DFU legacy service. Attempt: $attempts")
                 reConnect(gatt.device.address)
                 attempts++
                 return
             }
-            Utils.log(Log.ERROR, TAG, "Cannot find DFU legacy service. Attempts: $attempts")
+            Log.e(TAG, "Cannot find DFU legacy service. Attempts: $attempts")
             ApplicationStateHandler.updateNotification(ERROR, "Cannot find DFU legacy service.")
             ApplicationStateHandler.updateState(State.STATE_IDLE)
             gatt.disconnect()
@@ -272,7 +271,7 @@ open class LegacyDfuService : Service() {
             DFU_CONTROL_CHARACTERISTIC_UUID
         )
         if (dfuControlCharacteristic == null) {
-            Utils.log(Log.ERROR, TAG, "Cannot find DFU legacy characteristic")
+            Log.e(TAG, "Cannot find DFU legacy characteristic")
             ApplicationStateHandler.updateNotification(ERROR, "Cannot find DFU legacy characteristic.")
             ApplicationStateHandler.updateState(State.STATE_IDLE)
             gatt.disconnect()
@@ -290,19 +289,19 @@ open class LegacyDfuService : Service() {
             val res = gatt.writeCharacteristic(characteristic, value, writeType)
 
             if (res == BluetoothStatusCodes.SUCCESS) {
-                Utils.log(Log.DEBUG, TAG, "Writing Flash Command...")
+                Log.d(TAG, "Writing Flash Command...")
             } else {
-                Utils.log(Log.ERROR, TAG, "Error writing characteristic: $res")
+                Log.e(TAG, "Error writing characteristic: $res")
             }
         } else {
             characteristic.setValue(1, BluetoothGattCharacteristic.FORMAT_UINT8, 0)
             try {
-                Utils.log(Log.DEBUG, TAG, "Writing Flash Command...")
+                Log.d(TAG, "Writing Flash Command...")
                 gatt.writeCharacteristic(characteristic)
             } catch (e: Exception) {
                 e.printStackTrace()
                 gatt.disconnect()
-                Utils.log(Log.ERROR, TAG, "Error writing characteristic: ${e.message}")
+                Log.e(TAG, "Error writing characteristic: ${e.message}")
             }
         }
     }
@@ -311,7 +310,7 @@ open class LegacyDfuService : Service() {
     private fun stopService(gatt: BluetoothGatt) {
         BluetoothUtils.clearServicesCache(gatt)
         serviceScope.launch {
-            Utils.log(Log.DEBUG, TAG, "Wait for 2000 millis before closing the service...")
+            Log.d(TAG, "Wait for 2000 millis before closing the service...")
             delay(2000)
             gatt.close()
             stopSelf()

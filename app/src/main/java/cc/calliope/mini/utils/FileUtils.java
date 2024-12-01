@@ -123,13 +123,13 @@ public class FileUtils {
         File file = new File(path);
 
         if (file.exists() && !file.delete()) {
-            Utils.log(Log.ERROR, "FileUtils", "Failed to delete existing file: " + path);
+            Log.e("FileUtils", "Failed to delete existing file: " + path);
             return false;
         }
 
         try (FileOutputStream outputStream = new FileOutputStream(file)) {
             if (file.createNewFile()) {
-                Utils.log(Log.WARN, "FileUtils", "The named file already exists: " + path);
+                Log.w("FileUtils", "The named file already exists: " + path);
             }
             outputStream.write(data);
             outputStream.flush();
