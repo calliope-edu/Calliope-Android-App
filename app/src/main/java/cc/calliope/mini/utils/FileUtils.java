@@ -101,24 +101,6 @@ public class FileUtils {
         return FileVersion.UNDEFINED;
     }
 
-    public static boolean writeFile2(String path, byte[] data) {
-        try {
-            File hexToFlash = new File(path);
-            if (hexToFlash.exists()) {
-                hexToFlash.delete();
-            }
-            hexToFlash.createNewFile();
-
-            FileOutputStream outputStream = new FileOutputStream(hexToFlash);
-            outputStream.write(data);
-            outputStream.flush();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
     public static boolean writeFile(String path, byte[] data)  {
         File file = new File(path);
 

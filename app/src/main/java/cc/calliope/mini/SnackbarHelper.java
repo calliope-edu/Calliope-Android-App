@@ -1,7 +1,5 @@
 package cc.calliope.mini;
 
-import android.content.Context;
-import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
