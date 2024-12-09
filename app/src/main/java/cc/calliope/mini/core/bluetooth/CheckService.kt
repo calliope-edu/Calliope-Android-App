@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import android.os.ResultReceiver
+import android.util.Log
 import cc.calliope.mini.utils.Utils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +40,7 @@ class CheckService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (isRunning) {
-            Utils.log(TAG, "Service is already running. Ignoring new start request.")
+            Log.w(TAG, "Service is already running. Ignoring new start request.")
             return START_NOT_STICKY
         }
 
@@ -89,7 +90,7 @@ class CheckService : Service() {
                 .map { aggregator.aggregateDevices(it) }
                 .onEach { devices ->
                     if (devices.isNotEmpty()) {
-                        Utils.log(TAG, "Device with MAC: $macAddress is available.")
+                        Log.d(TAG, "Device with MAC: $macAddress is available.")
                         resultReceiver?.send(RESULT_OK, null)
                         stopSelf()
                     }
@@ -98,7 +99,7 @@ class CheckService : Service() {
 
             // Stop scanning after the specified duration
             delay(duration)
-            Utils.log(TAG, "Device with MAC: $macAddress is not available.")
+            Log.w(TAG, "Device with MAC: $macAddress is not available.")
             resultReceiver?.send(RESULT_CANCELED, null)
             scanJob.cancel() // Stop scanning
             stopSelf() // Stop the service

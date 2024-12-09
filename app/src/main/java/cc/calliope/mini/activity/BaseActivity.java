@@ -41,6 +41,7 @@ import androidx.preference.PreferenceManager;
 
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 
+import cc.calliope.mini.SnackbarHelper;
 import cc.calliope.mini.core.bluetooth.CheckService;
 import cc.calliope.mini.core.bluetooth.Device;
 import cc.calliope.mini.core.state.ScanResults;
@@ -96,7 +97,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
             public void onChanged(List<Device> devices) {
                 if (devices != null) {
                     for (Device device : devices) {
-                        Utils.log(Log.ASSERT, "SA", "Device: " + device);
+                        Log.v("SA", "Device: " + device);
                     }
                 }
             }
@@ -164,11 +165,11 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
             String message = notification.getMessage();
             switch (type) {
                 case Notification.INFO ->
-                        Utils.infoSnackbar(rootView, message).show();
+                        SnackbarHelper.infoSnackbar(rootView, message).show();
                 case Notification.WARNING ->
-                        Utils.warningSnackbar(rootView, message).show();
+                        SnackbarHelper.warningSnackbar(rootView, message).show();
                 case Notification.ERROR ->
-                        Utils.errorSnackbar(rootView, message).show();
+                        SnackbarHelper.errorSnackbar(rootView, message).show();
             }
         }
     };
@@ -276,14 +277,14 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     }
 
     private void showBluetoothDisabledWarning() {
-        Utils.errorSnackbar(rootView, getString(R.string.error_snackbar_bluetooth_disabled))
+        SnackbarHelper.errorSnackbar(rootView, getString(R.string.error_snackbar_bluetooth_disabled))
                 .setDuration(BaseTransientBottomBar.LENGTH_INDEFINITE)
                 .setAction(R.string.button_enable, this::startBluetoothEnableActivity)
                 .show();
     }
 
     private void showLocationDisabledWarning() {
-        Utils.errorSnackbar(rootView, getString(R.string.error_snackbar_location_disable))
+        SnackbarHelper.errorSnackbar(rootView, getString(R.string.error_snackbar_location_disable))
                 .show();
     }
 
@@ -349,7 +350,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     }
 
     public void onPopupMenuItemClick(AdapterView<?> parent, View view, int position, long id) {
-        Utils.log(Log.ASSERT, "SA", "position: " + position);
+        Log.v("SA", "position: " + position);
         popupWindow.dismiss();
         if (position == 0) {
             showPatternDialog(new FobParams(
@@ -427,7 +428,7 @@ public abstract class BaseActivity extends AppCompatActivity implements DialogIn
     }
 
     private void checkDeviceAvailability() {
-        if (currentState.getType() != State.STATE_IDLE || hasOpenedPatternDialog()) {
+        if (currentState.getType() == State.STATE_BUSY || currentState.getType() == State.STATE_FLASHING || hasOpenedPatternDialog()) {
             return;
         }
 

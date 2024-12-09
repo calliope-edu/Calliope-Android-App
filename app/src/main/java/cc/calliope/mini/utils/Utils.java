@@ -92,32 +92,6 @@ public class Utils {
         return gpsEnabled || networkEnabled;
     }
 
-    public static Snackbar infoSnackbar(View view, @NotNull String message) {
-        return baseSnackbar(view, message, R.color.aqua_500);
-    }
-
-    public static Snackbar warningSnackbar(View view, @NotNull String message) {
-        return baseSnackbar(view, message, R.color.yellow_500);
-    }
-
-    public static Snackbar errorSnackbar(View view, @NotNull String message) {
-        return baseSnackbar(view, message, R.color.red);
-    }
-
-    public static Snackbar baseSnackbar(View view, @NotNull String message, int color) {
-        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-        );
-        params.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-        params.topMargin = convertDpToPixel(view.getContext(), 8);
-
-        Snackbar snackbar = Snackbar.make(view, message, Snackbar.LENGTH_LONG);
-        snackbar.getView().setBackgroundTintList(ContextCompat.getColorStateList(view.getContext(), color));
-        snackbar.getView().setLayoutParams(params);
-        return snackbar;
-    }
-
     /**
      * This method converts dp unit to equivalent pixels, depending on device density.
      *
@@ -134,44 +108,5 @@ public class Utils {
         Date date = new Date(lastModified);
 
         return DateFormat.format(OUTPUT_DATE_FORMAT, date.getTime()).toString();
-    }
-
-    public static int getFileVersion(String filePath) {
-        String firstLine, secondLine;
-        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
-            firstLine = br.readLine();
-            secondLine = br.readLine();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return -1;
-        }
-
-        if (secondLine != null) {
-            if (secondLine.startsWith(":0400000A9900C0DEBB")) {
-                return 0;
-            }
-        }
-
-        if (firstLine != null) {
-            if (firstLine.startsWith(":020000040000FA")) {
-                return 1;
-            } else if (firstLine.startsWith(":1000000000040020810A000015070000610A0000BA")) {
-                return 2;
-            }
-        }
-
-        return 0;
-    }
-
-    public static void log(int priority, String TAG, String message) {
-        Log.println(priority, TAG, "### " + android.os.Process.myTid() + " # " + message);
-    }
-
-    public static void log(int priority, String TAG, String message, Exception e) {
-        log(priority, TAG, message + " " + e.getMessage());
-    }
-
-    public static void log(String TAG, String message) {
-        log(Log.INFO, TAG, message);
     }
 }

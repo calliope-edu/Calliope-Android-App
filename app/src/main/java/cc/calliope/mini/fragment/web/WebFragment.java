@@ -11,6 +11,7 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
+import cc.calliope.mini.SnackbarHelper;
 import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.activity.FlashingActivity;
@@ -80,12 +81,12 @@ public class WebFragment extends Fragment implements DownloadListener {
 
             File file = FileUtils.getFile(context, editorName, name);
             if (file == null) {
-                Utils.errorSnackbar(webView, getString(R.string.error_snackbar_save_file_error)).show();
+                SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_save_file_error)).show();
             } else {
                 if (createAndSaveFileFromBase64Url(url, file)) {
                     startDfuActivity(file);
                 } else {
-                    Utils.errorSnackbar(webView, getString(R.string.error_snackbar_download_error)).show();
+                    SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_download_error)).show();
                 }
             }
         }
@@ -141,8 +142,6 @@ public class WebFragment extends Fragment implements DownloadListener {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Utils.log(Log.ASSERT, TAG, "onCreate");
-
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
 
@@ -175,7 +174,7 @@ public class WebFragment extends Fragment implements DownloadListener {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                    Utils.errorSnackbar(webView, "Oh no! " + error.getDescription()).show();
+                SnackbarHelper.errorSnackbar(webView, "Oh no! " + error.getDescription()).show();
             }
         });
         webView.setDownloadListener(this);
@@ -229,7 +228,7 @@ public class WebFragment extends Fragment implements DownloadListener {
         boolean result = false;
 
         if (file == null) {
-            Utils.errorSnackbar(webView, getString(R.string.error_snackbar_save_file_error)).show();
+            SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_save_file_error)).show();
         } else {
             if (url.startsWith("data:text/hex")) {
                 result = createAndSaveFileFromHexUrl(url, file);
@@ -241,7 +240,7 @@ public class WebFragment extends Fragment implements DownloadListener {
             if (result) {
                 startDfuActivity(file);
             } else {
-                Utils.errorSnackbar(webView, getString(R.string.error_snackbar_download_error)).show();
+                SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_download_error)).show();
             }
         }
     }
@@ -336,7 +335,6 @@ public class WebFragment extends Fragment implements DownloadListener {
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
-        Utils.log(Log.ASSERT, TAG, "onSaveInstanceState");
         Bundle bundle = new Bundle();
         webView.saveState(bundle);
         outState.putBundle("webViewState", bundle);

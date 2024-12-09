@@ -1,7 +1,13 @@
 package cc.calliope.mini.fragment.editors;
 
+import static cc.calliope.mini.utils.Constants.MINI_V2;
+import static cc.calliope.mini.utils.Constants.MINI_V3;
+import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
+
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
@@ -9,7 +15,6 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.ScaleAnimation;
 import android.widget.ImageView;
@@ -20,15 +25,15 @@ import androidx.browser.customtabs.CustomTabColorSchemeParams;
 import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.navigation.NavController;
 import androidx.navigation.NavDirections;
 import androidx.navigation.Navigation;
+import androidx.preference.PreferenceManager;
 
 import cc.calliope.mini.R;
-import cc.calliope.mini.WebBluetoothFragment;
+import cc.calliope.mini.SnackbarHelper;
 import cc.calliope.mini.databinding.FragmentEditorsBinding;
+import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Settings;
 import cc.calliope.mini.utils.Utils;
 
@@ -45,7 +50,7 @@ public class EditorsFragment extends Fragment {
     private void setupEditorViews() {
         setupEditorView(binding.clRow1, Editor.MAKECODE);
         setupEditorView(binding.clRow2, Editor.ROBERTA);
-        setupEditorView(binding.clRow3, Editor.BLOCKS);
+        setupEditorView(binding.clRow3, Editor.PYTHON);
         setupEditorView(binding.clRow4, Editor.CUSTOM);
     }
 
@@ -77,17 +82,32 @@ public class EditorsFragment extends Fragment {
         }
 
         if (Utils.isNetworkConnected(activity)) {
-            if (editor == Editor.BLOCKS) {
-                openWebPage(editor.getUrl());
+//            if (editor == Editor.BLOCKS) {
+//                openWebPage(editor.getUrl_v2());
+//            } else {
+            int boardVersion;
+            Context context = getContext();
+            if (context == null) {
+                boardVersion = UNIDENTIFIED;
             } else {
-                String url = editor.getUrl();
-                if (editor == Editor.CUSTOM) {
-                    url = Settings.getCustomLink(getContext());
-                }
-                showWebFragment(url, editor.toString());
+                SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+                boardVersion = preferences.getInt(Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
             }
+
+            String url;
+            if (boardVersion == MINI_V2) {
+                url = editor.getUrl_v2();
+            } else {
+                url = editor.getUrl_v3();
+            }
+
+            if (editor == Editor.CUSTOM) {
+                url = Settings.getCustomLink(getContext());
+            }
+            showWebFragment(url, editor.toString());
+//            }
         } else {
-            Utils.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_no_internet)).show();
+            SnackbarHelper.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_no_internet)).show();
         }
     }
 

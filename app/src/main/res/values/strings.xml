@@ -20,11 +20,13 @@
     <string name="title_make_code" translatable="false">MakeCode</string>
     <string name="title_roberta" translatable="false">Open Roberta Lab</string>
     <string name="title_blocks">Calliope mini Blocks</string>
+    <string name="title_python">MicroPython</string>
     <string name="title_custom">Custom editor</string>
     <string name="title_scripts">Your programs</string>
     <string name="info_make_code">Microsoft MakeCode is a free, open source platform for creating engaging computer science learning experiences that support a progression path into real-world programming.</string>
     <string name="info_roberta">The Open Roberta Lab is a cloud-based integrated programming environment that enables children and adolescents to program easily different robot/microcontroller systems.</string>
     <string name="info_blocks">Blocks.</string>
+    <string name="info_python">MicroPython is a version of Python specifically adapted for microcontrollers. The main difference is that MicroPython does not require an operating system; once you use it, it essentially becomes the system running on the Calliope mini.</string>
     <string name="info_custom">Here you can enter to the custom editor.</string>
     <string name="info_scripts">Your programs will be here.</string>
 

@@ -3,16 +3,14 @@ package cc.calliope.mini.core.service;
 import static android.app.Activity.RESULT_OK;
 import static cc.calliope.mini.core.state.Notification.ERROR;
 import static cc.calliope.mini.core.state.Notification.INFO;
-import static cc.calliope.mini.utils.Constants.MINI_V1;
+import static cc.calliope.mini.core.state.State.STATE_ERROR;
 import static cc.calliope.mini.utils.Constants.MINI_V2;
+import static cc.calliope.mini.utils.Constants.MINI_V3;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
+import static cc.calliope.mini.utils.FileVersion.VERSION_2;
+import static cc.calliope.mini.utils.FileVersion.VERSION_3;
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
@@ -21,89 +19,67 @@ import android.util.Log;
 
 import androidx.lifecycle.LifecycleService;
 import androidx.lifecycle.Observer;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import androidx.preference.PreferenceManager;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import cc.calliope.mini.FirmwareZipCreator;
 import cc.calliope.mini.HexParser;
 import cc.calliope.mini.InitPacket;
 import cc.calliope.mini.R;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.Error;
 import cc.calliope.mini.core.state.Progress;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.utils.FileUtils;
+import cc.calliope.mini.utils.FileVersion;
 import cc.calliope.mini.utils.Preference;
 import cc.calliope.mini.utils.Settings;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
-import no.nordicsemi.android.dfu.DfuBaseService;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
 
-import cc.calliope.mini.utils.irmHexUtils;
 
-public class FlashingService extends LifecycleService{
+public class FlashingService extends LifecycleService {
     private static final String TAG = "FlashingService";
     private static final int NUMBER_OF_RETRIES = 3;
     private static final int REBOOT_TIME = 2000; // time required by the device to reboot, ms
     private String currentAddress;
     private String currentPattern;
-    private int currentVersion;
+    private int boardVersion;
     private String currentPath;
 
     private State currentState = new State(State.STATE_IDLE);
 
-    public static final String BROADCAST_PF_ATTEMPT_DFU = "org.microbit.android.partialflashing.broadcast.BROADCAST_PF_ATTEMPT_DFU";
-
-
-//    private static final int CONNECTION_TIMEOUT = 30000; // 3 seconds
-//    private Handler handler;
-//    private Runnable timeoutRunnable;
-
-    private record HexToDfu(byte[] data, String path, int size) {
-    }
-
-    private final Observer<State> stateObserver = new Observer<>() {
-        @Override
-        public void onChanged(State state) {
-            if (state == null) {
-                return;
+    private final Observer<State> stateObserver = state -> {
+        if (state == null) {
+            return;
+        }
+        currentState = state;
+        if (state.getType() == STATE_ERROR) {
+            Error error = ApplicationStateHandler.getErrorLiveData().getValue();
+            if (error != null) {
+                Log.e(TAG, "ERROR: " + error.getCode() + " " + error.getMessage());
             }
-            currentState = state;
-//            int type = state.getType();
-//
-//            if (type == State.STATE_FLASHING ||
-//                type == State.STATE_ERROR) {
-//                handler.removeCallbacks(timeoutRunnable); // Remove the timeout callback
-//            }
+            Log.e(TAG, "FlashingService stopped");
+            stopSelf();
         }
     };
 
-    private final Observer<Progress> progressObserver = new Observer<>() {
-        @Override
-        public void onChanged(Progress progress) {
-            if (progress == null) {
-                return;
-            }
+    private final Observer<Progress> progressObserver = progress -> {
+        if (progress == null) {
+            return;
+        }
 
-            int value = progress.getValue();
+        int value = progress.getValue();
 
-            if (value == Progress.PROGRESS_DISCONNECTING) {
-                stopSelf();
-            }
+        if (value == Progress.PROGRESS_DISCONNECTING) {
+            stopSelf();
         }
     };
 
@@ -111,70 +87,134 @@ public class FlashingService extends LifecycleService{
     @Override
     public void onCreate() {
         super.onCreate();
-
-        ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
+        // Get the current state
         currentState = ApplicationStateHandler.getStateLiveData().getValue();
 
+        // Observe the state and progress
+        ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
         ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
-
-        ApplicationStateHandler.getErrorLiveData().observe(this, error -> {
-            if (error != null) {
-                int code = error.getCode();
-                String message = error.getMessage();
-
-                if (code == 4110) {
-                    BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-                    if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
-                        Utils.log(Log.ERROR, TAG, "Bluetooth not enabled");
-                    } else {
-                        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(currentAddress);
-                        device.createBond();
-                    }
-                } else {
-                    Utils.log(Log.ERROR, TAG, "ERROR: " + code + " " + message);
-                }
-            }
-        });
-
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(BROADCAST_PF_ATTEMPT_DFU);
-        LocalBroadcastManager.getInstance(this).registerReceiver(progressReceiver, filter);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        Log.d(TAG, "FlashingService destroyed");
         ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver);
         ApplicationStateHandler.getProgressLiveData().removeObserver(progressObserver);
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(progressReceiver);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
-        Utils.log(Log.DEBUG, TAG, "FlashingService started");
+        Log.d(TAG, "FlashingService started");
 
-        if (currentState.getType() != State.STATE_IDLE) {
-            Utils.log(Log.WARN, TAG, "Service is already running.");
+        ApplicationStateHandler.updateNotification(INFO, "Flashing in progress. Please wait...");
+
+        if (!isBluetoothEnabled() || flashingInProgress()) {
             return START_NOT_STICKY;
         }
 
-        if(getPath(intent) && getDevice()) {
-            int fileVersion = Utils.getFileVersion(currentPath);
-            if((fileVersion == 2 && currentVersion == MINI_V1) || (fileVersion == 1 && currentVersion == MINI_V2)){
-                ApplicationStateHandler.updateState(State.STATE_IDLE);
-                ApplicationStateHandler.updateNotification(ERROR, getString(R.string.flashing_version_mismatch));
-                return START_NOT_STICKY;
-            }
-
-            ApplicationStateHandler.updateNotification(INFO, "Flashing in progress. Please wait...");
-            initFlashing();
-        } else {
-            ApplicationStateHandler.updateState(State.STATE_IDLE);
-            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_no_connected));
+        if (!loadDeviceInfo()) {
+            return START_NOT_STICKY;
         }
 
+        if (!loadFilePath(intent)) {
+            return START_NOT_STICKY;
+        }
+
+        if (!checkCompatibility()) {
+            return START_NOT_STICKY;
+        }
+
+        initFlashing();
         return START_NOT_STICKY;
+    }
+
+    private boolean isBluetoothEnabled() {
+        if (!Utils.isBluetoothEnabled()) {
+            Log.e(TAG, "Bluetooth is not enabled");
+            handleError("Bluetooth is not enabled. Please enable it and try again.");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean flashingInProgress() {
+        if (currentState.getType() == State.STATE_FLASHING) {
+            Log.w(TAG, "Flashing is already in progress");
+            return true;
+        }
+        return false;
+    }
+
+    private boolean loadDeviceInfo() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        currentAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
+        currentPattern = preferences.getString(Constants.CURRENT_DEVICE_PATTERN, "");
+
+        if (!checkBluetoothMAC(currentAddress)) {
+            Log.e(TAG, "Device address is incorrect");
+            handleError("Device address is incorrect. Service will stop.");
+            return false;
+        }
+
+        boardVersion = preferences.getInt(Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
+        if (boardVersion == UNIDENTIFIED) {
+            Log.e(TAG, "Device version is incorrect");
+            handleError("Device version is incorrect. Service will stop.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean loadFilePath(Intent intent) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        currentPath = intent.getStringExtra(Constants.EXTRA_FILE_PATH);
+        if (currentPath == null || currentPath.isEmpty()) {
+            currentPath = preferences.getString(Constants.CURRENT_FILE_PATH, "");
+        } else {
+            Preference.putString(getApplicationContext(), Constants.CURRENT_FILE_PATH, currentPath);
+        }
+
+        if (currentPath == null || currentPath.isEmpty()) {
+            Log.e(TAG, "File path is missing");
+            handleError("File path is missing. Service will stop.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean checkCompatibility() {
+        FileVersion fileVersion = FileUtils.getFileVersion(currentPath);
+
+        if ((fileVersion == VERSION_3 && boardVersion == MINI_V2) ||
+                (fileVersion == VERSION_2 && boardVersion == MINI_V3)) {
+            Log.e(TAG, "Flashing version mismatch");
+            handleError(getString(R.string.flashing_version_mismatch));
+            return false;
+        }
+
+        return true;
+    }
+
+    public boolean checkBluetoothMAC(String macAddress) {
+        if (macAddress == null) {
+            Log.e(TAG, "MAC address is null");
+            return false;
+        }
+
+        String regex = "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$";
+        if (!macAddress.matches(regex)) {
+            Log.i(TAG, "Invalid Bluetooth MAC address: " + macAddress);
+            return false;
+        }
+
+        Log.i(TAG, "MAC address: " + macAddress);
+        return true;
     }
 
     private class LegacyDfuResultReceiver extends ResultReceiver {
@@ -187,89 +227,42 @@ public class FlashingService extends LifecycleService{
             if (resultCode == RESULT_OK) {
                 boolean isSuccess = resultData.getBoolean("result");
                 if (isSuccess) {
-                    startFlashing();
+                    startDfu();
                 } else {
-                    Utils.log(ERROR, TAG, "DFU failed");
+                    Log.e(TAG, "DFU failed");
+                    handleError("DFU failed. Service will stop.");
                 }
             }
         }
     }
 
-    private boolean getPath(Intent intent) {
-        String path = intent.getStringExtra(Constants.EXTRA_FILE_PATH);
-        if(path != null && !path.isEmpty()){
-            currentPath = path;
-        }
-        if (currentPath == null || currentPath.isEmpty()) {
-            Utils.log(Log.ERROR, TAG, "File path is empty or null. Service will stop.");
-            stopSelf();
-            return false;
-        }
-
-        // Save the path to preferences
-        Preference.putString(getApplicationContext(), Constants.CURRENT_FILE_PATH, currentPath);
-        return true;
-    }
-
-    private boolean getDevice() {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        currentAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
-        currentPattern = preferences.getString(Constants.CURRENT_DEVICE_PATTERN, "ZUZUZ");
-        currentVersion = preferences.getInt(Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
-
-        if (!isValidBluetoothMAC(currentAddress)) {
-            Utils.log(Log.ERROR, TAG, "Device address is incorrect. Service will stop.");
-            stopSelf();
-            return false;
-        }
-
-        if (currentVersion == UNIDENTIFIED) {
-            Utils.log(Log.ERROR, TAG, "Device version is incorrect. Service will stop.");
-            stopSelf();
-            return false;
-        }
-
-        return true;
-    }
-
-    private void initFlashing(){
-        if (!Utils.isBluetoothEnabled()) {
-            Utils.log(Log.WARN, TAG, "Bluetooth not enabled or flashing already in progress. Service will stop.");
-            return;
-        }
-//
-//        // Initialize the handler and timeout runnable
-//        handler = new Handler(Looper.getMainLooper());
-//        timeoutRunnable = new Runnable() {
-//            @Override
-//            public void run() {
-//                if(currentVersion == MINI_V1) {
-//                    ApplicationStateHandler.updateNotification(Notification.WARNING, getString(R.string.flashing_timeout_v1));
-//                } else {
-//                    ApplicationStateHandler.updateNotification(Notification.WARNING, getString(R.string.flashing_timeout_v2));
-//                }
-//            }
-//        };
-//
-//        // Start the N second timeout countdown
-//        handler.postDelayed(timeoutRunnable, CONNECTION_TIMEOUT);
-
-
-
+    private void initFlashing() {
         if (Settings.isPartialFlashingEnable(this)) {
-            startPartialFlashing();
+            handlePartialFlashing();
         } else {
-            if(currentVersion == MINI_V1) {
-                startDfuControlService();
-            } else {
-                startFlashing();
-            }
+            handleFullFlashing();
+        }
+    }
+
+    private void handlePartialFlashing() {
+        // TODO: Implement partial flashing
+        Log.e(TAG, "Partial flashing not implemented");
+        handleError("Partial flashing is not supported yet. Service will stop.");
+    }
+
+    private void handleFullFlashing() {
+        if (boardVersion == MINI_V2) {
+            startDfuControlService();
+        } else if (boardVersion == MINI_V3) {
+            startDfu();
+        } else {
+            Log.e(TAG, "Unsupported board version: " + boardVersion);
+            handleError("Unsupported board version: " + boardVersion);
         }
     }
 
     private void startDfuControlService() {
-        Utils.log(TAG, "Starting DfuControl Service...");
-
+        Log.d(TAG, "Starting DfuControl Service...");
         LegacyDfuResultReceiver resultReceiver = new LegacyDfuResultReceiver(new Handler());
 
         // Start the service
@@ -279,339 +272,57 @@ public class FlashingService extends LifecycleService{
         startService(service);
     }
 
-    public boolean isValidBluetoothMAC(String macAddress) {
-        if (macAddress == null) {
-            Utils.log(Log.ERROR, TAG, "MAC address is null");
-            return false;
-        }
-
-        String regex = "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$";
-
-        if (macAddress.matches(regex)) {
-            Utils.log(Log.INFO, TAG, "Valid Bluetooth MAC address: " + macAddress);
-            return true;
-        } else {
-            Utils.log(Log.INFO, TAG, "Invalid Bluetooth MAC address: " + macAddress);
-            return false;
-        }
-    }
-
-    public byte[] getCalliopeV3Bin() {
+    private String prepareFirmwareZip() {
+        // Prepare firmware file
         HexParser parser = new HexParser(currentPath);
-        List<Byte> bin = new ArrayList<>();
-        parser.parse((address, data, dataType, isUniversal) -> {
-            if (address >= 0x1C000 && address < 0x77000 && (dataType == 2 || !isUniversal)) {
-                for (byte b : data) {
-                    bin.add(b);
-                }
-            }
+        byte[] firmware = parser.getCalliopeBin(boardVersion);
+
+        String firmwarePath = getCacheDir() + File.separator + "application.bin";
+        if (!FileUtils.writeFile(firmwarePath, firmware)) {
+            Log.e(TAG, "Failed to write firmware to file");
             return null;
-        });
-
-        // Android DFU library requires the firmware to be word-aligned.
-        int totalDataSize = bin.size();
-        if (totalDataSize % 4 != 0) {
-            int paddingSize = 4 - (totalDataSize % 4);
-            for (int i = 0; i < paddingSize; i++) {
-                bin.add((byte) 0xFF);
-            }
         }
 
-        byte[] binArray = new byte[bin.size()];
-        for (int i = 0; i < bin.size(); i++) {
-            binArray[i] = bin.get(i);
+        // Prepare init packet
+        InitPacket initPacket = new InitPacket(boardVersion);
+        byte[] initData = initPacket.encode(firmware);
+
+        String initPacketPath = getCacheDir() + File.separator + "application.dat";
+        if (!FileUtils.writeFile(initPacketPath, initData)) {
+            Log.e(TAG, "Failed to write init packet to file");
+            return null;
         }
-        return binArray;
+
+        // Create ZIP
+        FirmwareZipCreator zipCreator = new FirmwareZipCreator(this, firmwarePath, initPacketPath);
+        String zipPath = zipCreator.createZip();
+        if (zipPath == null) {
+            Log.e(TAG, "Failed to create ZIP");
+        }
+
+        return zipPath;
     }
 
-    @SuppressWarnings("deprecation")
-    private void startFlashing() {
-        Utils.log(Log.INFO, TAG, "Starting DFU Service...");
-
-        HexToDfu hexToDFU = universalHexToDFU(currentPath, currentVersion);
-        String hexPath = hexToDFU.path;
-        int hexSize = hexToDFU.size;
-        byte[] hexData = hexToDFU.data;
-
-        byte[] hexData2 = getCalliopeV3Bin();
-        try {
-            File hexToFlash = new File(this.getCacheDir() + "/application.bin");
-            if (hexToFlash.exists()) {
-                hexToFlash.delete();
-            }
-            hexToFlash.createNewFile();
-
-            FileOutputStream outputStream = new FileOutputStream(hexToFlash);
-            outputStream.write(hexData2);
-            outputStream.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
+    private void startDfu() {
+        String zipPath = prepareFirmwareZip();
+        if (zipPath == null) {
+            Log.e(TAG, "Failed to prepare firmware ZIP");
+            handleError("Failed to prepare firmware ZIP");
+            return;
         }
 
-        String hexPath2 = this.getCacheDir() + "/application.bin";
-        int hexSize2 = hexData2.length;
-
-        InitPacket initPacket = new InitPacket(hexSize2);
-        byte[] intP = initPacket.encode();
-
-        try {
-            File hexToFlash = new File(this.getCacheDir() + "/application.dat");
-            if (hexToFlash.exists()) {
-                hexToFlash.delete();
-            }
-            hexToFlash.createNewFile();
-
-            FileOutputStream outputStream = new FileOutputStream(hexToFlash);
-            outputStream.write(intP);
-            outputStream.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        String initPacketPath = this.getCacheDir() + "/application.dat";
-
-        Utils.log(Log.DEBUG, TAG, "Path: " + hexPath);
-        Utils.log(Log.DEBUG, TAG, "Size: " + hexSize);
-
-        if (hexSize == -1) {
-            Utils.log(Log.ERROR, TAG, "Failed to convert HEX to DFU");
-            //ApplicationStateHandler.updateNotification(ERROR, "Failed to convert HEX to DFU");
-            //return;
-        }
-
-        if (currentVersion == MINI_V1) {
-            new DfuServiceInitiator(currentAddress)
-                    .setDeviceName(currentPattern)
-                    .setPrepareDataObjectDelay(300L)
-                    .setNumberOfRetries(NUMBER_OF_RETRIES)
-                    .setRebootTime(REBOOT_TIME)
-                    .setForceDfu(true)
-                    .setKeepBond(true)
-                    .setMbrSize(0x1000)
-                    .setBinOrHex(DfuBaseService.TYPE_APPLICATION, hexPath)
-                    .start(this, DfuService.class);
-        } else {
-            //String initPacketPath;
-            String zipPath;
-
-            try {
-                //initPacketPath = createDFUInitPacket(hexSize2);
-                zipPath = createDFUZip(initPacketPath, hexPath2);
-            } catch (IOException e) {
-                Utils.log(Log.ERROR, TAG, "Failed to create init packet");
-                e.printStackTrace();
-                return;
-            }
-
-            if (zipPath == null) {
-                Utils.log(Log.ERROR, TAG, "Failed to create ZIP");
-                return;
-            }
-
-            new DfuServiceInitiator(currentAddress)
-                    .setDeviceName(currentPattern)
-                    .setPrepareDataObjectDelay(300L)
-                    .setNumberOfRetries(NUMBER_OF_RETRIES)
-                    .setRebootTime(REBOOT_TIME)
-                    .setKeepBond(true)
-                    .setPacketsReceiptNotificationsEnabled(true)
-                    .setUnsafeExperimentalButtonlessServiceInSecureDfuEnabled(true)
-                    .setZip(zipPath)
-                    //.setBinOrHex(DfuBaseService.TYPE_APPLICATION, hexPath2)
-                    //.setInitFile(initPacketPath)
-                    .start(this, DfuService.class);
-        }
+        new DfuServiceInitiator(currentAddress)
+                .setDeviceName(currentPattern)
+                .setPrepareDataObjectDelay(300L)
+                .setNumberOfRetries(NUMBER_OF_RETRIES)
+                .setRebootTime(REBOOT_TIME)
+                .setKeepBond(true)
+                .setZip(zipPath)
+                .start(this, DfuService.class);
     }
 
-    private HexToDfu universalHexToDFU(String inputPath, int hardwareType) {
-        Utils.log(Log.VERBOSE, TAG, "universalHexToDFU");
-        try {
-            FileInputStream fis = new FileInputStream(inputPath);
-            int fileSize = Integer.valueOf(FileUtils.getFileSize(inputPath));
-            byte[] bs = new byte[fileSize];
-            int i = 0;
-            i = fis.read(bs);
-
-            Utils.log(Log.VERBOSE, TAG, "universalHexToDFU - read file");
-
-            irmHexUtils irmHexUtil = new irmHexUtils();
-            int hexBlock = hardwareType == MINI_V1
-                    ? irmHexUtils.irmHexBlock01
-                    : irmHexUtils.irmHexBlock03;
-            if ( !irmHexUtil.universalHexToApplicationHex( bs, hexBlock)) {
-                return new HexToDfu(null, null,-1);
-            }
-            byte [] dataHex = irmHexUtil.resultHex;
-            int application_size = irmHexUtil.resultDataSize;
-            Utils.log(Log.VERBOSE, TAG, "universalHexToDFU - Finished parsing HEX");
-
-            try {
-                File hexToFlash = new File(this.getCacheDir() + "/application.hex");
-                if (hexToFlash.exists()) {
-                    hexToFlash.delete();
-                }
-                hexToFlash.createNewFile();
-
-                FileOutputStream outputStream = new FileOutputStream(hexToFlash);
-                outputStream.write(dataHex);
-                outputStream.flush();
-
-                // Should return from here
-                Utils.log(Log.VERBOSE, TAG, hexToFlash.getAbsolutePath());
-
-                Utils.log(Log.VERBOSE, TAG, "universalHexToDFU - Finished");
-                return new HexToDfu(dataHex, hexToFlash.getAbsolutePath(), application_size);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-        } catch (FileNotFoundException e) {
-            Log.e(TAG, "File not found.");
-            e.printStackTrace();
-        } catch (IOException e) {
-            Log.e(TAG, "IO Exception.");
-            e.printStackTrace();
-        }
-
-        // Should not reach this
-        return new HexToDfu(null, null, -1);
+    private void handleError(String message) {
+        ApplicationStateHandler.updateNotification(ERROR, message);
+        ApplicationStateHandler.updateState(STATE_ERROR);
     }
-
-    private String createDFUInitPacket(int hexLength) throws IOException, NoSuchAlgorithmException {
-        ByteArrayOutputStream outputInitPacket;
-        outputInitPacket = new ByteArrayOutputStream();
-
-        Utils.log(Log.VERBOSE, TAG, "DFU App Length: " + hexLength);
-
-        outputInitPacket.write("microbit_app".getBytes()); // "microbit_app"
-        outputInitPacket.write(new byte[]{0x1, 0, 0, 0});  // Init packet version
-        outputInitPacket.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(hexLength).array());  // App size
-        outputInitPacket.write(new byte[]{0, 0, 0, 0x0});  // Hash Size. 0: Ignore Hash
-        outputInitPacket.write(new byte[]{
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0
-        }); // Hash
-
-        // Write to temp file
-        File initPacket = new File(this.getCacheDir() + "/application.dat");
-        if (initPacket.exists()) {
-            initPacket.delete();
-        }
-        initPacket.createNewFile();
-
-        FileOutputStream outputStream;
-        outputStream = new FileOutputStream(initPacket);
-        outputStream.write(outputInitPacket.toByteArray());
-        outputStream.flush();
-
-        // Should return from here
-        return initPacket.getAbsolutePath();
-    }
-
-    private String createDFUInitPacket(int hexLength, byte[] firmwareData) throws IOException, NoSuchAlgorithmException {
-        ByteArrayOutputStream outputInitPacket = new ByteArrayOutputStream();
-
-        // Записуємо "microbit_app"
-        outputInitPacket.write("microbit_app".getBytes());
-
-        // Записуємо версію ініціалізаційного пакету (4 байти)
-        outputInitPacket.write(new byte[]{0x1, 0, 0, 0});
-
-        // Записуємо розмір додатку у форматі little-endian (4 байти)
-        outputInitPacket.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(hexLength).array());
-
-        // **Нові кроки починаються тут**
-
-        // Обчислюємо SHA-256 хеш прошивки
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hash = digest.digest(firmwareData);
-
-        // Записуємо розмір хеша у форматі little-endian (4 байти)
-        outputInitPacket.write(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(hash.length).array());
-
-        // Записуємо сам хеш
-        outputInitPacket.write(hash);
-
-        // Записуємо ініціалізаційний пакет у файл
-        File initPacket = new File(this.getCacheDir(), "application.dat");
-        if (initPacket.exists()) {
-            initPacket.delete();
-        }
-        initPacket.createNewFile();
-
-        try (FileOutputStream outputStream = new FileOutputStream(initPacket)) {
-            outputStream.write(outputInitPacket.toByteArray());
-            outputStream.flush();
-        }
-
-        return initPacket.getAbsolutePath();
-    }
-
-    /**
-     * Create zip for DFU
-     */
-    private String createDFUZip(String... srcFiles) throws IOException {
-        byte[] buffer = new byte[1024];
-
-        File zipFile = new File(getCacheDir() + "/update.zip");
-        if (zipFile.exists()) {
-            if (zipFile.delete()) {
-                if (!zipFile.createNewFile()) {
-                    return null;
-                }
-            } else {
-                return null;
-            }
-        }
-
-        FileOutputStream fileOutputStream = new FileOutputStream(getCacheDir() + "/update.zip");
-        ZipOutputStream zipOutputStream = new ZipOutputStream(fileOutputStream);
-
-        for (String file : srcFiles) {
-
-            File srcFile = new File(file);
-            FileInputStream fileInputStream = new FileInputStream(srcFile);
-            zipOutputStream.putNextEntry(new ZipEntry(srcFile.getName()));
-
-            int length;
-            while ((length = fileInputStream.read(buffer)) > 0) {
-                zipOutputStream.write(buffer, 0, length);
-            }
-
-            zipOutputStream.closeEntry();
-            fileInputStream.close();
-
-        }
-
-        // close the ZipOutputStream
-        zipOutputStream.close();
-
-        return getCacheDir() + "/update.zip";
-    }
-
-    private void startPartialFlashing(){
-        Context context = getApplicationContext();
-
-        final Intent service = new Intent(context, PartialFlashingService.class);
-        service.putExtra("deviceAddress", currentAddress);
-        service.putExtra("filepath", currentPath);
-
-        context.startService(service);
-    }
-
-    private final BroadcastReceiver progressReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            final String action = intent.getAction();
-            if (action != null && action.equals(BROADCAST_PF_ATTEMPT_DFU)) {
-                if(currentVersion == MINI_V1) {
-                    startDfuControlService();
-                } else {
-                    startFlashing();
-                }
-            }
-        }
-    };
 }

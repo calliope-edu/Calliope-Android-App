@@ -37,9 +37,9 @@ public class MainActivity extends BaseActivity {
     private final ActivityResultLauncher<String> pushNotificationPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
-                    Utils.log(Log.INFO, TAG, "NotificationPermission is Granted");
+                    Log.i(TAG, "NotificationPermission is Granted");
                 } else {
-                    Utils.log(Log.WARN, TAG, "NotificationPermission NOT Granted");
+                    Log.w(TAG, "NotificationPermission NOT Granted");
                 }
             });
 
@@ -71,8 +71,8 @@ public class MainActivity extends BaseActivity {
                 binding.patternFab.setVisibility(View.VISIBLE);
             }
 
-            Utils.log(Log.ASSERT, TAG, "Destination id: " + destination.getId());
-            Utils.log(Log.ASSERT, TAG, "Select item id: " + binding.bottomNavigation.getSelectedItemId());
+            Log.v(TAG, "Destination id: " + destination.getId());
+            Log.v(TAG, "Select item id: " + binding.bottomNavigation.getSelectedItemId());
         });
         NavigationUI.setupWithNavController(binding.bottomNavigation, navController);
 
@@ -86,7 +86,7 @@ public class MainActivity extends BaseActivity {
     private void externalStorageVolumes() {
         File[] externalStorageVolumes = ContextCompat.getExternalFilesDirs(getApplicationContext(), null);
         for (File externalDir : externalStorageVolumes) {
-            Utils.log(Log.ASSERT, TAG, "Found dir at : " + externalDir);
+            Log.v(TAG, "Found dir at : " + externalDir);
         }
     }
 
@@ -162,12 +162,12 @@ public class MainActivity extends BaseActivity {
 
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        Utils.log(Log.WARN, TAG, "onConfigurationChanged");
+        Log.w(TAG, "onConfigurationChanged");
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            Utils.log(Log.WARN, TAG, "ORIENTATION_LANDSCAPE");
+            Log.w(TAG, "ORIENTATION_LANDSCAPE");
 
         } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            Utils.log(Log.WARN, TAG, "ORIENTATION_PORTRAIT");
+            Log.w(TAG, "ORIENTATION_PORTRAIT");
         }
         if (currentFragment != R.id.navigation_web) {
             recreate();

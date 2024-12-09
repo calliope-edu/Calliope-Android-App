@@ -1,10 +1,5 @@
 package cc.calliope.mini.core.state;
 
-import androidx.annotation.IntDef;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
 public class Error {
 
     private int code;
