@@ -2,10 +2,7 @@ package cc.calliope.mini
 
 import cc.calliope.mini.utils.Constants.MINI_V2
 import cc.calliope.mini.utils.Constants.MINI_V3
-import java.io.BufferedReader
 import java.io.File
-import java.io.FileReader
-import java.io.IOException
 
 class HexParser(private val path: String) {
     data class Partition(val address: UInt, val data: MutableList<Byte>)
