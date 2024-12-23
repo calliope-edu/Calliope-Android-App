@@ -31,6 +31,7 @@ import androidx.navigation.Navigation;
 import androidx.preference.PreferenceManager;
 
 import cc.calliope.mini.R;
+import cc.calliope.mini.SnackbarHelper;
 import cc.calliope.mini.databinding.FragmentEditorsBinding;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Settings;
@@ -106,7 +107,7 @@ public class EditorsFragment extends Fragment {
             showWebFragment(url, editor.toString());
 //            }
         } else {
-            Utils.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_no_internet)).show();
+            SnackbarHelper.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_no_internet)).show();
         }
     }
 

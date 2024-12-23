@@ -101,21 +101,24 @@ public class FileUtils {
         return FileVersion.UNDEFINED;
     }
 
-    public static boolean writeFile(String path, byte[] data) {
-        try {
-            File hexToFlash = new File(path);
-            if (hexToFlash.exists()) {
-                hexToFlash.delete();
-            }
-            hexToFlash.createNewFile();
+    public static boolean writeFile(String path, byte[] data)  {
+        File file = new File(path);
 
-            FileOutputStream outputStream = new FileOutputStream(hexToFlash);
+        if (file.exists() && !file.delete()) {
+            Log.e("FileUtils", "Failed to delete existing file: " + path);
+            return false;
+        }
+
+        try (FileOutputStream outputStream = new FileOutputStream(file)) {
+            if (file.createNewFile()) {
+                Log.w("FileUtils", "The named file already exists: " + path);
+            }
             outputStream.write(data);
             outputStream.flush();
             return true;
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
+            return false;
         }
-        return false;
     }
 }

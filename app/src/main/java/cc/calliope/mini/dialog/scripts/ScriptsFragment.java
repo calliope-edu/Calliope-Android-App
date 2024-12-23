@@ -44,6 +44,7 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import cc.calliope.mini.SnackbarHelper;
 import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.FileWrapper;
 import cc.calliope.mini.R;
@@ -216,7 +217,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                     if (!dest.exists() && file.renameTo(dest.file())) {
                         scriptsRecyclerAdapter.change(file, dest);
                     } else {
-                        Utils.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_name_exists)).show();
+                        SnackbarHelper.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_name_exists)).show();
                     }
                 }
             }
@@ -252,7 +253,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     public void copyFile(FileWrapper file) {
         //TODO if(...)
         boolean connected = isMiniConnected();
-        Utils.log(TAG, "Mini connected: " + connected);
+        Log.d(TAG, "Mini connected: " + connected);
 
         sourceFilePath = file.getAbsolutePath();
 
@@ -285,8 +286,8 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
 
     ActivityResultLauncher<Intent> treeUriResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
-                Utils.log(TAG, "getResultCode: " + result.getResultCode());
-                Utils.log(TAG, "getData: " + result.getData());
+                Log.d(TAG, "getResultCode: " + result.getResultCode());
+                Log.d(TAG, "getData: " + result.getData());
                 int resultCode = result.getResultCode();
                 Intent data = result.getData();
 
@@ -301,7 +302,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                                 Intent.FLAG_GRANT_READ_URI_PERMISSION |
                                         Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                         );
-                        Utils.log(TAG, "treeUri: " + treeUri);
+                        Log.d(TAG, "treeUri: " + treeUri);
                         writeFile(treeUri);
                     }
                 }
@@ -328,7 +329,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
             inputStream.close();
             outputStream.close();
         } catch (IOException e) {
-            Utils.log(Log.ERROR, TAG, "IOException: " + e.getMessage());
+            Log.e(TAG, "IOException: " + e.getMessage());
         }
     }
 
@@ -336,14 +337,14 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
         UsbManager manager = (UsbManager) activity.getSystemService(Context.USB_SERVICE);
         HashMap<String, UsbDevice> deviceList = manager.getDeviceList();
         for (UsbDevice device : deviceList.values()) {
-            Utils.log(Log.DEBUG, "USB_Device", "Device Name: " + device.getDeviceName());
-            Utils.log(Log.DEBUG, "USB_Device", "Product Name: " + device.getProductName());
-            Utils.log(Log.DEBUG, "USB_Device", "Manufacturer Name: " + device.getManufacturerName());
-            Utils.log(Log.DEBUG, "USB_Device", "Device Protocol: " + device.getDeviceProtocol());
+            Log.d("USB_Device", "Device Name: " + device.getDeviceName());
+            Log.d("USB_Device", "Product Name: " + device.getProductName());
+            Log.d("USB_Device", "Manufacturer Name: " + device.getManufacturerName());
+            Log.d("USB_Device", "Device Protocol: " + device.getDeviceProtocol());
 
             String productName = device.getProductName();
             if (productName != null && productName.contains("Calliope")) {
-                Utils.log(Log.ASSERT, TAG, "it`s Calliope");
+                Log.d(TAG, "it`s Calliope");
                 return true;
             }
         }
