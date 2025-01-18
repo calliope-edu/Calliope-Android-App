@@ -27,7 +27,6 @@ import cc.calliope.mini.utils.Constants.MINI_V3
 import cc.calliope.mini.utils.Constants.UNIDENTIFIED
 import cc.calliope.mini.utils.Permission
 import cc.calliope.mini.utils.Preference
-import cc.calliope.mini.utils.Utils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -88,10 +87,7 @@ open class BondingService : Service() {
 
         private fun handleDeviceDisconnection(gatt: BluetoothGatt) {
             Log.w(TAG, "Disconnected by device. Will wait for 2 seconds before attempting to reconnect.")
-            serviceScope.launch {
-                delay(2000)
-                reConnect(gatt.device.address)
-            }
+            reConnect(gatt.device.address)
         }
 
         private fun handleInsufficientAuthorization(gatt: BluetoothGatt) {
@@ -105,7 +101,7 @@ open class BondingService : Service() {
                 attempts++
                 reConnect(gatt.device.address)
             } else {
-                val message: String = getString(GattStatus.get(status).message)
+                val message: String = getString(GattStatusUser.get(status).message)
                 Log.e(TAG, "Connection failed, attempts: $attempts; Error: $status $message")
                 errorCounter++
                 notifyError(R.string.error_connection_failed)

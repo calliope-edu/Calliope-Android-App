@@ -5,7 +5,7 @@ import java.util.Map;
 
 import cc.calliope.mini.R;
 
-public enum GattStatus {
+public enum GattStatusUser {
     GATT_SUCCESS(0x00, R.string.gatt_success),
     GATT_INVALID_HANDLE(0x01, R.string.gatt_invalid_handle),
     GATT_READ_NOT_PERMIT(0x02, R.string.gatt_read_not_permit),
@@ -49,21 +49,21 @@ public enum GattStatus {
     private final Integer code;
     private final Integer message;
 
-    private static final Map<Integer, GattStatus> lookup = new HashMap<>();
+    private static final Map<Integer, GattStatusUser> lookup = new HashMap<>();
 
     static {
-        for (GattStatus h : GattStatus.values()) {
+        for (GattStatusUser h : GattStatusUser.values()) {
             lookup.put(h.getCode(), h);
         }
     }
 
-    GattStatus(Integer code, Integer message) {
+    GattStatusUser(Integer code, Integer message) {
         this.code = code;
         this.message = message;
     }
 
-    public static GattStatus get(Integer code) {
-        GattStatus status = lookup.get(code);
+    public static GattStatusUser get(Integer code) {
+        GattStatusUser status = lookup.get(code);
         if (status == null) {
             return GATT_UNIDENTIFIED;
         }

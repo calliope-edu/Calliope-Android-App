@@ -16,8 +16,8 @@ public class Settings extends Preference{
     }
 
     public static boolean isPartialFlashingEnable(Context context){
-        //return getBoolean(context, PREF_KEY_ENABLE_PARTIAL_FLASHING, false);
-        return false;
+        return getBoolean(context, PREF_KEY_ENABLE_PARTIAL_FLASHING, false);
+        //return false;
     }
 
     public static boolean isBackgroundFlashingEnable(Context context){

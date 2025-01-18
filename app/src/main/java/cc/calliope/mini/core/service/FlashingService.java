@@ -22,11 +22,6 @@ import androidx.lifecycle.Observer;
 import androidx.preference.PreferenceManager;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import cc.calliope.mini.FirmwareZipCreator;
 import cc.calliope.mini.HexParser;
@@ -236,6 +231,57 @@ public class FlashingService extends LifecycleService {
         }
     }
 
+    private class PartialFlashingInitReceiver extends ResultReceiver {
+        public PartialFlashingInitReceiver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            if (resultCode == RESULT_OK) {
+                boolean isSuccess = resultData.getBoolean("result");
+                if (isSuccess) {
+                    Log.d(TAG, "Partial flashing initiated");
+                    startPartialFlashing();
+                } else {
+                    Log.e(TAG, "Failed to initiate partial flashing");
+                    handleFullFlashing();
+                }
+            }
+        }
+    }
+
+    private class PartialFlashingReceiver extends ResultReceiver {
+        public PartialFlashingReceiver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            Log.d(TAG, "Partial flashing result received");
+            if (resultCode == RESULT_OK) {
+                boolean isSuccess = resultData.getBoolean("result");
+                if (isSuccess) {
+                    Log.d(TAG, "Partial flashing completed");
+                    stopSelf();
+                } else {
+                    Log.e(TAG, "Partial flashing failed");
+                    startDfu();
+                }
+            }
+        }
+    }
+
+    private void startPartialFlashing() {
+        PartialFlashingReceiver resultReceiver = new PartialFlashingReceiver(new Handler());
+
+        Intent intent = new Intent(this, PartialFlashingService.class);
+        intent.putExtra("filepath", currentPath);
+        intent.putExtra("deviceAddress", currentAddress);
+        intent.putExtra("resultReceiver", resultReceiver);
+        startService(intent);
+    }
+
     private void initFlashing() {
         if (Settings.isPartialFlashingEnable(this)) {
             handlePartialFlashing();
@@ -245,9 +291,13 @@ public class FlashingService extends LifecycleService {
     }
 
     private void handlePartialFlashing() {
-        // TODO: Implement partial flashing
-        Log.e(TAG, "Partial flashing not implemented");
-        handleError("Partial flashing is not supported yet. Service will stop.");
+        PartialFlashingInitReceiver resultReceiver = new PartialFlashingInitReceiver(new Handler());
+
+        // Start the service
+        Intent service = new Intent(this, PartialFlashingInitService.class);
+        service.putExtra(Constants.CURRENT_DEVICE_ADDRESS, currentAddress);
+        service.putExtra("resultReceiver", resultReceiver);
+        startService(service);
     }
 
     private void handleFullFlashing() {
