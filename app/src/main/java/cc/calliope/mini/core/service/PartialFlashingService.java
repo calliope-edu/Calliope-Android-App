@@ -2,7 +2,6 @@ package cc.calliope.mini.core.service;
 
 import static android.app.Activity.RESULT_OK;
 import static cc.calliope.mini.core.state.State.STATE_BUSY;
-import static cc.calliope.mini.core.state.State.STATE_ERROR;
 import static cc.calliope.mini.core.state.State.STATE_FLASHING;
 import static cc.calliope.mini.core.state.State.STATE_IDLE;
 
@@ -31,6 +30,7 @@ public class PartialFlashingService extends PartialFlashingBaseService {
     static final String TAG = "PartialFlashingService";
 
     private ResultReceiver resultReceiver = null;
+    private int finalState = STATE_IDLE;
 
     @Override
     public void logi(String message) {
@@ -90,7 +90,7 @@ public class PartialFlashingService extends PartialFlashingBaseService {
     public void onDestroy() {
         super.onDestroy();
 
-        //ApplicationStateHandler.updateState(STATE_READY);
+        ApplicationStateHandler.updateState(finalState);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(progressReceiver);
     }
 
@@ -120,19 +120,21 @@ public class PartialFlashingService extends PartialFlashingBaseService {
                     String message = getString(R.string.flashing_uploading);
                     ApplicationStateHandler.updateNotification(Notification.INFO, message);
                     ApplicationStateHandler.updateState(STATE_BUSY);
+                    ApplicationStateHandler.updateProgress(DfuService.PROGRESS_STARTING);
                 }
                 case BROADCAST_COMPLETE -> {
+                    finalState = STATE_IDLE;
                     String message = getString(R.string.flashing_completed);
                     ApplicationStateHandler.updateNotification(Notification.INFO, message);
-                    ApplicationStateHandler.updateState(STATE_IDLE);
-                    ApplicationStateHandler.updateProgress(0);
+                    ApplicationStateHandler.updateProgress(DfuService.PROGRESS_COMPLETED);
                     sendResult(true);
                 }
                 case BROADCAST_PF_FAILED, BROADCAST_PF_ATTEMPT_DFU, BROADCAST_PF_ABORTED -> {
+                    finalState = STATE_BUSY;
+                    String message = getString(R.string.partial_flashing_failed);
                     final int data = intent.getIntExtra(EXTRA_DATA, 0);
-                    Log.e(TAG, "Partial flashing failed");
-                    ApplicationStateHandler.updateState(STATE_BUSY);
-                    ApplicationStateHandler.updateNotification(Notification.INFO, "Partial flashing failed, attempting full flashing");
+                    ApplicationStateHandler.updateNotification(Notification.INFO, message);
+                    Log.e(TAG, "Partial flashing failed, error code: " + data);
                     //ApplicationStateHandler.updateState(STATE_ERROR);
                     //ApplicationStateHandler.updateNotification(Notification.ERROR, R.string.error_connection_failed);
                     //ApplicationStateHandler.updateError(data, "Partial flashing failed");

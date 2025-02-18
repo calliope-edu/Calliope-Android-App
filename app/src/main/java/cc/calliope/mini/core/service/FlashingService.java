@@ -29,6 +29,7 @@ import cc.calliope.mini.InitPacket;
 import cc.calliope.mini.R;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.core.state.Error;
+import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.Progress;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.utils.FileUtils;
@@ -103,7 +104,8 @@ public class FlashingService extends LifecycleService {
         super.onStartCommand(intent, flags, startId);
         Log.d(TAG, "FlashingService started");
 
-        ApplicationStateHandler.updateNotification(INFO, "Flashing in progress. Please wait...");
+        String message = getString(R.string.partial_flashing_starting);
+        ApplicationStateHandler.updateNotification(Notification.INFO, message);
 
         if (!isBluetoothEnabled() || flashingInProgress()) {
             return START_NOT_STICKY;

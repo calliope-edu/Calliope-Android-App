@@ -350,7 +350,7 @@ class PartialFlashingInitService : Service() {
         bundle.putBoolean("result", errorCounter == 0)
         resultReceiver?.send(RESULT_OK, bundle)
 
-        ApplicationStateHandler.updateState(State.STATE_IDLE)
+        //ApplicationStateHandler.updateState(State.STATE_IDLE)
         Log.d(TAG, "Service destroyed")
     }
 

@@ -1,23 +1,21 @@
 package cc.calliope.mini.fragment.help;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.widget.Toolbar;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.Navigation;
+
 import cc.calliope.mini.R;
-import cc.calliope.mini.activity.SettingsActivity;
 import cc.calliope.mini.databinding.FragmentHelpBinding;
-import cc.calliope.mini.fragment.home.HomeItemFragment;
 
 public class HelpFragment extends Fragment {
     private FragmentHelpBinding binding;
@@ -27,20 +25,21 @@ public class HelpFragment extends Fragment {
 
         binding = FragmentHelpBinding.inflate(inflater, container, false);
 
-        TextView appInfo = binding.appInfo;
+        TextView appInfo = binding.summaryContact;
         appInfo.setMovementMethod(LinkMovementMethod.getInstance());
-        Spanned spanned = Html.fromHtml(getString(R.string.info_app));
+        Spanned spanned = Html.fromHtml(getString(R.string.text_contact));
         appInfo.setText(spanned);
 
-        // Adding menu items programmatically
-//        MenuItem shareMenuItem = binding.topAppBar.getMenu().add(R.string.title_settings);
-//        shareMenuItem.setOnMenuItemClickListener(item -> {
-//            Intent intent = new Intent(getContext(), SettingsActivity.class);
-//            startActivity(intent);
-//            return true;
-//        });
-
         return binding.getRoot();
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        binding.topAppBar.setNavigationOnClickListener(v -> {
+            Navigation.findNavController(v).navigateUp();
+        });
     }
 
     @Override
