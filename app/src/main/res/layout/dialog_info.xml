@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/layoutDialogContainer"
+    android:layout_margin="20dp"
+    android:padding="20dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/layoutDialog"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/dialog_background"
+        app:layout_constraintTop_toTopOf="parent">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/dialog_title"
+            android:background="@drawable/dialog_success_background"
+            android:padding="10dp"
+            android:textColor="@color/white"
+            android:text="@string/title_rename"
+            android:textSize="@dimen/text_size_default"
+            android:textStyle="bold"
+            app:layout_constraintTop_toTopOf="parent"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/dialog_message"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="18sp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="40dp"
+            android:textColor="@color/ic_fill_primary"
+            android:textSize="@dimen/text_size_default"
+            android:text="@string/info_app_text"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/dialog_title"/>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/dialog_cancel"
+        android:layout_width="120dp"
+        android:layout_height="40dp"
+        android:background="@drawable/btn_grey"
+        android:text="@string/button_cancel"
+        android:textColor="@color/white"
+        android:textSize="@dimen/text_size_button"
+        app:layout_constraintBottom_toBottomOf="@id/layoutDialog"
+        app:layout_constraintEnd_toEndOf="@+id/layoutDialog"
+        app:layout_constraintStart_toStartOf="@+id/layoutDialog"
+        app:layout_constraintTop_toBottomOf="@id/layoutDialog" />
+</androidx.constraintlayout.widget.ConstraintLayout>

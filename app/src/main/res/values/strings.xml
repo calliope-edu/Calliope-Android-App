@@ -61,7 +61,9 @@
     <b>Hello and welcome to the Calliope mini app!</b>
     <br/>
     <br/>By using this app you can connect, code and flash programs to your <b>Calliope mini</b> via Bluetooth.
-    <br/>
+    ]]></string>
+
+    <string name="info_app2"><![CDATA[
     <br/>You can find inspiring and fun projects at the Calliope website at <a href="https://calliope.cc">calliope.cc</a>!
     <br/>
     <br/>Have fun!
@@ -70,6 +72,9 @@
     <string name="info_app_text" translatable="false">
     Hello and welcome to the Calliope mini app!
     By using this app you can connect, code and flash programs to your Calliope mini via Bluetooth.
+    </string>
+
+    <string name="info_app_text2" translatable="false">
     You can find inspiring and fun projects at the Calliope website at https://calliope.cc!
     Have fun!
     </string>
@@ -125,6 +130,8 @@
     <string name="flashing_error">Error (%d): %s</string>
     <string name="flashing_connection_fail">Connection fail</string>
     <string name="flashing_status">Status %d</string>
+    <string name="partial_flashing_starting">Partial flashing starting…</string>
+    <string name="partial_flashing_failed">Partial flashing failed, attempting full flashing</string>
     <string name="points" translatable="false">…</string>
     <string name="title_web" translatable="false">WEB</string>
     <string name="menu_fab_connect">Connection</string>
@@ -186,9 +193,10 @@
     <string name="gatt_failure" translatable="false">GATT FAILURE</string>
     <string name="gatt_unidentified" translatable="false">GATT UNIDENTIFIED</string>
     <string name="title_copy">Copy</string>
-    <string name="title_contact_сategory">Contact Information</string>
-    <string name="title_contact">Contact Information</string>
-    <string name="summary_contact">
+    <string name="title_info_сategory">Information</string>
+    <string name="title_contact">Contacts</string>
+    <string name="summary_contact" translatable="false">Calliope gGmbH</string>
+    <string name="text_contact">
         <![CDATA[
         Calliope gGmbH<br/>
         Raumerstrasse 11<br/>
@@ -214,5 +222,7 @@
     <string name="pattern_remove_failed">Failed to remove device</string>
     <string name="flashing_timeout_v1">Bluetooth available?\nPress AB + Reset.</string>
     <string name="flashing_timeout_v2">Bluetooth available?\nPress three times Reset.</string>
+    <string name="info_web">Connection</string>
+    <string name="title_info">Info</string>
 
 </resources>

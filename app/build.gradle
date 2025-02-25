@@ -5,12 +5,12 @@ plugins {
 }
 
 android {
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId "cc.calliope.mini"
         minSdk 23
-        targetSdk 34
+        targetSdk 35
         versionCode 22
         versionName '2.0.4'
         multiDexEnabled true
@@ -36,6 +36,8 @@ android {
 }
 
 dependencies {
+    implementation project(":partialflashing")
+
     implementation 'no.nordicsemi.android.kotlin.ble:scanner:1.1.0'
     implementation 'no.nordicsemi.android:dfu:2.6.0'
 
@@ -43,9 +45,10 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3:3.15.0'
 
     implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
-    implementation 'androidx.navigation:navigation-fragment-ktx:2.8.4'
-    implementation 'androidx.navigation:navigation-ui-ktx:2.8.4'
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.8.5'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.8.5'
     implementation 'androidx.preference:preference-ktx:1.2.1'
 
     implementation 'androidx.browser:browser:1.8.0'
+    implementation 'com.google.android.material:material:1.4.0'
 }

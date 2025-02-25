@@ -16,8 +16,8 @@ public class Settings extends Preference{
     }
 
     public static boolean isPartialFlashingEnable(Context context){
-        //return getBoolean(context, PREF_KEY_ENABLE_PARTIAL_FLASHING, false);
-        return false;
+        return getBoolean(context, PREF_KEY_ENABLE_PARTIAL_FLASHING, false);
+        //return false;
     }
 
     public static boolean isBackgroundFlashingEnable(Context context){
@@ -30,5 +30,9 @@ public class Settings extends Preference{
 
     public static String getCustomLink(Context context){
         return getString(context, PREF_KEY_CUSTOM_LINK, Editor.CUSTOM.getUrl_v2());
+    }
+
+    public static void setCustomLink(Context context, String link){
+        putString(context, PREF_KEY_CUSTOM_LINK, link);
     }
 }

@@ -18,7 +18,7 @@
             android:title="@string/title_partial_flashing"
             android:summary="@string/summary_partial_flashing"
             android:defaultValue="false"
-            android:enabled="false"
+            android:enabled="true"
             app:iconSpaceReserved="false"/>
 
         <CheckBoxPreference
@@ -45,13 +45,13 @@
     </PreferenceCategory>
 
     <PreferenceCategory
-        android:title="@string/title_contact_сategory"
+        android:title="@string/title_info_сategory"
         app:iconSpaceReserved="false">
 
         <Preference
-            android:key="pref_key_contact"
+            android:key="pref_key_help"
+            android:title="@string/title_contact"
             android:summary="@string/summary_contact"
-            android:layout="@layout/preference_contact"
             app:iconSpaceReserved="false"/>
     </PreferenceCategory>
 

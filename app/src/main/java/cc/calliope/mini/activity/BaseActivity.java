@@ -394,12 +394,11 @@ public abstract class BaseActivity extends AppCompatActivity
 
     public void onFabClick(View view) {
         State state = ApplicationStateHandler.getStateLiveData().getValue();
-        boolean flashing = false;
-        if (state != null) {
-            flashing = state.getType() == State.STATE_FLASHING;
+        if (state == null) {
+            return;
         }
 
-        if (flashing) {
+        if (state.getType() == State.STATE_FLASHING || state.getType() == State.STATE_BUSY) {
             startFlashingActivity();
         } else {
             createPopupMenu(view);

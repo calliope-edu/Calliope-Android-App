@@ -14,7 +14,8 @@
         android:layout_height="?attr/actionBarSize"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent"
+        app:navigationIcon="@drawable/ic_back_24" />
 
     <ScrollView
         android:id="@+id/scrollView2"
@@ -23,7 +24,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/topAppBar">
+        app:layout_constraintTop_toBottomOf="@+id/topAppBar" >
 
         <LinearLayout
             android:id="@+id/linearLayout"
@@ -43,11 +44,11 @@
                 android:src="@drawable/logo_calliope_mini" />
 
             <TextView
-                android:id="@+id/app_info"
+                android:id="@+id/summary_contact"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:text="@string/info_app_text"
+                android:text="@string/text_contact"
                 android:textAlignment="textStart"
                 android:textIsSelectable="true"
                 android:textSize="@dimen/text_size_default" />
