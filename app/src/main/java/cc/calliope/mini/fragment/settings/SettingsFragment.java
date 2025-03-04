@@ -2,31 +2,35 @@ package cc.calliope.mini.fragment.settings;
 
 import android.os.Bundle;
 import android.text.Html;
-import android.text.Spanned;
-import android.text.method.LinkMovementMethod;
-import android.widget.TextView;
 
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import cc.calliope.mini.R;
 
 public class SettingsFragment extends PreferenceFragmentCompat {
-
-    // TODO: GitHub link
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.preferences, rootKey);
+    }
 
-        Preference contactPreference = findPreference("pref_key_contact");
-        if (contactPreference != null) {
+    @Override
+    public boolean onPreferenceTreeClick(Preference preference) {
+        if ("pref_key_contact".equals(preference.getKey())) {
             // Set HTML-formatted text for API Level 23 and above
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                contactPreference.setSummary(Html.fromHtml(getString(R.string.summary_contact), Html.FROM_HTML_MODE_LEGACY));
+                preference.setSummary(Html.fromHtml(getString(R.string.text_contact), Html.FROM_HTML_MODE_LEGACY));
             } else {
                 // For API Level below 24
-                contactPreference.setSummary(Html.fromHtml(getString(R.string.summary_contact)));
+                preference.setSummary(Html.fromHtml(getString(R.string.text_contact)));
             }
-            contactPreference.setSelectable(false);
+            preference.setSelectable(false);
+        } else if ("pref_key_help".equals(preference.getKey())) {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.navigation_host_fragment);
+            navController.navigate(R.id.action_settings_to_help);
+            return true;
         }
+        return super.onPreferenceTreeClick(preference);
     }
 }

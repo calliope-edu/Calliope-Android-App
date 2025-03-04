@@ -1,8 +1,6 @@
 package cc.calliope.mini.core.service
 
-import android.app.Activity
 import android.app.Activity.RESULT_OK
-import android.app.PendingIntent
 import android.app.Service
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
@@ -26,7 +24,6 @@ import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.BluetoothUtils
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Permission
-import cc.calliope.mini.utils.Utils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -74,7 +71,7 @@ open class LegacyDfuService : Service() {
                         reConnect(gatt.device.address)
                         attempts++
                     } else {
-                        val message: String = getString(GattStatus.get(status).message)
+                        val message: String = getString(GattStatusUser.get(status).message)
                         Log.e(TAG, "Connection failed. Attempts: $attempts. Error: $status $message")
                         stopService(gatt)
                     }

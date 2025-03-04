@@ -54,7 +54,11 @@
         <b>Привіт і ласкаво просимо до Calliope mini додатку!</b>
         <br/>
         <br/>За допомогою цієї програми ви можете підключати, кодувати і прошивати програми до вашого <b>Calliope mini</b> через Bluetooth.
-        <br/>
+        ]]>
+    </string>
+
+    <string name="info_app2">
+        <![CDATA[
         <br/>Ви можете знайти надихаючі та цікаві проекти на сайті Calliope за посиланням <a href="https://calliope.cc">calliope.cc</a>!
         <br/>
         <br/>Розважайтеся!
@@ -127,9 +131,9 @@
     <string name="summary_rename_files">додається (n), якщо файл існує</string>
     <string name="button_remove">Видалити</string>
     <string name="title_pattern_connected">%s підключено</string>
-    <string name="title_contact_сategory">Контакти</string>
+    <string name="title_info_сategory">Інформація</string>
     <string name="title_contact">Контакти</string>
-    <string name="summary_contact">
+    <string name="text_contact">
         <![CDATA[
         Calliope gGmbH<br/>
         Raumerstrasse 11<br/>
@@ -146,4 +150,7 @@
 
     <string name="flashing_timeout_v1">Bluetooth доступний?\nНатисніть AB + Reset.</string>
     <string name="flashing_timeout_v2">Bluetooth доступний?\nНатисніть тричі Reset.</string>
+    <string name="partial_flashing_starting">Часткове прошивання розпочато…</string>
+    <string name="partial_flashing_failed">Часткове прошивання не вдалося, спроба повного прошивання</string>
+    <string name="info_web">Підключення</string>
 </resources>

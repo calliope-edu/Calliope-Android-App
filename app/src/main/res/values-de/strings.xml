@@ -51,7 +51,11 @@
         <b>Hallo und willkommen in der Calliope mini App!</b>
         <br/>
         <br/>Mit Hilfe dieser App kannst du dich mit deinem <b>Calliope mini</b> verbinden und diesen mobil programmieren.
-        <br/>
+        ]]>
+    </string>
+
+    <string name="info_app2">
+        <![CDATA[
         <br/>Um die App nutzen zu können, wird ein Calliope mini dringend empfohlen.
         <br/>
         <br/>Falls du Fragen oder Anmerkungen hast, kannst du uns an die Emailadresse <a href="mailto:info@calliope.cc">info@calliope.cc</a> eine Nachricht schreiben.
@@ -129,9 +133,9 @@
     <string name="summary_rename_files">angehängtes (n), wenn Datei vorhanden ist</string>
     <string name="button_remove">Entfernen</string>
     <string name="title_pattern_connected">%s angeschlossen</string>
-    <string name="title_contact_сategory">Contact Information</string>
+    <string name="title_info_сategory">Information</string>
     <string name="title_contact">Contact Information</string>
-    <string name="summary_contact">
+    <string name="text_contact">
         <![CDATA[
         Calliope gGmbH<br/>
         Raumerstrasse 11<br/>
@@ -147,4 +151,7 @@
 
     <string name="flashing_timeout_v1">Bluetooth verfügbar?\nDrücken Sie AB + Reset.</string>
     <string name="flashing_timeout_v2">Bluetooth verfügbar?\nDrücken Sie dreimal Reset.</string>
+    <string name="partial_flashing_starting">Teilweises Flashen wurde gestartet…</string>
+    <string name="partial_flashing_failed">Teilweises Flashen fehlgeschlagen, Versuch des vollständigen Flashen</string>
+    <string name="info_web">Anleitung</string>
 </resources>

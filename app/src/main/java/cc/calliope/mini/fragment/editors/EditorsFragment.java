@@ -1,15 +1,11 @@
 package cc.calliope.mini.fragment.editors;
 
 import static cc.calliope.mini.utils.Constants.MINI_V2;
-import static cc.calliope.mini.utils.Constants.MINI_V3;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -19,26 +15,28 @@ import android.view.animation.Animation;
 import android.view.animation.ScaleAnimation;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.browser.customtabs.CustomTabColorSchemeParams;
-import androidx.browser.customtabs.CustomTabsIntent;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavController;
 import androidx.navigation.NavDirections;
 import androidx.navigation.Navigation;
 import androidx.preference.PreferenceManager;
 
+import org.apache.commons.io.FilenameUtils;
+
 import cc.calliope.mini.R;
 import cc.calliope.mini.SnackbarHelper;
 import cc.calliope.mini.databinding.FragmentEditorsBinding;
+import cc.calliope.mini.dialog.DialogUtils;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Settings;
 import cc.calliope.mini.utils.Utils;
 
 public class EditorsFragment extends Fragment {
     private FragmentEditorsBinding binding;
+    private boolean isLongPressHandled = false;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -55,12 +53,15 @@ public class EditorsFragment extends Fragment {
     }
 
     private void setupEditorView(View view, Editor editor) {
-        if (editor == null && view == null) {
+        if (editor == null || view == null) {
             return;
         }
 
-        setupClickAnimation(view);
+        view.setClickable(true);
+
         view.setOnClickListener(v -> openEditor(v, editor));
+
+        setupClickAnimation(view, editor);
 
         ImageView imageView = view.findViewById(R.id.icon_image_view);
         TextView textView = view.findViewById(R.id.title_text_view);
@@ -76,15 +77,17 @@ public class EditorsFragment extends Fragment {
     }
 
     private void openEditor(View view, Editor editor) {
+        if (isLongPressHandled) {
+            isLongPressHandled = false;
+            return;
+        }
+
         Activity activity = getActivity();
         if (activity == null) {
             return;
         }
 
         if (Utils.isNetworkConnected(activity)) {
-//            if (editor == Editor.BLOCKS) {
-//                openWebPage(editor.getUrl_v2());
-//            } else {
             int boardVersion;
             Context context = getContext();
             if (context == null) {
@@ -105,48 +108,33 @@ public class EditorsFragment extends Fragment {
                 url = Settings.getCustomLink(getContext());
             }
             showWebFragment(url, editor.toString());
-//            }
         } else {
             SnackbarHelper.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_no_internet)).show();
         }
     }
 
-    private void openWebPage(String url) {
-        Activity activity = getActivity();
-        if (activity == null) {
-            return;
-        }
+    private boolean onLongPress(View view, Editor editor) {
+        isLongPressHandled = true;
 
-        CustomTabColorSchemeParams colorSchemeParams = new CustomTabColorSchemeParams.Builder()
-                .setToolbarColor(ContextCompat.getColor(activity, R.color.aqua_200))
-                .build();
+        ScaleAnimation scaleUp = new ScaleAnimation(0.9f, 1.0f, 0.9f, 1.0f,
+                Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        scaleUp.setDuration(100);
+        scaleUp.setFillAfter(true);
+        view.startAnimation(scaleUp);
 
-        CustomTabsIntent customTabsIntent = new CustomTabsIntent.Builder()
-                .setShowTitle(true)
-                .setDefaultColorSchemeParams(colorSchemeParams)
-                .build();
+        String dialogTitle = editor.getTitleResId() == 0 ? "" : getString(editor.getTitleResId());
 
-        String chromePackageName = "com.android.chrome";
-        customTabsIntent.intent.setPackage(chromePackageName);
-
-        if (isPackageInstalled(chromePackageName, activity.getPackageManager())) {
-            customTabsIntent.launchUrl(activity, Uri.parse(url));
+        if (editor == Editor.CUSTOM) {
+            String link = Settings.getCustomLink(getContext());
+            DialogUtils.showEditDialog(getContext(), dialogTitle, link, output -> {
+                Settings.setCustomLink(getContext(), output);
+            });
         } else {
-            Intent playStoreIntent = new Intent(Intent.ACTION_VIEW);
-            playStoreIntent.setData(Uri.parse("market://details?id=com.android.chrome"));
-            activity.startActivity(playStoreIntent);
+            String message = editor.getInfoResId() == 0 ? "" : getString(editor.getInfoResId());
+            DialogUtils.showInfoDialog(getContext(), dialogTitle, message);
         }
-    }
 
-    private boolean isPackageInstalled(String packageName, PackageManager packageManager) {
-        //TODO: Check if the package is installed
         return true;
-//        try {
-//            packageManager.getPackageInfo(packageName, PackageManager.GET_ACTIVITIES);
-//            return true;
-//        } catch (PackageManager.NameNotFoundException e) {
-//            return false;
-//        }
     }
 
     private void showWebFragment(String url, String editorName) {
@@ -160,31 +148,34 @@ public class EditorsFragment extends Fragment {
         navController.navigate(webFragment);
     }
 
-    private void setupClickAnimation(View view) {
+    private void setupClickAnimation(View view, Editor editor) {
         view.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
-                    // Animation downscale
+                    isLongPressHandled = false;
                     ScaleAnimation scaleDown = new ScaleAnimation(1.0f, 0.9f, 1.0f, 0.9f,
                             Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
                     scaleDown.setDuration(100);
                     scaleDown.setFillAfter(true);
                     v.startAnimation(scaleDown);
-                    return true;
+                    return false;
+
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
-                    // Animation upscale
-                    ScaleAnimation scaleUp = new ScaleAnimation(0.9f, 1.0f, 0.9f, 1.0f,
-                            Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
-                    scaleUp.setDuration(100);
-                    scaleUp.setFillAfter(true);
-                    v.startAnimation(scaleUp);
-                    v.performClick();
+                    if (!isLongPressHandled) {
+                        ScaleAnimation scaleUp = new ScaleAnimation(0.9f, 1.0f, 0.9f, 1.0f,
+                                Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+                        scaleUp.setDuration(100);
+                        scaleUp.setFillAfter(true);
+                        v.startAnimation(scaleUp);
+                        v.performClick();
+                    }
+                    isLongPressHandled = false;
                     return true;
             }
             return false;
         });
+
+        view.setOnLongClickListener(v -> onLongPress(v, editor));
     }
-
 }
-

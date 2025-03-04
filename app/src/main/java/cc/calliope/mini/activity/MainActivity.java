@@ -3,15 +3,19 @@ package cc.calliope.mini.activity;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -21,6 +25,8 @@ import androidx.core.content.ContextCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.NavigationUI;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import cc.calliope.mini.popup.PopupItem;
 import cc.calliope.mini.R;
@@ -52,28 +58,26 @@ public class MainActivity extends BaseActivity {
 
         setPatternFab(binding.patternFab);
 
+        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
+
         NavController navController = Navigation.findNavController(this, R.id.navigation_host_fragment);
+        NavigationUI.setupWithNavController(bottomNavigationView, navController);
+
+        Map<Integer, Integer> navMapping = new HashMap<>();
+        navMapping.put(R.id.navigation_info, R.id.navigation_home);
+        navMapping.put(R.id.navigation_web, R.id.navigation_editors);
+        navMapping.put(R.id.navigation_help, R.id.navigation_settings);
+
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
-            previousFragment = currentFragment;
-            currentFragment = destination.getId();
-
-            if (currentFragment == R.id.navigation_web) {
-                binding.bottomNavigation.setVisibility(View.GONE);
-                binding.patternFab.moveDown();
-            } else if (previousFragment == R.id.navigation_web){
-                binding.bottomNavigation.setVisibility(View.VISIBLE);
-                binding.patternFab.moveUp();
+            int destId = destination.getId();
+            Integer mapping = navMapping.get(destId);
+            int menuId = (mapping != null) ? mapping : destId;
+            MenuItem menuItem = binding.bottomNavigation.getMenu().findItem(menuId);
+            if (menuItem != null) {
+                menuItem.setChecked(true);
             }
-
-            if (currentFragment == R.id.navigation_help) {
-                binding.patternFab.setVisibility(View.GONE);
-            } else if (previousFragment == R.id.navigation_help){
-                binding.patternFab.setVisibility(View.VISIBLE);
-            }
-
-            Log.v(TAG, "Destination id: " + destination.getId());
-            Log.v(TAG, "Select item id: " + binding.bottomNavigation.getSelectedItemId());
         });
+
         NavigationUI.setupWithNavController(binding.bottomNavigation, navController);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -131,7 +135,7 @@ public class MainActivity extends BaseActivity {
         if (position == 1) {
             ScriptsFragment scriptsFragment = new ScriptsFragment();
             scriptsFragment.show(getSupportFragmentManager(), "Bottom Sheet Dialog Fragment");
-        }else if(position == 2){
+        } else if (position == 2) {
             if (fullScreen) {
                 disableFullScreenMode();
             } else {
@@ -144,12 +148,27 @@ public class MainActivity extends BaseActivity {
         fullScreen = true;
         binding.bottomNavigation.setVisibility(View.GONE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+        View decorView = getWindow().getDecorView();
+        decorView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        );
     }
 
     private void disableFullScreenMode() {
         fullScreen = false;
         binding.bottomNavigation.setVisibility(View.VISIBLE);
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+        View decorView = getWindow().getDecorView();
+        decorView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+        );
     }
 
     @Override

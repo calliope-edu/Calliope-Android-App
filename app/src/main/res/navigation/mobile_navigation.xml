@@ -10,7 +10,19 @@
         android:id="@+id/navigation_home"
         android:name="cc.calliope.mini.fragment.home.HomeFragment"
         android:label="@string/title_home"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_home" >
+
+        <action
+            android:id="@+id/action_home_to_info"
+            app:destination="@id/navigation_info">
+            <argument
+                android:name="editorUrl"
+                app:argType="string" />
+            <argument
+                android:name="editorName"
+                app:argType="string" />
+        </action>
+    </fragment>
 
     <fragment
         android:id="@+id/navigation_editors"
@@ -44,8 +56,19 @@
         tools:layout="@layout/fragment_web" />
 
     <fragment
+        android:id="@+id/navigation_info"
+        android:name="cc.calliope.mini.fragment.info.InfoFragment"
+        android:label="@string/title_info"
+        tools:layout="@layout/fragment_info" />
+
+    <fragment
         android:id="@+id/navigation_settings"
         android:name="cc.calliope.mini.fragment.settings.SettingsFragment"
-        android:label="@string/title_settings" />
+        android:label="@string/title_settings" >
+
+        <action
+            android:id="@+id/action_settings_to_help"
+            app:destination="@id/navigation_help" />
+    </fragment>
 
 </navigation>

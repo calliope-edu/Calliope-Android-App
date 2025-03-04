@@ -7,6 +7,7 @@
     <dimen name="list_item_spacing">16dp</dimen>
     <dimen name="list_item_spacing_half">8dp</dimen>
     <dimen name="padding">16dp</dimen>
+    <dimen name="padding_half">8dp</dimen>
     <dimen name="fab_title_horizontal_padding">8dp</dimen>
     <dimen name="fab_title_vertical_padding">2dp</dimen>
     <dimen name="text_size_button">14sp</dimen>

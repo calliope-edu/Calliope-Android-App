@@ -49,10 +49,10 @@ public class DfuService extends DfuBaseService{
             DfuServiceInitiator.createDfuNotificationChannel(getApplicationContext());
         }
 
-        IntentFilter dfuServiceFilter = new IntentFilter();
-        dfuServiceFilter.addAction(BROADCAST_PROGRESS);
-        dfuServiceFilter.addAction(BROADCAST_ERROR);
-        LocalBroadcastManager.getInstance(this).registerReceiver(progressReceiver, dfuServiceFilter);
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BROADCAST_PROGRESS);
+        filter.addAction(BROADCAST_ERROR);
+        LocalBroadcastManager.getInstance(this).registerReceiver(progressReceiver, filter);
     }
 
     @Override
