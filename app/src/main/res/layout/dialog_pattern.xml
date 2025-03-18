@@ -14,7 +14,7 @@
         android:padding="10dp"
         app:layout_constraintTop_toTopOf="parent">
 
-    <cc.calliope.mini.views.PatternMatrixView
+    <cc.calliope.mini.ui.views.PatternMatrixView
         android:id="@+id/pattern_view"
         android:layout_width="200dp"
         android:layout_height="200dp"

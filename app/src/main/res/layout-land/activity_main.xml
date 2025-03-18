@@ -23,7 +23,7 @@
         app:layout_constraintBottom_toTopOf="@+id/bottom_navigation"
         app:layout_constraintTop_toTopOf="parent">
 
-        <cc.calliope.mini.views.MovableFloatingActionButton
+        <cc.calliope.mini.ui.views.MovableFloatingActionButton
             android:id="@+id/pattern_fab"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -43,5 +43,4 @@
         android:background="?android:attr/windowBackground"
         app:layout_constraintBottom_toBottomOf="parent"
         app:menu="@menu/bottom_nav_menu" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>

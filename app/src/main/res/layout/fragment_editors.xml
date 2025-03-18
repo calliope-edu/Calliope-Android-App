@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="@dimen/padding_half"
-    tools:context=".fragment.editors.EditorsFragment">
+    tools:context=".ui.fragment.editors.EditorsFragment">
 
     <LinearLayout
         android:layout_width="0dp"
