@@ -20,7 +20,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import org.microbit.android.partialflashing.PartialFlashingBaseService;
 
 import cc.calliope.mini.R;
-import cc.calliope.mini.activity.NotificationActivity;
+import cc.calliope.mini.ui.activity.NotificationActivity;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.core.state.Notification;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;

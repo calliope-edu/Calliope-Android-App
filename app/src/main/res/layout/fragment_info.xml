@@ -6,7 +6,7 @@
     android:id="@+id/constraint_layout_info"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".fragment.web.WebFragment">
+    tools:context=".ui.fragment.web.WebFragment">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/topAppBar"

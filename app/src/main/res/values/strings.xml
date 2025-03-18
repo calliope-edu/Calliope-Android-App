@@ -19,14 +19,16 @@
 
     <string name="title_make_code" translatable="false">MakeCode</string>
     <string name="title_roberta" translatable="false">Open Roberta Lab</string>
-    <string name="title_blocks">Calliope mini Blocks</string>
-    <string name="title_python">MicroPython</string>
+    <string name="title_blocks" translatable="false">Calliope mini Blocks</string>
+    <string name="title_python" translatable="false">MicroPython</string>
     <string name="title_custom">Custom editor</string>
     <string name="title_scripts">Your programs</string>
-    <string name="info_make_code">Microsoft MakeCode is a free, open source platform for creating engaging computer science learning experiences that support a progression path into real-world programming.</string>
-    <string name="info_roberta">The Open Roberta Lab is a cloud-based integrated programming environment that enables children and adolescents to program easily different robot/microcontroller systems.</string>
-    <string name="info_blocks">Blocks.</string>
-    <string name="info_python">MicroPython is a version of Python specifically adapted for microcontrollers. The main difference is that MicroPython does not require an operating system; once you use it, it essentially becomes the system running on the Calliope mini.</string>
+
+    <string name="info_make_code">The MakeCode editor enables full control over the Calliope mini and the integration of any external sensors through (custom) extensions. Programming can be done by arranging code blocks, using JavaScript, or Python.</string>
+    <string name="info_roberta">In the "Open Roberta Lab," you learn to program with the graphical language NEPO!</string>
+    <string name="info_python">MicroPython is a version of Python specifically adapted for microcontrollers. Python is an excellent first text-based programming language.</string>
+    <string name="info_blocks">The Calliope mini Blocks editor enables programming of the Calliope mini using the Scratch programming language. This allows applications to be controlled on the computer with the Calliope mini and vice versa.</string>
+
     <string name="info_custom">Here you can enter to the custom editor.</string>
     <string name="info_scripts">Your programs will be here.</string>
 
@@ -222,7 +224,7 @@
     <string name="pattern_remove_failed">Failed to remove device</string>
     <string name="flashing_timeout_v1">Bluetooth available?\nPress AB + Reset.</string>
     <string name="flashing_timeout_v2">Bluetooth available?\nPress three times Reset.</string>
-    <string name="info_web">Connection</string>
+    <string name="info_web">Instructions</string>
     <string name="title_info">Info</string>
 
 </resources>

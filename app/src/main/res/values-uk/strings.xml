@@ -16,8 +16,12 @@
 
     <string name="title_custom">Кастомний редактор</string>
     <string name="title_scripts">Ваші програми</string>
-    <string name="info_make_code">Microsoft MakeCode - це інтерактивна платформа для створення програм та проектів, зокрема, для програмування мікроконтролерів та розробки ігор. Вона надає зручне середовище розробки з використанням графічного програмування, що дає змогу створювати програми без необхідності вручну писати код.</string>
-    <string name="info_roberta">Open Roberta Lab - це хмарне інтегроване середовище програмування, яке дозволяє дітям та підліткам легко програмувати різні системи роботів/мікроконтролерів.</string>
+
+    <string name="info_make_code">Редактор MakeCode забезпечує повний контроль над Calliope mini та інтеграцію будь-яких зовнішніх датчиків за допомогою (користувацьких) розширень. Програмування можна здійснювати шляхом розташування блоків коду, використання JavaScript або Python.</string>
+    <string name="info_roberta">У "Open Roberta Lab" можна навчитися програмувати за допомогою графічної мови NEPO!</string>
+    <string name="info_python">MicroPython — це версія Python, спеціально адаптована для мікроконтролерів. Python є чудовою першою текстовою мовою програмування.</string>
+    <string name="info_blocks">Редактор Calliope mini Blocks дозволяє програмувати Calliope mini мовою програмування Scratch. Таким чином, можна керувати застосунками на комп’ютері за допомогою Calliope mini і навпаки.</string>
+
     <string name="info_custom">Тут ви можете перейти до кастомного редактору.</string>
     <string name="info_scripts">Тут будуть ваші програми.</string>
 
@@ -152,5 +156,5 @@
     <string name="flashing_timeout_v2">Bluetooth доступний?\nНатисніть тричі Reset.</string>
     <string name="partial_flashing_starting">Часткове прошивання розпочато…</string>
     <string name="partial_flashing_failed">Часткове прошивання не вдалося, спроба повного прошивання</string>
-    <string name="info_web">Підключення</string>
+    <string name="info_web">Інструкція</string>
 </resources>

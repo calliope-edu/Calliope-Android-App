@@ -11,6 +11,8 @@ import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import cc.calliope.mini.utils.settings.Preference;
+
 
 public class Permission {
     public static final String[] BLUETOOTH_PERMISSIONS;

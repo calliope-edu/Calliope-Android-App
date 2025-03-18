@@ -20,13 +20,13 @@ import cc.calliope.mini.R
 import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.Notification
 import cc.calliope.mini.core.state.State
-import cc.calliope.mini.utils.BluetoothUtils
+import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Constants.MINI_V2
 import cc.calliope.mini.utils.Constants.MINI_V3
 import cc.calliope.mini.utils.Constants.UNIDENTIFIED
 import cc.calliope.mini.utils.Permission
-import cc.calliope.mini.utils.Preference
+import cc.calliope.mini.utils.settings.Preference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

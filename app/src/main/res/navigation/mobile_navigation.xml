@@ -8,7 +8,7 @@
 
     <fragment
         android:id="@+id/navigation_home"
-        android:name="cc.calliope.mini.fragment.home.HomeFragment"
+        android:name="cc.calliope.mini.ui.fragment.home.HomeFragment"
         android:label="@string/title_home"
         tools:layout="@layout/fragment_home" >
 
@@ -26,7 +26,7 @@
 
     <fragment
         android:id="@+id/navigation_editors"
-        android:name="cc.calliope.mini.fragment.editors.EditorsFragment"
+        android:name="cc.calliope.mini.ui.fragment.editors.EditorsFragment"
         android:label="@string/title_scripts"
         tools:layout="@layout/fragment_editors">
 
@@ -44,26 +44,26 @@
 
     <fragment
         android:id="@+id/navigation_help"
-        android:name="cc.calliope.mini.fragment.help.HelpFragment"
+        android:name="cc.calliope.mini.ui.fragment.help.HelpFragment"
         android:label="@string/title_help"
         tools:layout="@layout/fragment_help">
     </fragment>
 
     <fragment
         android:id="@+id/navigation_web"
-        android:name="cc.calliope.mini.fragment.web.WebFragment"
+        android:name="cc.calliope.mini.ui.fragment.web.WebFragment"
         android:label="@string/title_web"
         tools:layout="@layout/fragment_web" />
 
     <fragment
         android:id="@+id/navigation_info"
-        android:name="cc.calliope.mini.fragment.info.InfoFragment"
+        android:name="cc.calliope.mini.ui.fragment.info.InfoFragment"
         android:label="@string/title_info"
         tools:layout="@layout/fragment_info" />
 
     <fragment
         android:id="@+id/navigation_settings"
-        android:name="cc.calliope.mini.fragment.settings.SettingsFragment"
+        android:name="cc.calliope.mini.ui.fragment.settings.SettingsFragment"
         android:label="@string/title_settings" >
 
         <action
