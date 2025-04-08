@@ -152,7 +152,16 @@
     <string name="mini_version_1">1 oder 2</string>
     <string name="mini_version_2">3</string>
     <string name="flashing_version_mismatch">Versionen stimmen nicht überein. Flashen nicht möglich!</string>
-
+    <string name="error_bluetooth_permissions">Bluetooth-Berechtigungen nicht erteilt</string>
+    <string name="error_connection_failed">Verbindung fehlgeschlagen</string>
+    <string name="error_device_null">Probleme mit dem Calliope mini Programm</string>
+    <string name="error_bluetooth_not_enabled">Bluetooth ist nicht aktiviert</string>
+    <string name="error_invalid_mac_address">Ungültige MAC-Adresse</string>
+    <string name="error_service_discovery">Suche nach einem benötigten Dienst fehlgeschlagen</string>
+    <string name="error_missing_characteristic">DFU-Merkmal kann nicht gefunden werden</string>
+    <string name="error_reading_characteristic">DFU konnte nicht gelesen werden</string>
+    <string name="pattern_removed">%s entfernt</string>
+    <string name="pattern_remove_failed">Gerät kann nicht entfernt werden</string>
     <string name="flashing_timeout_v1">Bluetooth verfügbar?\nDrücken Sie AB + Reset.</string>
     <string name="flashing_timeout_v2">Bluetooth verfügbar?\nDrücken Sie dreimal Reset.</string>
     <string name="partial_flashing_starting">Teilweises Flashen wurde gestartet…</string>
