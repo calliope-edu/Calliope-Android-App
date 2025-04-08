@@ -487,9 +487,9 @@ public abstract class BaseActivity extends AppCompatActivity
         int y;
 
         if (Math.round(view.getX()) <= screenWidth / 2) {
-            x = Utils.convertDpToPixel(this, 8);
+            x = Utils.convertDpToPixel(this, 4);
         } else {
-            x = (Utils.convertDpToPixel(this, 8) - view.getWidth() + popupMenuWidth) * -1;
+            x = (Utils.convertDpToPixel(this, 4) - view.getWidth() + popupMenuWidth) * -1;
         }
 
         if (Math.round(view.getY()) <= screenHeight / 2) {

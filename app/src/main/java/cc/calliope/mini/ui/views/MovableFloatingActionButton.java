@@ -13,7 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-
+import com.google.android.material.shape.ShapeAppearanceModel;
 
 import cc.calliope.mini.utils.Utils;
 
@@ -44,6 +44,10 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
 
     private void init(Context context) {
         this.context = context;
+
+        setShapeAppearanceModel(ShapeAppearanceModel.builder()
+            .setAllCornerSizes(Utils.convertDpToPixel(context, 20)).build()
+        );
 
         setOnTouchListener(this);
         paint = new Paint();

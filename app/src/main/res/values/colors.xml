@@ -18,7 +18,7 @@
     <color name="green">#FF00D265</color>
     <color name="green_dark">#FF00A235</color>
     <color name="red">#FFB00020</color>
-    <color name="grey_transparent">#80C1C1C1</color>
+    <color name="grey_transparent">#B0585858</color>
     <color name="grey_transparent_light">#60C1C1C1</color>
     <color name="grey_200">#FFC1C1C1</color>
     <color name="grey_500">#FF818181</color>
@@ -33,4 +33,9 @@
     <color name="ic_fill_primary">#FF000000</color>
     <color name="ic_fill_secondary">#FFFFFFFF</color>
     <color name="ic_fill_pattern">#FFEEEEEE</color>
+
+    <color name="item_text">#FFFFFFFF</color>
+    <color name="item_icon">#FFFFFFFF</color>
+    <color name="item_background">#FF00C8C6</color>
+    <color name="nav_background">#FFFFFFFF</color>
 </resources>

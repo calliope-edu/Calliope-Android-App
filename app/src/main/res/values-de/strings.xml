@@ -50,10 +50,10 @@
     <br/>5. <b>Fertig!</b>
     ]]></string>
 
+    <string name="hello_text">Hallo und willkommen in der Calliope mini App!</string>
+
     <string name="info_app">
         <![CDATA[
-        <b>Hallo und willkommen in der Calliope mini App!</b>
-        <br/>
         <br/>Mit Hilfe dieser App kannst du dich mit deinem <b>Calliope mini</b> verbinden und diesen mobil programmieren.
         ]]>
     </string>

@@ -53,11 +53,11 @@
     <br/>5. готово!
     ]]></string>
 
+    <string name="hello_text">Ласкаво просимо до додатку Calliope mini!</string>
+
     <string name="info_app">
         <![CDATA[
-        <b>Привіт і ласкаво просимо до Calliope mini додатку!</b>
-        <br/>
-        <br/>За допомогою цієї програми ви можете підключати, кодувати і прошивати програми до вашого <b>Calliope mini</b> через Bluetooth.
+        <br/>Тут ви можете підключати, кодувати і прошивати програми до вашого <b>Calliope mini</b> через Bluetooth.
         ]]>
     </string>
 

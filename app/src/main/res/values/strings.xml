@@ -59,9 +59,9 @@
         ]]>
     </string>
 
+    <string name="hello_text">Hello and welcome to the Calliope mini app!</string>
+
     <string name="info_app"><![CDATA[
-    <b>Hello and welcome to the Calliope mini app!</b>
-    <br/>
     <br/>By using this app you can connect, code and flash programs to your <b>Calliope mini</b> via Bluetooth.
     ]]></string>
 
