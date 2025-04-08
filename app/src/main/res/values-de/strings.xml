@@ -70,6 +70,7 @@
 
     <string name="welcome">Willkommen</string>
 
+    <string name="title_copy">kopieren via USB</string>
     <string name="title_rename">umbenennen</string>
     <string name="title_share">teilen</string>
     <string name="title_delete">löschen</string>
@@ -127,7 +128,6 @@
     <string name="bonding_succeeded">Bindung gelungen</string>
     <string name="bonding_not_succeeded">Bindung nicht gelungen</string>
     <string name="button_retry">Wiederholen</string>
-    <string name="title_copy">Kopieren</string>
     <string name="summary_auto_flashing">Aunach dem Herunterladen der .hex-Datei.</string>
     <string name="title_partial_flashing">Partielles Flashen</string>
     <string name="title_background_flashing">Hintergrund Flashen</string>

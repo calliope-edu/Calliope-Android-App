@@ -71,6 +71,7 @@
 
     <string name="welcome">ласкаво просимо</string>
 
+    <string name="title_copy">Копіювати по USB</string>
     <string name="title_rename">Перейменувати</string>
     <string name="title_share">Поділитися</string>
     <string name="title_delete">Видалити</string>
@@ -124,7 +125,7 @@
     <string name="bonding_succeeded">Пару створено</string>
     <string name="bonding_not_succeeded">Не вдалося створити пару</string>
     <string name="button_retry">Повторити</string>
-    <string name="title_copy">Копіювати</string>
+
     <string name="summary_auto_flashing">після завантаження .hex файлу.</string>
     <string name="summary_background_flashing">увімкнути або вимкнути</string>
     <string name="title_partial_flashing">Часткове прошивання</string>

@@ -83,6 +83,7 @@
 
     <string name="welcome">welcome</string>
 
+    <string name="title_copy">Copy by USB</string>
     <string name="title_rename">Rename</string>
     <string name="title_share">Share</string>
     <string name="title_delete">Delete</string>
@@ -194,7 +195,7 @@
     <string name="gatt_connection_congested" translatable="false">A remote device connection is congested.</string>
     <string name="gatt_failure" translatable="false">GATT FAILURE</string>
     <string name="gatt_unidentified" translatable="false">GATT UNIDENTIFIED</string>
-    <string name="title_copy">Copy</string>
+
     <string name="title_info_сategory">Information</string>
     <string name="title_contact">Contacts</string>
     <string name="summary_contact" translatable="false">Calliope gGmbH</string>
