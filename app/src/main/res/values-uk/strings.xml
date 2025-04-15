@@ -158,4 +158,19 @@
     <string name="partial_flashing_starting">Часткове прошивання розпочато…</string>
     <string name="partial_flashing_failed">Часткове прошивання не вдалося, спроба повного прошивання</string>
     <string name="info_web">Інструкція</string>
+
+    <string name="title_info">Інформація</string>
+    <string name="error_bluetooth_permissions">Не надано дозволи на Bluetooth</string>
+    <string name="error_connection_failed">Не вдалося підключитися</string>
+    <string name="error_bluetooth_not_enabled">Bluetooth вимкнено</string>
+    <string name="error_invalid_mac_address">Неправильна MAC-адреса</string>
+    <string name="error_service_discovery">Помилка виявлення сервісу</string>
+    <string name="error_missing_characteristic">Не вдалося знайти характеристику DFU</string>
+    <string name="error_reading_characteristic">Не вдалося зчитати характеристику керування DFU</string>
+    <string name="pattern_removed">%s видалено</string>
+    <string name="pattern_remove_failed">Не вдалося видалити пристрій</string>
+    <string name="error_bluetooth_adapter_null">Адаптер Bluetooth відсутній або вимкнений</string>
+    <string name="error_device_null">Пристрій не знайдено</string>
+    <string name="error_missing_dfu_service">Не вдалося знайти DFU-сервіс</string>
+    <string name="error_missing_dfu_characteristic">Не вдалося знайти характеристику DFU</string>
 </resources>

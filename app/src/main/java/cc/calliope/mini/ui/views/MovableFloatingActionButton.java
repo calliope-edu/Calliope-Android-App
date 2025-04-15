@@ -5,6 +5,8 @@ import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PathMeasure;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.TypedValue;
@@ -22,10 +24,14 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
     private float downRawX, downRawY;
     private float dX, dY;
     private Paint paint;
-    private RectF rectF;
     private Context context;
     private int actionBarSize;
     private int progress = 0;
+
+    private final RectF bounds = new RectF();
+    private final Path fullPath = new Path();
+    private final Path progressPath = new Path();
+    private final PathMeasure pathMeasure = new PathMeasure();
 
     public MovableFloatingActionButton(Context context) {
         super(context);
@@ -51,7 +57,6 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
 
         setOnTouchListener(this);
         paint = new Paint();
-        rectF = new RectF();
 
         TypedValue typedValue = new TypedValue();
         if (getContext().getTheme().resolveAttribute(android.R.attr.actionBarSize, typedValue, true)) {
@@ -143,20 +148,36 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
 
     @Override
     protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+
         int strokeWidth = Utils.convertDpToPixel(getContext(), 4);
+        float radius = Utils.convertDpToPixel(getContext(), 20);
         int width = getWidth();
         int height = getHeight();
-        int sweepAngle = (int) (360 * (progress / 100.f));
-
-        rectF.set(strokeWidth / 2.f, strokeWidth / 2.f, width - strokeWidth / 2.f, height - strokeWidth / 2.f);
 
         paint.setColor(Color.WHITE);
         paint.setStrokeWidth(strokeWidth);
         paint.setStyle(Paint.Style.STROKE);
+        paint.setAntiAlias(true);
 
-        canvas.drawArc(rectF, 270, sweepAngle, false, paint);
+        bounds.set(
+                strokeWidth / 2f,
+                strokeWidth / 2f,
+                width - strokeWidth / 2f,
+                height - strokeWidth / 2f
+        );
 
-        super.onDraw(canvas);
+        fullPath.reset();
+        fullPath.addRoundRect(bounds, radius, radius, Path.Direction.CW);
+
+        pathMeasure.setPath(fullPath, true);
+        float pathLength = pathMeasure.getLength();
+        float progressLength = pathLength * (progress / 100f);
+
+        progressPath.reset();
+        pathMeasure.getSegment(0, progressLength, progressPath, true);
+
+        canvas.drawPath(progressPath, paint);
     }
 
     public void moveUp() {

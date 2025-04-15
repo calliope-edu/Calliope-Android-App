@@ -42,6 +42,7 @@ import com.google.android.material.snackbar.BaseTransientBottomBar;
 import java.util.ArrayList;
 import java.util.List;
 
+import cc.calliope.mini.core.state.Event;
 import cc.calliope.mini.ui.SnackbarHelper;
 import cc.calliope.mini.core.bluetooth.CheckService;
 import cc.calliope.mini.core.bluetooth.Device;
@@ -217,19 +218,20 @@ public abstract class BaseActivity extends AppCompatActivity
     };
 
     // NOTIFICATION OBSERVER
-    private final Observer<Notification> notificationObserver = new Observer<>() {
-        @Override
-        public void onChanged(Notification notification) {
-            int type = notification.getType();
-            String message = notification.getMessage();
-            switch (type) {
-                case Notification.INFO ->
-                        SnackbarHelper.infoSnackbar(rootView, message).show();
-                case Notification.WARNING ->
-                        SnackbarHelper.warningSnackbar(rootView, message).show();
-                case Notification.ERROR ->
-                        SnackbarHelper.errorSnackbar(rootView, message).show();
-            }
+    private final Observer<Event<Notification>> notificationObserver = event -> {
+        Notification notification = event.getContentIfNotHandled();
+        if (notification == null) return;
+
+        int type = notification.getType();
+        String message = notification.getMessage();
+
+        switch (type) {
+            case Notification.INFO ->
+                    SnackbarHelper.infoSnackbar(rootView, message).show();
+            case Notification.WARNING ->
+                    SnackbarHelper.warningSnackbar(rootView, message).show();
+            case Notification.ERROR ->
+                    SnackbarHelper.errorSnackbar(rootView, message).show();
         }
     };
 

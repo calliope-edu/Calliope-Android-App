@@ -23,6 +23,7 @@ import no.nordicsemi.android.error.GattError;
 
 // TODO помилка при пееревертані екрану, не оновлює сторінку
 // TODO прогресбар на кнопці
+// TODO перевірити чи немає стрінгів в коді
 
 public class App extends Application {
     private static final String FILE_NAME = "one_time_pairing.hex";

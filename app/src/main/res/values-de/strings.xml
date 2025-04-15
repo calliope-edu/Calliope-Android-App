@@ -167,4 +167,9 @@
     <string name="partial_flashing_starting">Teilweises Flashen wurde gestartet…</string>
     <string name="partial_flashing_failed">Teilweises Flashen fehlgeschlagen, Versuch des vollständigen Flashen</string>
     <string name="info_web">Anleitung</string>
+
+    <string name="title_info">Information</string>
+    <string name="error_bluetooth_adapter_null">Bluetooth-Adapter ist nicht vorhanden oder deaktiviert</string>
+    <string name="error_missing_dfu_service">DFU-Legacy-Dienst konnte nicht gefunden werden.</string>
+    <string name="error_missing_dfu_characteristic">DFU-Legacy-Charakteristik konnte nicht gefunden werden.</string>
 </resources>
