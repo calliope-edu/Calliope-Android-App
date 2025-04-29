@@ -33,6 +33,8 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
     private final Path progressPath = new Path();
     private final PathMeasure pathMeasure = new PathMeasure();
 
+    private static final int RADIUS_DP = 20;
+
     public MovableFloatingActionButton(Context context) {
         super(context);
         init(context);
@@ -52,7 +54,7 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
         this.context = context;
 
         setShapeAppearanceModel(ShapeAppearanceModel.builder()
-            .setAllCornerSizes(Utils.convertDpToPixel(context, 20)).build()
+            .setAllCornerSizes(Utils.convertDpToPixel(context, RADIUS_DP)).build()
         );
 
         setOnTouchListener(this);
@@ -150,8 +152,10 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        int strokeWidth = Utils.convertDpToPixel(getContext(), 4);
-        float radius = Utils.convertDpToPixel(getContext(), 20);
+        int STROKE_DP = 4;
+
+        int strokeWidth = Utils.convertDpToPixel(getContext(), STROKE_DP);
+        float radius = Utils.convertDpToPixel(getContext(), RADIUS_DP-(STROKE_DP/2));
         int width = getWidth();
         int height = getHeight();
 

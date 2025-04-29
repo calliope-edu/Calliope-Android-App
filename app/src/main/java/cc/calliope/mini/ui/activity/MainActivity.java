@@ -66,6 +66,11 @@ public class MainActivity extends BaseActivity {
 
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
             int destId = destination.getId();
+            if (destId == R.id.navigation_web) {
+               moveFabDown();
+            } else {
+               moveFabUp();
+            }
             Integer mapping = navMapping.get(destId);
             int menuId = (mapping != null) ? mapping : destId;
             MenuItem menuItem = binding.bottomNavigation.getMenu().findItem(menuId);

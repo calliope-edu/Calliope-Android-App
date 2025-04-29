@@ -339,6 +339,14 @@ public abstract class BaseActivity extends AppCompatActivity
         this.patternFab.setOnClickListener(this::onFabClick);
     }
 
+    public void moveFabUp(){
+        patternFab.moveUp();
+    }
+
+    public void moveFabDown(){
+        patternFab.moveDown();
+    }
+
     private void checkPermission() {
         boolean isBluetoothAccessGranted = Permission.isAccessGranted(this, Permission.BLUETOOTH_PERMISSIONS);
         boolean isLocationAccessGranted = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
