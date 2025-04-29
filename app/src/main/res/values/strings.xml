@@ -232,4 +232,11 @@
     <string name="error_missing_dfu_service">Cannot find DFU legacy service.</string>
     <string name="error_missing_dfu_characteristic">Cannot find DFU legacy characteristic.</string>
 
+    <string name="title_remove_all_devices">Remove All Calliope Mini</string>
+    <string name="summary_remove_all_devices">Clear all connected Calliope Mini and bonds</string>
+    <string name="title_dialog_delete_all_devices">Remove All Calliope Mini</string>
+    <string name="info_dialog_delete_all_devices">Are you sure you want to remove %d connected Calliope Minis?</string>
+    <string name="snackbar_no_calliope_connected">No Calliope Mini connected</string>
+    <string name="snackbar_calliope_removed">All Calliope Minis removed</string>
+
 </resources>

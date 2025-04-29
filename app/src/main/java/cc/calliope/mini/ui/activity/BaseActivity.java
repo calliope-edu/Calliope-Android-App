@@ -551,11 +551,7 @@ public abstract class BaseActivity extends AppCompatActivity
             }
         };
 
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String address = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
-
         Intent intent = new Intent(this, CheckService.class);
-        intent.putExtra("device_mac_address", address);
         intent.putExtra("result_receiver", resultReceiver);
         startService(intent);
     }

@@ -173,4 +173,11 @@
     <string name="error_device_null">Пристрій не знайдено</string>
     <string name="error_missing_dfu_service">Не вдалося знайти DFU-сервіс</string>
     <string name="error_missing_dfu_characteristic">Не вдалося знайти характеристику DFU</string>
+
+    <string name="title_remove_all_devices">Видалити всі Calliope Mini</string>
+    <string name="summary_remove_all_devices">Очистити всі підключені Calliope Mini та видалити сполучення</string>
+    <string name="title_dialog_delete_all_devices">Видалити всі Calliope Mini</string>
+    <string name="info_dialog_delete_all_devices">Ви впевнені, що хочете видалити %d підключених Calliope Mini?</string>
+    <string name="snackbar_no_calliope_connected">Немає підключених Calliope Mini</string>
+    <string name="snackbar_calliope_removed">Усі Calliope Mini видалені</string>
 </resources>

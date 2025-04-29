@@ -172,4 +172,11 @@
     <string name="error_bluetooth_adapter_null">Bluetooth-Adapter ist nicht vorhanden oder deaktiviert</string>
     <string name="error_missing_dfu_service">DFU-Legacy-Dienst konnte nicht gefunden werden.</string>
     <string name="error_missing_dfu_characteristic">DFU-Legacy-Charakteristik konnte nicht gefunden werden.</string>
+
+    <string name="title_remove_all_devices">Calliope Mini entfernen</string>
+    <string name="summary_remove_all_devices">Alle verbundenen Calliope Mini löschen und Bindungen entfernen</string>
+    <string name="title_dialog_delete_all_devices">Alle Calliope Mini entfernen</string>
+    <string name="info_dialog_delete_all_devices">Sollen %d verbundene Calliope Mini gelöscht werden?</string>
+    <string name="snackbar_no_calliope_connected">Keine Calliope Mini verbunden</string>
+    <string name="snackbar_calliope_removed">Alle Calliope Minis wurden entfernt</string>
 </resources>
