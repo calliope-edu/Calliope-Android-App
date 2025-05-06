@@ -37,11 +37,13 @@ import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Observer;
 import androidx.preference.PreferenceManager;
 
+import com.google.android.material.color.DynamicColors;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import cc.calliope.mini.AppContext;
 import cc.calliope.mini.core.state.Event;
 import cc.calliope.mini.ui.SnackbarHelper;
 import cc.calliope.mini.core.bluetooth.CheckService;
