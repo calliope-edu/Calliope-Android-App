@@ -7,7 +7,9 @@ import android.os.IBinder
 import android.os.ResultReceiver
 import android.util.Log
 import androidx.preference.PreferenceManager
+import cc.calliope.mini.core.service.LegacyDfuService
 import cc.calliope.mini.utils.Constants
+import cc.calliope.mini.utils.Permission
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -63,6 +65,12 @@ class CheckService : Service() {
             while (true) {
                 val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
                 val macAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
+
+                if (!Permission.isAccessGranted(applicationContext, *Permission.BLUETOOTH_PERMISSIONS)) {
+                    Log.e(LegacyDfuService.TAG, "BLUETOOTH permission no granted")
+                    stopSelf()
+                    break
+                }
 
                 if (macAddress.isEmpty()) {
                     Log.w(TAG, "No MAC address found. Stopping service.")

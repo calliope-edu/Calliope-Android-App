@@ -36,44 +36,50 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="@dimen/padding"
     android:fitsSystemWindows="true"
     tools:ignore="ContentDescription">
 
-    <ImageView
-        android:id="@+id/icon_image_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:padding="@dimen/horizontal_margin"
-        app:srcCompat="@drawable/ic_location_disabled"/>
-
-    <TextView
-        android:id="@+id/title_text_view"
-        android:textColor="?android:textColorSecondary"
-        android:textStyle="bold"
-        android:textSize="@dimen/text_size_title"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:text="@string/title_location_permission"/>
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_margin="@dimen/margin">
+        <ImageView
+            android:id="@+id/icon_image_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:padding="@dimen/horizontal_margin"
+            app:srcCompat="@drawable/ic_location_disabled"/>
 
-    <TextView
-        android:id="@+id/message_text_view"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="@dimen/text_size_default"
-        android:layout_marginBottom="@dimen/vertical_margin"
-        android:layout_marginTop="@dimen/vertical_margin"
-        android:text="@string/info_location_permission"/>
+        <TextView
+            android:id="@+id/title_text_view"
+            android:textColor="?android:textColorSecondary"
+            android:textStyle="bold"
+            android:textSize="@dimen/text_size_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="@string/title_location_permission"/>
 
-    <Button
-        android:id="@+id/action_button"
-        style="@style/Widget.AppCompat.Button.Borderless.Colored"
-        android:layout_width="wrap_content"
-        android:layout_height="40dp"
-        android:textSize="@dimen/text_size_button"
-        android:layout_gravity="center_horizontal"
-        android:background="@drawable/btn_aqua"
-        android:text="@string/action_btn_permission"/>
+        <TextView
+            android:id="@+id/message_text_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/text_size_default"
+            android:layout_marginBottom="@dimen/vertical_margin"
+            android:layout_marginTop="@dimen/vertical_margin"
+            android:text="@string/info_location_permission"/>
+
+        <Button
+            android:id="@+id/action_button"
+            style="@style/Widget.AppCompat.Button.Borderless.Colored"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:textSize="@dimen/text_size_button"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/btn_aqua"
+            android:text="@string/action_btn_permission"/>
+    </LinearLayout>
+
 </LinearLayout>
