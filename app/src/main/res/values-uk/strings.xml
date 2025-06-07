@@ -53,11 +53,11 @@
     <br/>5. готово!
     ]]></string>
 
+    <string name="hello_text">Ласкаво просимо до додатку Calliope mini!</string>
+
     <string name="info_app">
         <![CDATA[
-        <b>Привіт і ласкаво просимо до Calliope mini додатку!</b>
-        <br/>
-        <br/>За допомогою цієї програми ви можете підключати, кодувати і прошивати програми до вашого <b>Calliope mini</b> через Bluetooth.
+        <br/>Тут ви можете підключати, кодувати і прошивати програми до вашого <b>Calliope mini</b> через Bluetooth.
         ]]>
     </string>
 
@@ -71,6 +71,7 @@
 
     <string name="welcome">ласкаво просимо</string>
 
+    <string name="title_copy">Копіювати по USB</string>
     <string name="title_rename">Перейменувати</string>
     <string name="title_share">Поділитися</string>
     <string name="title_delete">Видалити</string>
@@ -124,7 +125,7 @@
     <string name="bonding_succeeded">Пару створено</string>
     <string name="bonding_not_succeeded">Не вдалося створити пару</string>
     <string name="button_retry">Повторити</string>
-    <string name="title_copy">Копіювати</string>
+
     <string name="summary_auto_flashing">після завантаження .hex файлу.</string>
     <string name="summary_background_flashing">увімкнути або вимкнути</string>
     <string name="title_partial_flashing">Часткове прошивання</string>
@@ -157,4 +158,26 @@
     <string name="partial_flashing_starting">Часткове прошивання розпочато…</string>
     <string name="partial_flashing_failed">Часткове прошивання не вдалося, спроба повного прошивання</string>
     <string name="info_web">Інструкція</string>
+
+    <string name="title_info">Інформація</string>
+    <string name="error_bluetooth_permissions">Не надано дозволи на Bluetooth</string>
+    <string name="error_connection_failed">Не вдалося підключитися</string>
+    <string name="error_bluetooth_not_enabled">Bluetooth вимкнено</string>
+    <string name="error_invalid_mac_address">Неправильна MAC-адреса</string>
+    <string name="error_service_discovery">Помилка виявлення сервісу</string>
+    <string name="error_missing_characteristic">Не вдалося знайти характеристику DFU</string>
+    <string name="error_reading_characteristic">Не вдалося зчитати характеристику керування DFU</string>
+    <string name="pattern_removed">%s видалено</string>
+    <string name="pattern_remove_failed">Не вдалося видалити пристрій</string>
+    <string name="error_bluetooth_adapter_null">Адаптер Bluetooth відсутній або вимкнений</string>
+    <string name="error_device_null">Пристрій не знайдено</string>
+    <string name="error_missing_dfu_service">Не вдалося знайти DFU-сервіс</string>
+    <string name="error_missing_dfu_characteristic">Не вдалося знайти характеристику DFU</string>
+
+    <string name="title_remove_all_devices">Видалити всі Calliope Mini</string>
+    <string name="summary_remove_all_devices">Очистити всі підключені Calliope Mini та видалити сполучення</string>
+    <string name="title_dialog_delete_all_devices">Видалити всі Calliope Mini</string>
+    <string name="info_dialog_delete_all_devices">Ви впевнені, що хочете видалити %d підключених Calliope Mini?</string>
+    <string name="snackbar_no_calliope_connected">Немає підключених Calliope Mini</string>
+    <string name="snackbar_calliope_removed">Усі Calliope Mini видалені</string>
 </resources>

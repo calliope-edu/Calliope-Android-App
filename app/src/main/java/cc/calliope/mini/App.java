@@ -1,25 +1,12 @@
 package cc.calliope.mini;
 
-import static no.nordicsemi.android.dfu.DfuBaseService.EXTRA_DATA;
-
 import android.app.Application;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.util.Log;
-
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
-import cc.calliope.mini.core.service.DfuService;
-import cc.calliope.mini.utils.Utils;
-import no.nordicsemi.android.dfu.DfuBaseService;
-import no.nordicsemi.android.error.GattError;
 
 public class App extends Application {
     private static final String FILE_NAME = "one_time_pairing.hex";

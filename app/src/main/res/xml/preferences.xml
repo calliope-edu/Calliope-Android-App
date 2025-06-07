@@ -42,6 +42,11 @@
             android:defaultValue="https://makecode.calliope.cc"
             app:iconSpaceReserved="false"/>
 
+        <Preference
+            android:key="pref_key_remove_all_devices"
+            android:title="@string/title_remove_all_devices"
+            android:summary="@string/summary_remove_all_devices"
+            app:iconSpaceReserved="false"/>
     </PreferenceCategory>
 
     <PreferenceCategory

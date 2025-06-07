@@ -37,11 +37,14 @@ import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Observer;
 import androidx.preference.PreferenceManager;
 
+import com.google.android.material.color.DynamicColors;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import cc.calliope.mini.AppContext;
+import cc.calliope.mini.core.state.Event;
 import cc.calliope.mini.ui.SnackbarHelper;
 import cc.calliope.mini.core.bluetooth.CheckService;
 import cc.calliope.mini.core.bluetooth.Device;
@@ -217,19 +220,20 @@ public abstract class BaseActivity extends AppCompatActivity
     };
 
     // NOTIFICATION OBSERVER
-    private final Observer<Notification> notificationObserver = new Observer<>() {
-        @Override
-        public void onChanged(Notification notification) {
-            int type = notification.getType();
-            String message = notification.getMessage();
-            switch (type) {
-                case Notification.INFO ->
-                        SnackbarHelper.infoSnackbar(rootView, message).show();
-                case Notification.WARNING ->
-                        SnackbarHelper.warningSnackbar(rootView, message).show();
-                case Notification.ERROR ->
-                        SnackbarHelper.errorSnackbar(rootView, message).show();
-            }
+    private final Observer<Event<Notification>> notificationObserver = event -> {
+        Notification notification = event.getContentIfNotHandled();
+        if (notification == null) return;
+
+        int type = notification.getType();
+        String message = notification.getMessage();
+
+        switch (type) {
+            case Notification.INFO ->
+                    SnackbarHelper.infoSnackbar(rootView, message).show();
+            case Notification.WARNING ->
+                    SnackbarHelper.warningSnackbar(rootView, message).show();
+            case Notification.ERROR ->
+                    SnackbarHelper.errorSnackbar(rootView, message).show();
         }
     };
 
@@ -335,6 +339,14 @@ public abstract class BaseActivity extends AppCompatActivity
     public void setPatternFab(MovableFloatingActionButton patternFab) {
         this.patternFab = patternFab;
         this.patternFab.setOnClickListener(this::onFabClick);
+    }
+
+    public void moveFabUp(){
+        patternFab.moveUp();
+    }
+
+    public void moveFabDown(){
+        patternFab.moveDown();
     }
 
     private void checkPermission() {
@@ -487,9 +499,9 @@ public abstract class BaseActivity extends AppCompatActivity
         int y;
 
         if (Math.round(view.getX()) <= screenWidth / 2) {
-            x = Utils.convertDpToPixel(this, 8);
+            x = Utils.convertDpToPixel(this, 4);
         } else {
-            x = (Utils.convertDpToPixel(this, 8) - view.getWidth() + popupMenuWidth) * -1;
+            x = (Utils.convertDpToPixel(this, 4) - view.getWidth() + popupMenuWidth) * -1;
         }
 
         if (Math.round(view.getY()) <= screenHeight / 2) {
@@ -541,11 +553,7 @@ public abstract class BaseActivity extends AppCompatActivity
             }
         };
 
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String address = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
-
         Intent intent = new Intent(this, CheckService.class);
-        intent.putExtra("device_mac_address", address);
         intent.putExtra("result_receiver", resultReceiver);
         startService(intent);
     }
