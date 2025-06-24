@@ -35,13 +35,18 @@
             android:defaultValue="false"
             app:iconSpaceReserved="false"/>
 
-        <cc.calliope.mini.dialog.CustomLinkDialogPreference
+        <cc.calliope.mini.ui.dialog.CustomLinkDialogPreference
             android:key="pref_key_custom_link"
             android:title="@string/title_custom"
             android:summary="@string/summary_custom"
             android:defaultValue="https://makecode.calliope.cc"
             app:iconSpaceReserved="false"/>
 
+        <Preference
+            android:key="pref_key_remove_all_devices"
+            android:title="@string/title_remove_all_devices"
+            android:summary="@string/summary_remove_all_devices"
+            app:iconSpaceReserved="false"/>
     </PreferenceCategory>
 
     <PreferenceCategory

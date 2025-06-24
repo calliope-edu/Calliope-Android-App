@@ -19,14 +19,16 @@
 
     <string name="title_make_code" translatable="false">MakeCode</string>
     <string name="title_roberta" translatable="false">Open Roberta Lab</string>
-    <string name="title_blocks">Calliope mini Blocks</string>
-    <string name="title_python">MicroPython</string>
+    <string name="title_blocks" translatable="false">Calliope mini Blocks</string>
+    <string name="title_python" translatable="false">MicroPython</string>
     <string name="title_custom">Custom editor</string>
     <string name="title_scripts">Your programs</string>
-    <string name="info_make_code">Microsoft MakeCode is a free, open source platform for creating engaging computer science learning experiences that support a progression path into real-world programming.</string>
-    <string name="info_roberta">The Open Roberta Lab is a cloud-based integrated programming environment that enables children and adolescents to program easily different robot/microcontroller systems.</string>
-    <string name="info_blocks">Blocks.</string>
-    <string name="info_python">MicroPython is a version of Python specifically adapted for microcontrollers. The main difference is that MicroPython does not require an operating system; once you use it, it essentially becomes the system running on the Calliope mini.</string>
+
+    <string name="info_make_code">The MakeCode editor enables full control over the Calliope mini and the integration of any external sensors through (custom) extensions. Programming can be done by arranging code blocks, using JavaScript, or Python.</string>
+    <string name="info_roberta">In the "Open Roberta Lab," you learn to program with the graphical language NEPO!</string>
+    <string name="info_python">MicroPython is a version of Python specifically adapted for microcontrollers. Python is an excellent first text-based programming language.</string>
+    <string name="info_blocks">The Calliope mini Blocks editor enables programming of the Calliope mini using the Scratch programming language. This allows applications to be controlled on the computer with the Calliope mini and vice versa.</string>
+
     <string name="info_custom">Here you can enter to the custom editor.</string>
     <string name="info_scripts">Your programs will be here.</string>
 
@@ -57,9 +59,9 @@
         ]]>
     </string>
 
+    <string name="hello_text">Hello and welcome to the Calliope mini app!</string>
+
     <string name="info_app"><![CDATA[
-    <b>Hello and welcome to the Calliope mini app!</b>
-    <br/>
     <br/>By using this app you can connect, code and flash programs to your <b>Calliope mini</b> via Bluetooth.
     ]]></string>
 
@@ -81,6 +83,7 @@
 
     <string name="welcome">welcome</string>
 
+    <string name="title_copy">Copy by USB</string>
     <string name="title_rename">Rename</string>
     <string name="title_share">Share</string>
     <string name="title_delete">Delete</string>
@@ -192,7 +195,7 @@
     <string name="gatt_connection_congested" translatable="false">A remote device connection is congested.</string>
     <string name="gatt_failure" translatable="false">GATT FAILURE</string>
     <string name="gatt_unidentified" translatable="false">GATT UNIDENTIFIED</string>
-    <string name="title_copy">Copy</string>
+
     <string name="title_info_сategory">Information</string>
     <string name="title_contact">Contacts</string>
     <string name="summary_contact" translatable="false">Calliope gGmbH</string>
@@ -210,9 +213,13 @@
     <string name="mini_version_1">1 or 2</string>
     <string name="mini_version_2">3</string>
     <string name="flashing_version_mismatch">Version mismatch. Flashing not possible!</string>
+    <string name="flashing_timeout_v1">Bluetooth available?\nPress AB + Reset.</string>
+    <string name="flashing_timeout_v2">Bluetooth available?\nPress three times Reset.</string>
+    <string name="info_web">Instructions</string>
+
+    <string name="error_device_null">Device is null</string>
     <string name="error_bluetooth_permissions">Bluetooth permissions not granted</string>
     <string name="error_connection_failed">Connection failed</string>
-    <string name="error_device_null">Device is null</string>
     <string name="error_bluetooth_not_enabled">Bluetooth is not enabled</string>
     <string name="error_invalid_mac_address">Invalid MAC address</string>
     <string name="error_service_discovery">Service discovery failed</string>
@@ -220,9 +227,16 @@
     <string name="error_reading_characteristic">Failed to read DFU control characteristic</string>
     <string name="pattern_removed">%s removed</string>
     <string name="pattern_remove_failed">Failed to remove device</string>
-    <string name="flashing_timeout_v1">Bluetooth available?\nPress AB + Reset.</string>
-    <string name="flashing_timeout_v2">Bluetooth available?\nPress three times Reset.</string>
-    <string name="info_web">Connection</string>
     <string name="title_info">Info</string>
+    <string name="error_bluetooth_adapter_null">Bluetooth adapter is null or not enabled</string>
+    <string name="error_missing_dfu_service">Cannot find DFU legacy service.</string>
+    <string name="error_missing_dfu_characteristic">Cannot find DFU legacy characteristic.</string>
+
+    <string name="title_remove_all_devices">Remove All Calliope Mini</string>
+    <string name="summary_remove_all_devices">Clear all connected Calliope Mini and bonds</string>
+    <string name="title_dialog_delete_all_devices">Remove All Calliope Mini</string>
+    <string name="info_dialog_delete_all_devices">Are you sure you want to remove %d connected Calliope Minis?</string>
+    <string name="snackbar_no_calliope_connected">No Calliope Mini connected</string>
+    <string name="snackbar_calliope_removed">All Calliope Minis removed</string>
 
 </resources>

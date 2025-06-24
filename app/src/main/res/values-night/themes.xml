@@ -20,6 +20,8 @@
         <item name="snackbarButtonStyle">@style/SnackbarButton</item>
         <item name="snackbarTextViewStyle">@style/SnackbarTextView</item>
 
+        <item name="android:windowLightStatusBar">false</item>
+
         <item name="bottomSheetDialogTheme">@style/ModalBottomSheetDialog</item>
     </style>
 

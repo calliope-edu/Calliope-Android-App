@@ -16,8 +16,12 @@
 
     <string name="title_custom">Eigener Editor</string>
     <string name="title_scripts">Deine Programme</string>
-    <string name="info_make_code">MakeCode vermittelt allen Schülern Programmierung mit unterhaltsamen Projekten, sofortigen Ergebnissen mit Block- und Texteditoren für alle Kenntnisstufen.</string>
-    <string name="info_roberta">Das Open Roberta Lab ist eine Cloud-basierte integrierte Programmierumgebung, die es Kindern und Jugendlichen ermöglicht, auf einfache Weise verschiedene Roboter/Mikrocontroller-Systeme zu programmieren.</string>
+
+    <string name="info_make_code">Der MakeCode-Editor ermöglicht die volle Kontrolle über den Calliope mini und die Integration beliebiger externer Sensoren durch (benutzerdefinierte) Erweiterungen. Die Programmierung kann entweder durch Anordnen von Codeblöcken, Verwendung von JavaScript oder Python erfolgen.</string>
+    <string name="info_roberta">Im "Open Roberta Lab" lernt man, mit der grafischen Sprache NEPO zu programmieren!</string>
+    <string name="info_python">MicroPython ist eine Version von Python, die speziell für Mikrocontroller angepasst wurde. Python ist eine ausgezeichnete erste textbasierte Programmiersprache.</string>
+    <string name="info_blocks">Der Calliope mini Blocks-Editor ermöglicht die Programmierung des Calliope mini mit der Programmiersprache Scratch. So können Anwendungen auf dem Computer mit dem Calliope mini gesteuert werden und andersherum.</string>
+
     <string name="info_custom">Hier können Sie zum benutzerdefinierten Editor gehen.</string>
     <string name="info_scripts">Hier sind deine Programme.</string>
 
@@ -46,10 +50,10 @@
     <br/>5. <b>Fertig!</b>
     ]]></string>
 
+    <string name="hello_text">Hallo und willkommen in der Calliope mini App!</string>
+
     <string name="info_app">
         <![CDATA[
-        <b>Hallo und willkommen in der Calliope mini App!</b>
-        <br/>
         <br/>Mit Hilfe dieser App kannst du dich mit deinem <b>Calliope mini</b> verbinden und diesen mobil programmieren.
         ]]>
     </string>
@@ -66,8 +70,9 @@
 
     <string name="welcome">Willkommen</string>
 
+    <string name="title_copy">kopieren via USB</string>
     <string name="title_rename">umbenennen</string>
-    <string name="title_share">freigeben</string>
+    <string name="title_share">teilen</string>
     <string name="title_delete">löschen</string>
 
     <string name="title_dialog_rename">Datei umbenennen</string>
@@ -123,7 +128,6 @@
     <string name="bonding_succeeded">Bindung gelungen</string>
     <string name="bonding_not_succeeded">Bindung nicht gelungen</string>
     <string name="button_retry">Wiederholen</string>
-    <string name="title_copy">Kopieren</string>
     <string name="summary_auto_flashing">Aunach dem Herunterladen der .hex-Datei.</string>
     <string name="title_partial_flashing">Partielles Flashen</string>
     <string name="title_background_flashing">Hintergrund Flashen</string>
@@ -148,10 +152,31 @@
     <string name="mini_version_1">1 oder 2</string>
     <string name="mini_version_2">3</string>
     <string name="flashing_version_mismatch">Versionen stimmen nicht überein. Flashen nicht möglich!</string>
-
+    <string name="error_bluetooth_permissions">Bluetooth-Berechtigungen nicht erteilt</string>
+    <string name="error_connection_failed">Verbindung fehlgeschlagen</string>
+    <string name="error_device_null">Probleme mit dem Calliope mini Programm</string>
+    <string name="error_bluetooth_not_enabled">Bluetooth ist nicht aktiviert</string>
+    <string name="error_invalid_mac_address">Ungültige MAC-Adresse</string>
+    <string name="error_service_discovery">Suche nach einem benötigten Dienst fehlgeschlagen</string>
+    <string name="error_missing_characteristic">DFU-Merkmal kann nicht gefunden werden</string>
+    <string name="error_reading_characteristic">DFU konnte nicht gelesen werden</string>
+    <string name="pattern_removed">%s entfernt</string>
+    <string name="pattern_remove_failed">Gerät kann nicht entfernt werden</string>
     <string name="flashing_timeout_v1">Bluetooth verfügbar?\nDrücken Sie AB + Reset.</string>
     <string name="flashing_timeout_v2">Bluetooth verfügbar?\nDrücken Sie dreimal Reset.</string>
     <string name="partial_flashing_starting">Teilweises Flashen wurde gestartet…</string>
     <string name="partial_flashing_failed">Teilweises Flashen fehlgeschlagen, Versuch des vollständigen Flashen</string>
     <string name="info_web">Anleitung</string>
+
+    <string name="title_info">Information</string>
+    <string name="error_bluetooth_adapter_null">Bluetooth-Adapter ist nicht vorhanden oder deaktiviert</string>
+    <string name="error_missing_dfu_service">DFU-Legacy-Dienst konnte nicht gefunden werden.</string>
+    <string name="error_missing_dfu_characteristic">DFU-Legacy-Charakteristik konnte nicht gefunden werden.</string>
+
+    <string name="title_remove_all_devices">Calliope Mini entfernen</string>
+    <string name="summary_remove_all_devices">Alle verbundenen Calliope Mini löschen und Bindungen entfernen</string>
+    <string name="title_dialog_delete_all_devices">Alle Calliope Mini entfernen</string>
+    <string name="info_dialog_delete_all_devices">Sollen %d verbundene Calliope Mini gelöscht werden?</string>
+    <string name="snackbar_no_calliope_connected">Keine Calliope Mini verbunden</string>
+    <string name="snackbar_calliope_removed">Alle Calliope Minis wurden entfernt</string>
 </resources>

@@ -4,7 +4,7 @@
     android:id="@+id/constraint_layout_help"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".fragment.help.HelpFragment">
+    tools:context=".ui.fragment.help.HelpFragment">
 
     <ScrollView
         android:id="@+id/scrollView"
@@ -29,15 +29,24 @@
                 android:layout_height="wrap_content"
                 android:adjustViewBounds="true"
                 android:contentDescription="@string/app_name"
-                android:paddingHorizontal="32dp"
+                android:paddingHorizontal="56dp"
                 android:scaleType="fitCenter"
                 android:src="@drawable/welcome" />
+
+            <TextView
+                android:id="@+id/app_hello"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                android:text="@string/hello_text"
+                android:textAlignment="textStart"
+                android:textIsSelectable="true"
+                android:textSize="24sp" />
 
             <TextView
                 android:id="@+id/app_info"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
                 android:text="@string/info_app_text"
                 android:textAlignment="textStart"
                 android:textIsSelectable="true"
@@ -46,13 +55,13 @@
             <FrameLayout
                 android:id="@+id/open_web_button"
                 android:layout_width="match_parent"
-                android:layout_height="100dp"
+                android:layout_height="60dp"
                 android:layout_marginTop="16dp">
 
                 <include
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    layout="@layout/fragment_editor_item"/>
+                    layout="@layout/fragment_home_item"/>
             </FrameLayout>
 
             <TextView
@@ -62,6 +71,7 @@
                 android:text="@string/info_app_text2"
                 android:textAlignment="textStart"
                 android:textIsSelectable="true"
+                android:layout_marginBottom="@dimen/margin"
                 android:textSize="@dimen/text_size_default" />
 
         </LinearLayout>

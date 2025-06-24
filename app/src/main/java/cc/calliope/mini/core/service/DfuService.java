@@ -21,11 +21,9 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import cc.calliope.mini.BuildConfig;
 import cc.calliope.mini.R;
-import cc.calliope.mini.activity.NotificationActivity;
+import cc.calliope.mini.ui.activity.NotificationActivity;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.core.state.Notification;
-import cc.calliope.mini.core.state.State;
-import cc.calliope.mini.utils.Utils;
 import no.nordicsemi.android.dfu.DfuBaseService;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
 import no.nordicsemi.android.error.GattError;

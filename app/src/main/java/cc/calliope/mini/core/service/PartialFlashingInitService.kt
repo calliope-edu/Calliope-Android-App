@@ -21,11 +21,12 @@ import android.os.Bundle
 import android.os.IBinder
 import android.os.ResultReceiver
 import android.util.Log
+import cc.calliope.mini.R
 import cc.calliope.mini.core.service.LegacyDfuService.Companion.EXTRA_NUMB_ATTEMPTS
 import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.Notification.ERROR
 import cc.calliope.mini.core.state.State
-import cc.calliope.mini.utils.BluetoothUtils
+import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import cc.calliope.mini.utils.Permission
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -363,7 +364,7 @@ class PartialFlashingInitService : Service() {
             val adapter: BluetoothAdapter? = bluetoothManager.adapter
 
             if (adapter == null || !adapter.isEnabled || !BluetoothUtils.isValidBluetoothMAC(address)) {
-                ApplicationStateHandler.updateNotification(ERROR, "Bluetooth adapter is null or not enabled")
+                ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_bluetooth_adapter_null));
                 ApplicationStateHandler.updateState(State.STATE_IDLE)
                 stopSelf()
                 return@launch

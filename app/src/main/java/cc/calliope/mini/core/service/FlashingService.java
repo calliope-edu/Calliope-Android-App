@@ -2,13 +2,12 @@ package cc.calliope.mini.core.service;
 
 import static android.app.Activity.RESULT_OK;
 import static cc.calliope.mini.core.state.Notification.ERROR;
-import static cc.calliope.mini.core.state.Notification.INFO;
 import static cc.calliope.mini.core.state.State.STATE_ERROR;
 import static cc.calliope.mini.utils.Constants.MINI_V2;
 import static cc.calliope.mini.utils.Constants.MINI_V3;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
-import static cc.calliope.mini.utils.FileVersion.VERSION_2;
-import static cc.calliope.mini.utils.FileVersion.VERSION_3;
+import static cc.calliope.mini.utils.file.FileVersion.VERSION_2;
+import static cc.calliope.mini.utils.file.FileVersion.VERSION_3;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -23,19 +22,19 @@ import androidx.preference.PreferenceManager;
 
 import java.io.File;
 
-import cc.calliope.mini.FirmwareZipCreator;
-import cc.calliope.mini.HexParser;
-import cc.calliope.mini.InitPacket;
+import cc.calliope.mini.utils.file.FirmwareZipCreator;
+import cc.calliope.mini.utils.hex.HexParser;
+import cc.calliope.mini.utils.hex.InitPacket;
 import cc.calliope.mini.R;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.core.state.Error;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.Progress;
 import cc.calliope.mini.core.state.State;
-import cc.calliope.mini.utils.FileUtils;
-import cc.calliope.mini.utils.FileVersion;
-import cc.calliope.mini.utils.Preference;
-import cc.calliope.mini.utils.Settings;
+import cc.calliope.mini.utils.file.FileUtils;
+import cc.calliope.mini.utils.file.FileVersion;
+import cc.calliope.mini.utils.settings.Preference;
+import cc.calliope.mini.utils.settings.Settings;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;

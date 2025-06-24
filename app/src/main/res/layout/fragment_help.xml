@@ -6,7 +6,7 @@
     android:id="@+id/constraint_layout_help"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".fragment.help.HelpFragment">
+    tools:context=".ui.fragment.help.HelpFragment">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/topAppBar"
@@ -15,7 +15,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:navigationIcon="@drawable/ic_back_24" />
+        app:navigationIcon="@drawable/ic_back_24dp" />
 
     <ScrollView
         android:id="@+id/scrollView2"

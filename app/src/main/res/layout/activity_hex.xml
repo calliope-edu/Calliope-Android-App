@@ -3,6 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main_constraint_layout"
+    android:fitsSystemWindows="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -33,7 +34,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/info_textView" />
 
-    <cc.calliope.mini.views.MovableFloatingActionButton
+    <cc.calliope.mini.ui.views.MovableFloatingActionButton
         android:id="@+id/pattern_fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

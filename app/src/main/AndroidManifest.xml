@@ -76,8 +76,7 @@
         </provider>
 
         <activity
-            android:name=".activity.MainActivity"
-            android:configChanges="orientation|screenSize"
+            android:name=".ui.activity.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -85,7 +84,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".activity.OpenHexActivity"
+            android:name=".ui.activity.OpenHexActivity"
             android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -98,16 +97,16 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".activity.NotificationActivity"
+            android:name=".ui.activity.NotificationActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.FlashingActivity"
+            android:name=".ui.activity.FlashingActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.NoPermissionActivity"
+            android:name=".ui.activity.NoPermissionActivity"
             android:exported="false" />
         <activity
-            android:name=".activity.SettingsActivity"
+            android:name=".ui.activity.SettingsActivity"
             android:exported="false" />
         <service
             android:name=".core.service.DfuService"
