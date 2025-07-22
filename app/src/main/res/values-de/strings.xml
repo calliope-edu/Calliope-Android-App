@@ -92,6 +92,7 @@
     <string name="menu_fab_connect">Verbindung</string>
     <string name="menu_fab_scripts">Programme</string>
     <string name="menu_fab_full_screen">Vollbild</string>
+    <string name="title_select_editor">Editoren</string>
 
     <!-- Errors and messages -->
     <string name="error_no_connected">Kein Calliope mini verbunden</string>
@@ -204,4 +205,37 @@
     <string name="info_dialog_delete_all_devices">Sind Sie sicher, dass Sie %d verbundene Calliope Mini entfernen möchten?</string>
     <string name="snackbar_no_calliope_connected">Kein Calliope Mini verbunden</string>
     <string name="snackbar_calliope_removed">Alle Calliope Mini entfernt</string>
+
+    <!-- File versions -->
+    <string name="version_universal">v1,2,3</string>
+    <string name="version_v2">v1,2</string>
+    <string name="version_v3">v3</string>
+    <string name="version_error">Fehler</string>
+
+    <!-- Pattern matrix errors -->
+    <string name="error_pattern_length">Die Zeichenkette muss %d Buchstaben enthalten.</string>
+    <string name="error_letter_not_found">Der Buchstabe \'%s\' wurde in der Matrix nicht gefunden.</string>
+
+    <!-- Service errors -->
+    <string name="error_bluetooth_not_enabled_service">Bluetooth ist nicht aktiviert. Bitte aktivieren Sie es und versuchen Sie es erneut.</string>
+    <string name="error_device_address_incorrect">Geräteadresse ist falsch. Service wird gestoppt.</string>
+    <string name="error_device_version_incorrect">Geräteversion ist falsch. Service wird gestoppt.</string>
+    <string name="error_file_path_missing">Dateipfad fehlt. Service wird gestoppt.</string>
+    <string name="error_dfu_failed">DFU fehlgeschlagen. Service wird gestoppt.</string>
+    <string name="error_unsupported_board_version">Nicht unterstützte Board-Version: %d</string>
+    <string name="error_failed_prepare_firmware_zip">Firmware-ZIP konnte nicht vorbereitet werden</string>
+
+    <!-- GATT status descriptions -->
+    <string name="gatt_connection_congested">Verbindung überlastet</string>
+    <string name="gatt_connection_timeout">Verbindungs-Timeout</string>
+    <string name="gatt_failure">Fehler</string>
+    <string name="gatt_insufficient_authentication">Unzureichende Authentifizierung</string>
+    <string name="gatt_insufficient_authorization">Unzureichende Autorisierung</string>
+    <string name="gatt_insufficient_encryption">Unzureichende Verschlüsselung</string>
+    <string name="gatt_invalid_attribute_length">Ungültige Attributlänge</string>
+    <string name="gatt_invalid_offset">Ungültiger Offset</string>
+    <string name="gatt_read_not_permitted">Lesen nicht erlaubt</string>
+    <string name="gatt_request_not_supported">Anfrage nicht unterstützt</string>
+    <string name="gatt_success">Erfolgreich</string>
+    <string name="gatt_write_not_permitted">Schreiben nicht erlaubt</string>
 </resources>

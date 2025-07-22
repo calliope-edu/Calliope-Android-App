@@ -91,6 +91,7 @@
     <string name="menu_fab_connect">Під\'єднання</string>
     <string name="menu_fab_scripts">Програми</string>
     <string name="menu_fab_full_screen">На весь екран</string>
+    <string name="title_select_editor">Редактори</string>
 
     <!-- Errors and messages -->
     <string name="error_no_connected">Calliope mini не під\'єднано</string>
@@ -202,4 +203,37 @@
     <string name="info_dialog_delete_all_devices">Ви впевнені, що хочете видалити %d підключених Calliope Mini?</string>
     <string name="snackbar_no_calliope_connected">Немає підключених Calliope Mini</string>
     <string name="snackbar_calliope_removed">Усі Calliope Mini видалені</string>
+
+    <!-- File versions -->
+    <string name="version_universal">v1,2,3</string>
+    <string name="version_v2">v1,2</string>
+    <string name="version_v3">v3</string>
+    <string name="version_error">помилка</string>
+
+    <!-- Pattern matrix errors -->
+    <string name="error_pattern_length">Рядок повинен містити %d літер.</string>
+    <string name="error_letter_not_found">Літера \'%s\' не знайдена в матриці.</string>
+
+    <!-- Service errors -->
+    <string name="error_bluetooth_not_enabled_service">Bluetooth вимкнено. Будь ласка, увімкніть його і спробуйте знову.</string>
+    <string name="error_device_address_incorrect">Адреса пристрою неправильна. Сервіс буде зупинено.</string>
+    <string name="error_device_version_incorrect">Версія пристрою неправильна. Сервіс буде зупинено.</string>
+    <string name="error_file_path_missing">Шлях до файлу відсутній. Сервіс буде зупинено.</string>
+    <string name="error_dfu_failed">DFU не вдався. Сервіс буде зупинено.</string>
+    <string name="error_unsupported_board_version">Непідтримувана версія плати: %d</string>
+    <string name="error_failed_prepare_firmware_zip">Не вдалося підготувати ZIP файл прошивки</string>
+
+    <!-- GATT status descriptions -->
+    <string name="gatt_connection_congested">З\'єднання перевантажено</string>
+    <string name="gatt_connection_timeout">Таймаут з\'єднання</string>
+    <string name="gatt_failure">Помилка</string>
+    <string name="gatt_insufficient_authentication">Недостатня автентифікація</string>
+    <string name="gatt_insufficient_authorization">Недостатня авторизація</string>
+    <string name="gatt_insufficient_encryption">Недостатнє шифрування</string>
+    <string name="gatt_invalid_attribute_length">Неправильна довжина атрибуту</string>
+    <string name="gatt_invalid_offset">Неправильне зміщення</string>
+    <string name="gatt_read_not_permitted">Читання не дозволено</string>
+    <string name="gatt_request_not_supported">Запит не підтримується</string>
+    <string name="gatt_success">Успішно</string>
+    <string name="gatt_write_not_permitted">Запис не дозволено</string>
 </resources>

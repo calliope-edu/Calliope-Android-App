@@ -12,7 +12,7 @@
         android:id="@+id/title_text_view"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Select Editor"
+        android:text="@string/title_select_editor"
         android:textAppearance="?attr/textAppearanceHeadline6"
         android:textStyle="bold"
         android:gravity="center"

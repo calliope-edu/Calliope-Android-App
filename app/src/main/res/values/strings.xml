@@ -97,6 +97,15 @@
     <string name="info_dialog_delete">You will permanently delete \"%s\".</string>
     <string name="subject_dialog_share">Sharing File…</string>
     <string name="text_dialog_share">Calliope mini firmware</string>
+    <string name="title_select_editor">Editors</string>
+
+    <!-- Layout placeholders and titles -->
+    <string name="placeholder_menu_item" translatable="false">Menu Item</string>
+    <string name="placeholder_demo_file" translatable="false">demo</string>
+    <string name="placeholder_file_date" translatable="false">01.01.2022 11.25 - 2h. ago</string>
+    <string name="placeholder_file_version" translatable="false">v2</string>
+    <string name="content_description_menu_icon" translatable="false">menu_item_icon</string>
+    <string name="content_description_menu_info" translatable="false">menu_item_info</string>
 
     <!-- Errors and messages -->
     <string name="error_no_connected">No Calliope mini connected</string>
@@ -257,5 +266,29 @@
     <string name="info_dialog_delete_all_devices">Are you sure you want to remove %d connected Calliope Minis?</string>
     <string name="snackbar_no_calliope_connected">No Calliope Mini connected</string>
     <string name="snackbar_calliope_removed">All Calliope Minis removed</string>
+
+    <!-- File versions -->
+    <string name="version_universal">v1,2,3</string>
+    <string name="version_v2">v1,2</string>
+    <string name="version_v3">v3</string>
+    <string name="version_error">error</string>
+
+    <!-- Pattern matrix errors -->
+    <string name="error_pattern_length">The string must contain %d letters.</string>
+    <string name="error_letter_not_found">The letter \'%s\' is not found in the matrix.</string>
+
+    <!-- Service errors -->
+    <string name="error_bluetooth_not_enabled_service">Bluetooth is not enabled. Please enable it and try again.</string>
+    <string name="error_device_address_incorrect">Device address is incorrect. Service will stop.</string>
+    <string name="error_device_version_incorrect">Device version is incorrect. Service will stop.</string>
+    <string name="error_file_path_missing">File path is missing. Service will stop.</string>
+    <string name="error_dfu_failed">DFU failed. Service will stop.</string>
+    <string name="error_unsupported_board_version">Unsupported board version: %d</string>
+    <string name="error_failed_prepare_firmware_zip">Failed to prepare firmware ZIP</string>
+
+    <!-- GATT status descriptions -->
+    <string name="gatt_connection_timeout">Connection Timeout</string>
+    <string name="gatt_insufficient_authentication">Insufficient Authentication</string>
+    <string name="gatt_read_not_permitted">Read Not Permitted</string>
 
 </resources>
