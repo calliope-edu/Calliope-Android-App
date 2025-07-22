@@ -199,6 +199,8 @@
     <string name="title_info_сategory">Information</string>
     <string name="title_contact">Contacts</string>
     <string name="summary_contact" translatable="false">Calliope gGmbH</string>
+    <string name="title_editors_menu">Visible editors</string>
+    <string name="summary_editors_menu">Settings of visible editors</string>
     <string name="text_contact">
         <![CDATA[
         Calliope gGmbH<br/>

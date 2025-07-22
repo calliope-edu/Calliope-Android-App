@@ -35,6 +35,17 @@
             android:defaultValue="false"
             app:iconSpaceReserved="false"/>
 
+        <Preference
+            android:key="pref_key_remove_all_devices"
+            android:title="@string/title_remove_all_devices"
+            android:summary="@string/summary_remove_all_devices"
+            app:iconSpaceReserved="false"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/title_editors"
+        app:iconSpaceReserved="false">
+
         <cc.calliope.mini.ui.dialog.CustomLinkDialogPreference
             android:key="pref_key_custom_link"
             android:title="@string/title_custom"
@@ -43,9 +54,9 @@
             app:iconSpaceReserved="false"/>
 
         <Preference
-            android:key="pref_key_remove_all_devices"
-            android:title="@string/title_remove_all_devices"
-            android:summary="@string/summary_remove_all_devices"
+            android:key="pref_key_help"
+            android:title="@string/title_editors_menu"
+            android:summary="@string/summary_editors_menu"
             app:iconSpaceReserved="false"/>
     </PreferenceCategory>
 

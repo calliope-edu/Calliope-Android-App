@@ -2,7 +2,7 @@ package cc.calliope.mini.utils.settings;
 
 import android.content.Context;
 
-import cc.calliope.mini.ui.fragment.editors.Editor;
+import cc.calliope.mini.ui.model.EditorType;
 
 public class Settings extends Preference {
     private static final String PREF_KEY_ENABLE_AUTO_FLASHING = "pref_key_enable_auto_flashing";
@@ -29,7 +29,7 @@ public class Settings extends Preference {
     }
 
     public static String getCustomLink(Context context){
-        return getString(context, PREF_KEY_CUSTOM_LINK, Editor.CUSTOM.getUrl_v2());
+        return getString(context, PREF_KEY_CUSTOM_LINK, EditorType.CUSTOM.getUrlV2());
     }
 
     public static void setCustomLink(Context context, String link){

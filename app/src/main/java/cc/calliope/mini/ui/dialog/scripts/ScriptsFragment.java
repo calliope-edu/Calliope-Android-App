@@ -53,7 +53,7 @@ import cc.calliope.mini.ui.dialog.DialogUtils;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.databinding.FragmentScriptsBinding;
-import cc.calliope.mini.ui.fragment.editors.Editor;
+import cc.calliope.mini.ui.model.EditorType;
 import cc.calliope.mini.utils.settings.Settings;
 import cc.calliope.mini.utils.Utils;
 
@@ -117,7 +117,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         ArrayList<FileWrapper> filesList = new ArrayList<>();
-        for (Editor editor : Editor.values()) {
+        for (EditorType editor : EditorType.values()) {
             filesList.addAll(getFiles(editor));
         }
         TextView infoTextView = binding.infoTextView;
@@ -139,7 +139,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
         }
     }
 
-    private ArrayList<FileWrapper> getFiles(Editor editor) {
+    private ArrayList<FileWrapper> getFiles(EditorType editor) {
         File[] filesArray = new File(activity.getFilesDir().toString() + File.separator + editor).listFiles();
 
         ArrayList<FileWrapper> filesList = new ArrayList<>();
