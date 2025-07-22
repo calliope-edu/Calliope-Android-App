@@ -238,4 +238,6 @@
     <string name="gatt_request_not_supported">Anfrage nicht unterstützt</string>
     <string name="gatt_success">Erfolgreich</string>
     <string name="gatt_write_not_permitted">Schreiben nicht erlaubt</string>
+    <string name="info_cardboard_control">Steuern Sie Ihr Calliope mini mit der Cardboard Control-Oberfläche.</string>
+    <string name="info_cardboard_face">Erstellen und animieren Sie Gesichter mit dem Cardboard Face Editor.</string>
 </resources>

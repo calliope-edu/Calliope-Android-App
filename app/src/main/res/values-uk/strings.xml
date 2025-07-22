@@ -236,4 +236,6 @@
     <string name="gatt_request_not_supported">Запит не підтримується</string>
     <string name="gatt_success">Успішно</string>
     <string name="gatt_write_not_permitted">Запис не дозволено</string>
+    <string name="info_cardboard_control">Керуйте вашим Calliope mini через інтерфейс Cardboard Control.</string>
+    <string name="info_cardboard_face">Створюйте та анімуйте обличчя за допомогою редактора Cardboard Face.</string>
 </resources>

@@ -59,7 +59,7 @@ public class EditorSettingsFragment extends Fragment {
         
         private void setupEditorVisibilityListeners() {
             // Listen for changes in editor visibility preferences
-            String[] editorIds = {"makecode", "roberta", "blocks", "python", "custom"};
+            String[] editorIds = {"makecode", "roberta", "blocks", "python", "custom", "cardboard_control", "cardboard_face"};
             
             for (String editorId : editorIds) {
                 String prefKey = Settings.getEditorVisibilityKey(editorId);

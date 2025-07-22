@@ -59,5 +59,25 @@ enum class EditorType(
         urlV2 = "https://makecode.calliope.cc/beta?androidapp=1",
         urlV3 = "https://makecode.calliope.cc/beta?androidapp=1",
         defaultOrder = 4
+    ),
+
+    CARDBOARD_CONTROL(
+        id = "cardboard_control",
+        titleResId = R.string.title_cardboard_control,
+        iconResId = R.drawable.ic_editors_cardboard_control,
+        infoResId = R.string.info_cardboard_control,
+        urlV2 = "https://cardboard.lofirobot.com/control-calliope/",
+        urlV3 = "https://cardboard.lofirobot.com/control-calliope/",
+        defaultOrder = 5
+    ),
+
+    CARDBOARD_FACE(
+        id = "cardboard_face",
+        titleResId = R.string.title_cardboard_face,
+        iconResId = R.drawable.ic_editors_cardboard_face,
+        infoResId = R.string.info_cardboard_face,
+        urlV2 = "https://cardboard.lofirobot.com/face-app/",
+        urlV3 = "https://cardboard.lofirobot.com/face-app/",
+        defaultOrder = 6
     );
 }

@@ -41,6 +41,20 @@
             android:summary="@string/summary_show_custom"
             android:defaultValue="true"
             app:iconSpaceReserved="false"/>
+
+        <CheckBoxPreference
+            android:key="pref_key_editor_visibility_cardboard_control"
+            android:title="@string/title_show_cardboard_control"
+            android:summary="@string/summary_show_cardboard_control"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
+
+        <CheckBoxPreference
+            android:key="pref_key_editor_visibility_cardboard_face"
+            android:title="@string/title_show_cardboard_face"
+            android:summary="@string/summary_show_cardboard_face"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
     </PreferenceCategory>
 
     <PreferenceCategory
