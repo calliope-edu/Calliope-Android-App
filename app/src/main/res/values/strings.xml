@@ -179,6 +179,9 @@
     <string name="summary_show_cardboard_control">Show or hide Cardboard Control editor</string>
     <string name="title_show_cardboard_face">Show Cardboard Face</string>
     <string name="summary_show_cardboard_face">Show or hide Cardboard Face editor</string>
+    <string name="editor_hidden">hidden</string>
+    <string name="undo">Undo</string>
+    <string name="swipe_to_hide_hint">Swipe left to hide editors</string>
     <string name="title_custom_editor">Custom editor</string>
     <string name="title_editor_settings">Editor settings</string>
     <string name="summary_editor_settings">Configure editor visibility and custom links</string>

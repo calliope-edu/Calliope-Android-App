@@ -52,4 +52,12 @@ class MenuAdapter(
     fun getCurrentOrder(): List<MenuItem> = mutableItems.mapIndexed { index, item ->
         item.copy(order = index)
     }
+
+    fun getItemAt(position: Int): MenuItem? {
+        return if (position in 0 until mutableItems.size) {
+            mutableItems[position]
+        } else {
+            null
+        }
+    }
 }

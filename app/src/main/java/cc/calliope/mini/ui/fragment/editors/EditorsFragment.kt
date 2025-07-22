@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import cc.calliope.mini.R
 import cc.calliope.mini.databinding.FragmentEditorsBinding
 import cc.calliope.mini.ui.adapter.MenuAdapter
 import cc.calliope.mini.ui.model.MenuItem
@@ -16,6 +17,11 @@ import cc.calliope.mini.ui.dialog.DialogUtils
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import cc.calliope.mini.ui.adapter.ItemMoveListener
+import com.google.android.material.snackbar.Snackbar
+import android.graphics.Canvas
+import android.graphics.drawable.VectorDrawable
+import android.graphics.Color
+import androidx.core.graphics.drawable.toDrawable
 
 class EditorsFragment : Fragment() {
 
@@ -52,8 +58,45 @@ class EditorsFragment : Fragment() {
 
         val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
             ItemTouchHelper.UP or ItemTouchHelper.DOWN,
-            0
+            ItemTouchHelper.LEFT
         ) {
+            override fun onChildDraw(
+                c: Canvas,
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder,
+                dX: Float,
+                dY: Float,
+                actionState: Int,
+                isCurrentlyActive: Boolean
+            ) {
+                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
+                    val itemView = viewHolder.itemView
+                    val background = Color.RED.toDrawable()
+                    val icon = requireContext().getDrawable(R.drawable.delete_icon) as? VectorDrawable
+                    
+                    if (dX < 0) { // Swiping to the left
+                        background.setBounds(
+                            itemView.right + dX.toInt(),
+                            itemView.top,
+                            itemView.right,
+                            itemView.bottom
+                        )
+                        background.draw(c)
+                        
+                        // Draw delete icon
+                        icon?.let {
+                            val iconMargin = (itemView.height - it.intrinsicHeight) / 2
+                            val iconTop = itemView.top + iconMargin
+                            val iconBottom = iconTop + it.intrinsicHeight
+                            val iconLeft = itemView.right - iconMargin - it.intrinsicWidth
+                            val iconRight = itemView.right - iconMargin
+                            it.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                            it.draw(c)
+                        }
+                    }
+                }
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+            }
             override fun onMove(
                 recyclerView: RecyclerView,
                 viewHolder: RecyclerView.ViewHolder,
@@ -64,7 +107,16 @@ class EditorsFragment : Fragment() {
             }
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                // No-op
+                if (direction == ItemTouchHelper.LEFT) {
+                    val position = viewHolder.adapterPosition
+                    val item = adapter.getItemAt(position)
+                    if (item != null) {
+                        // Hide the editor
+                        viewModel.setVisibility(item.id, false)
+                        // Show a snackbar with undo option
+                        showUndoSnackbar(item)
+                    }
+                }
             }
 
             override fun isLongPressDragEnabled(): Boolean = true
@@ -114,6 +166,19 @@ class EditorsFragment : Fragment() {
             getString(item.infoResId)
         )
     }
+
+    private fun showUndoSnackbar(item: MenuItem) {
+        Snackbar.make(
+            binding.root,
+            "${getString(item.titleResId)} ${getString(R.string.editor_hidden)}",
+            Snackbar.LENGTH_LONG
+        ).setAction(getString(R.string.undo)) {
+            // Show the editor again
+            viewModel.setVisibility(item.id, true)
+        }.show()
+    }
+
+
 
     override fun onDestroyView() {
         super.onDestroyView()

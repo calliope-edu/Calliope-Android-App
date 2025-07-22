@@ -242,4 +242,7 @@
     <string name="summary_show_cardboard_control">Показати або приховати редактор Cardboard Control</string>
     <string name="title_show_cardboard_face">Показати Cardboard Face</string>
     <string name="summary_show_cardboard_face">Показати або приховати редактор Cardboard Face</string>
+    <string name="editor_hidden">приховано</string>
+    <string name="undo">Скасувати</string>
+    <string name="swipe_to_hide_hint">Свайпніть вліво, щоб приховати редактори</string>
 </resources>
