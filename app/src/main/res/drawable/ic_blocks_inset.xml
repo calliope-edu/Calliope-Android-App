@@ -1,0 +1,6 @@
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@mipmap/icon_abgerundet"
+    android:insetLeft="120dp"
+    android:insetTop="120dp"
+    android:insetRight="120dp"
+    android:insetBottom="120dp" />

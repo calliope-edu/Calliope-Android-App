@@ -240,4 +240,8 @@
     <string name="gatt_write_not_permitted">Schreiben nicht erlaubt</string>
     <string name="info_cardboard_control">Steuern Sie Ihr Calliope mini mit der Cardboard Control-Oberfläche.</string>
     <string name="info_cardboard_face">Erstellen und animieren Sie Gesichter mit dem Cardboard Face Editor.</string>
+    <string name="title_show_cardboard_control">Cardboard Control anzeigen</string>
+    <string name="summary_show_cardboard_control">Cardboard Control Editor ein- oder ausblenden</string>
+    <string name="title_show_cardboard_face">Cardboard Face anzeigen</string>
+    <string name="summary_show_cardboard_face">Cardboard Face Editor ein- oder ausblenden</string>
 </resources>

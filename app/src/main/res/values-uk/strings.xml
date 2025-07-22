@@ -238,4 +238,8 @@
     <string name="gatt_write_not_permitted">Запис не дозволено</string>
     <string name="info_cardboard_control">Керуйте вашим Calliope mini через інтерфейс Cardboard Control.</string>
     <string name="info_cardboard_face">Створюйте та анімуйте обличчя за допомогою редактора Cardboard Face.</string>
+    <string name="title_show_cardboard_control">Показати Cardboard Control</string>
+    <string name="summary_show_cardboard_control">Показати або приховати редактор Cardboard Control</string>
+    <string name="title_show_cardboard_face">Показати Cardboard Face</string>
+    <string name="summary_show_cardboard_face">Показати або приховати редактор Cardboard Face</string>
 </resources>

@@ -14,7 +14,7 @@ enum class EditorType(
     MAKECODE(
         id = "makecode",
         titleResId = R.string.title_make_code,
-        iconResId = R.drawable.ic_editors_makecode,
+        iconResId = R.drawable.ic_make_code_inset,
         infoResId = R.string.info_make_code,
         urlV2 = "https://makecode.calliope.cc/?androidapp=1",
         urlV3 = "https://makecode.calliope.cc/?androidapp=1",
@@ -24,7 +24,7 @@ enum class EditorType(
     ROBERTA(
         id = "roberta",
         titleResId = R.string.title_roberta,
-        iconResId = R.drawable.ic_editors_roberta,
+        iconResId = R.drawable.ic_roberta_inset,
         infoResId = R.string.info_roberta,
         urlV2 = "https://lab.open-roberta.org/?loadSystem=calliope2017",
         urlV3 = "https://lab.open-roberta.org/?loadSystem=calliopev3",
@@ -34,7 +34,7 @@ enum class EditorType(
     BLOCKS(
         id = "blocks",
         titleResId = R.string.title_blocks,
-        iconResId = R.mipmap.icon_abgerundet,
+        iconResId = R.drawable.ic_blocks_inset,
         infoResId = R.string.info_blocks,
         urlV2 = "https://blocks.calliope.cc/",
         urlV3 = "https://blocks.calliope.cc/",
@@ -44,7 +44,7 @@ enum class EditorType(
     PYTHON(
         id = "python",
         titleResId = R.string.title_python,
-        iconResId = R.drawable.python_logo,
+        iconResId = R.drawable.ic_python_inset,
         infoResId = R.string.info_python,
         urlV2 = "https://python.calliope.cc/",
         urlV3 = "https://python.calliope.cc/",
@@ -54,7 +54,7 @@ enum class EditorType(
     CUSTOM(
         id = "custom",
         titleResId = R.string.title_custom,
-        iconResId = R.drawable.ic_editors_custom,
+        iconResId = R.drawable.ic_custom_inset,
         infoResId = R.string.info_custom,
         urlV2 = "https://makecode.calliope.cc/beta?androidapp=1",
         urlV3 = "https://makecode.calliope.cc/beta?androidapp=1",
