@@ -7,6 +7,7 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.PreferenceManager;
 
 import java.util.List;
 
@@ -14,11 +15,32 @@ import cc.calliope.mini.R;
 import cc.calliope.mini.ui.SnackbarHelper;
 import cc.calliope.mini.ui.dialog.DialogUtils;
 import cc.calliope.mini.utils.bluetooth.ConnectedDevicesManager;
+import cc.calliope.mini.utils.settings.Settings;
 
 public class SettingsFragment extends PreferenceFragmentCompat {
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.preferences, rootKey);
+        
+        // Set up preference change listeners for editor visibility
+        setupEditorVisibilityListeners();
+    }
+    
+    private void setupEditorVisibilityListeners() {
+        // Listen for changes in editor visibility preferences
+        String[] editorIds = {"makecode", "roberta", "blocks", "python", "custom"};
+        
+        for (String editorId : editorIds) {
+            String prefKey = Settings.getEditorVisibilityKey(editorId);
+            Preference preference = findPreference(prefKey);
+            if (preference != null) {
+                preference.setOnPreferenceChangeListener((pref, newValue) -> {
+                    // The change will be automatically saved by the preference system
+                    // We just need to notify that the menu should be refreshed
+                    return true;
+                });
+            }
+        }
     }
 
     @Override

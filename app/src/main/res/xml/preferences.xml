@@ -54,9 +54,50 @@
             app:iconSpaceReserved="false"/>
 
         <Preference
-            android:key="pref_key_help"
+            android:key="pref_key_editors_menu"
             android:title="@string/title_editors_menu"
             android:summary="@string/summary_editors_menu"
+            app:iconSpaceReserved="false"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/title_editor_visibility"
+        android:summary="@string/summary_editor_visibility"
+        app:iconSpaceReserved="false">
+
+        <CheckBoxPreference
+            android:key="pref_key_editor_visibility_makecode"
+            android:title="@string/title_show_makecode"
+            android:summary="@string/summary_show_makecode"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
+
+        <CheckBoxPreference
+            android:key="pref_key_editor_visibility_roberta"
+            android:title="@string/title_show_roberta"
+            android:summary="@string/summary_show_roberta"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
+
+        <CheckBoxPreference
+            android:key="pref_key_editor_visibility_blocks"
+            android:title="@string/title_show_blocks"
+            android:summary="@string/summary_show_blocks"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
+
+        <CheckBoxPreference
+            android:key="pref_key_editor_visibility_python"
+            android:title="@string/title_show_python"
+            android:summary="@string/summary_show_python"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
+
+        <CheckBoxPreference
+            android:key="pref_key_editor_visibility_custom"
+            android:title="@string/title_show_custom"
+            android:summary="@string/summary_show_custom"
+            android:defaultValue="true"
             app:iconSpaceReserved="false"/>
     </PreferenceCategory>
 

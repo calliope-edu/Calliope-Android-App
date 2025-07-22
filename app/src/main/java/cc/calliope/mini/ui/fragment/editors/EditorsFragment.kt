@@ -22,7 +22,9 @@ class EditorsFragment : Fragment() {
     private var _binding: FragmentEditorsBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: MenuViewModel by viewModels()
+    private val viewModel: MenuViewModel by viewModels { 
+        MenuViewModel.Factory(requireContext()) 
+    }
     private lateinit var adapter: MenuAdapter
 
     override fun onCreateView(
@@ -71,8 +73,16 @@ class EditorsFragment : Fragment() {
         itemTouchHelper.attachToRecyclerView(binding.recyclerView)
 
         viewModel.menuItems.observe(viewLifecycleOwner) { items ->
-            adapter.submitList(items.sortedBy { it.order })
+            // Filter out invisible items and sort by order
+            val visibleItems = items.filter { it.visible }.sortedBy { it.order }
+            adapter.submitList(visibleItems)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh menu when returning from settings
+        viewModel.refreshMenu()
     }
 
     override fun onPause() {
@@ -109,6 +119,4 @@ class EditorsFragment : Fragment() {
         super.onDestroyView()
         _binding = null
     }
-
-
 }

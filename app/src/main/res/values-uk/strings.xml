@@ -180,4 +180,18 @@
     <string name="info_dialog_delete_all_devices">Ви впевнені, що хочете видалити %d підключених Calliope Mini?</string>
     <string name="snackbar_no_calliope_connected">Немає підключених Calliope Mini</string>
     <string name="snackbar_calliope_removed">Усі Calliope Mini видалені</string>
+    
+    <!-- Editor visibility settings -->
+    <string name="title_editor_visibility">Видимість редакторів</string>
+    <string name="summary_editor_visibility">Показати або приховати конкретні редактори</string>
+    <string name="title_show_makecode">Показати MakeCode</string>
+    <string name="summary_show_makecode">Показати або приховати редактор MakeCode</string>
+    <string name="title_show_roberta">Показати Open Roberta Lab</string>
+    <string name="summary_show_roberta">Показати або приховати редактор Open Roberta Lab</string>
+    <string name="title_show_blocks">Показати Calliope mini Blocks</string>
+    <string name="summary_show_blocks">Показати або приховати редактор Calliope mini Blocks</string>
+    <string name="title_show_python">Показати MicroPython</string>
+    <string name="summary_show_python">Показати або приховати редактор MicroPython</string>
+    <string name="title_show_custom">Показати Кастомний редактор</string>
+    <string name="summary_show_custom">Показати або приховати кастомний редактор</string>
 </resources>
