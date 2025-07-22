@@ -1,33 +1,36 @@
 <resources>
+    <!-- App name and navigation -->
     <string name="title_home">Startseite</string>
     <string name="title_editors">Programmieren</string>
     <string name="title_help">Hilfe</string>
+    <string name="title_settings">Einstellungen</string>
+    <string name="title_info">Info</string>
 
+    <!-- Permissions -->
     <string name="title_location_permission">STANDORTGENEHMIGUNG ERFORDERLICH</string>
     <string name="title_bluetooth_permission">BLUETOOTH-ERLAUBNIS ERFORDERLICH</string>
     <string name="title_notification_permission">ANZEIGEERLAUBNIS ERFORDERLICH</string>
     <string name="info_location_permission">Ab Android 6.0 (Marshmallow) benötigt die Anwendung eine Standortberechtigung, um nach Bluetooth-Geräten zu suchen.
         \n\nDies liegt daran, dass Bluetoothn verwendet werden kannn, um den Standort des Telefons und des Benutzers zu bestimmen. <b>Calliope</b> wird diese Informationen in keiner Weise verwenden.</string>
     <string name="info_bluetooth_permission">Um die Bluetooth-Funktionen für die Kommunikation der App mit deinem <b>Calliope mini</b> zu nutzen, musst du mehrere Berechtigungen vergeben.</string>
-
     <string name="info_notification_permission">Klicken Sie auf \"Zulassen\", damit die App Ihnen Benachrichtigungen über den Status der Firmware senden kann.</string>
     <string name="settings_btn_permission">Einstellungen</string>
     <string name="action_btn_permission">Erlaubnis erteilen</string>
 
+    <!-- Editor names and descriptions -->
     <string name="title_custom">Eigener Editor</string>
     <string name="title_scripts">Deine Programme</string>
-
     <string name="info_make_code">Der MakeCode-Editor ermöglicht die volle Kontrolle über den Calliope mini und die Integration beliebiger externer Sensoren durch (benutzerdefinierte) Erweiterungen. Die Programmierung kann entweder durch Anordnen von Codeblöcken, Verwendung von JavaScript oder Python erfolgen.</string>
     <string name="info_roberta">Im "Open Roberta Lab" lernt man, mit der grafischen Sprache NEPO zu programmieren!</string>
     <string name="info_python">MicroPython ist eine Version von Python, die speziell für Mikrocontroller angepasst wurde. Python ist eine ausgezeichnete erste textbasierte Programmiersprache.</string>
     <string name="info_blocks">Der Calliope mini Blocks-Editor ermöglicht die Programmierung des Calliope mini mit der Programmiersprache Scratch. So können Anwendungen auf dem Computer mit dem Calliope mini gesteuert werden und andersherum.</string>
-
     <string name="info_custom">Hier können Sie zum benutzerdefinierten Editor gehen.</string>
     <string name="info_scripts">Hier sind deine Programme.</string>
+    <string name="summary_custom">Link zum benutzerdefinierten Editor</string>
 
+    <!-- Welcome and tutorial -->
     <string name="title_welcome">Los geht\'s</string>
     <string name="info_welcome">Auf dieser Seite erfährst du, wie du den Calliope mini in Betrieb nehmen kannst.</string>
-
     <string name="title_battery">Verbinden</string>
     <string name="info_battery"><![CDATA[
     Bevor du starten kannst, muss der Calliope mini mit Strom versorgt werden. Es gibt zwei Möglichkeiten.
@@ -38,7 +41,6 @@
     <br/>
     <br/>Achte darauf, dass die geschlossene Steckerseite mit der Erhöhung in der Mitte oben ist. Wenn der Kabelstecker leicht in den Batterieanschluss des Boards passt, ist es richtig.
     ]]></string>
-
     <string name="title_demo">Demo Sequenz</string>
     <string name="info_demo"><![CDATA[
     Der Calliope mini zeigt dir auf der LED-Matrix an, welche Eingabe du ausführen sollst.
@@ -49,15 +51,12 @@
     <br/>4. <b>Der Lagesensor</b> - schüttel den Calliope mini.
     <br/>5. <b>Fertig!</b>
     ]]></string>
-
     <string name="hello_text">Hallo und willkommen in der Calliope mini App!</string>
-
     <string name="info_app">
         <![CDATA[
         <br/>Mit Hilfe dieser App kannst du dich mit deinem <b>Calliope mini</b> verbinden und diesen mobil programmieren.
         ]]>
     </string>
-
     <string name="info_app2">
         <![CDATA[
         <br/>Um die App nutzen zu können, wird ein Calliope mini dringend empfohlen.
@@ -67,83 +66,110 @@
         <br/>Viel Spaß wünscht dir das Calliope Team!
         ]]>
     </string>
-
     <string name="welcome">Willkommen</string>
 
+    <!-- Common UI elements -->
     <string name="title_copy">kopieren via USB</string>
     <string name="title_rename">umbenennen</string>
     <string name="title_share">teilen</string>
     <string name="title_delete">löschen</string>
-
     <string name="title_dialog_rename">Datei umbenennen</string>
     <string name="title_dialog_delete">Datei löschen</string>
-
+    <string name="title_dialog_share">Datei teilen</string>
+    <string name="title_dialog_edit_link">Link bearbeiten</string>
     <string name="button_cancel">abbrechen</string>
+    <string name="button_select">auswählen</string>
+    <string name="button_ok">Ok</string>
     <string name="button_rename">umbenennen</string>
     <string name="button_continue">fortsetzen</string>
     <string name="button_enable">aktivieren</string>
-
+    <string name="button_remove">entfernen</string>
+    <string name="button_save">speichern</string>
+    <string name="button_retry">wiederholen</string>
     <string name="info_dialog_delete">\"%s\" wird entgültig gelöscht.</string>
-    <string name="title_dialog_share">Datei teilen</string>
     <string name="subject_dialog_share">Datei teilen…</string>
     <string name="text_dialog_share">Calliope mini Skript teilen</string>
+    <string name="menu_fab_connect">Verbindung</string>
+    <string name="menu_fab_scripts">Programme</string>
+    <string name="menu_fab_full_screen">Vollbild</string>
 
+    <!-- Errors and messages -->
     <string name="error_no_connected">Kein Calliope mini verbunden</string>
     <string name="error_snackbar_name_exists">Die Datei mit diesem Namen existiert bereits</string>
     <string name="error_snackbar_no_internet">Kein Internet verfügbar</string>
     <string name="error_snackbar_download_error">Fehler beim Herunterladen</string>
     <string name="error_snackbar_bluetooth_disabled">Bluetooth ist deaktiviert</string>
     <string name="error_snackbar_location_disable">Standort ist deaktiviert</string>
+    <string name="error_snackbar_save_file_error">Fehler beim Speichern der Datei</string>
+
+    <!-- Hex file operations -->
     <string name="open_hex_info">
         Du versuchst, die Datei \"%s\" zu öffnen und auf deinen Calliope mini zu übertragen.
         \n\nWenn du eine falsche oder beschädigte Datei kopierst, kann das dazu führen, dass du deinen Calliope mini mit dem Computer verbinden musst, um ihn zurückzusetzen.</string>
     <string name="open_hex_button">Flashen</string>
 
-    <string name="flashing_device_connecting">Gerät verbinden…</string>
+    <!-- Flashing status -->
+    <string name="flashing_device_connecting">Gerät verbindet sich…</string>
     <string name="flashing_device_connected">Gerät verbunden</string>
-    <string name="flashing_process_starting">Prozessbeginn…</string>
+    <string name="flashing_process_starting">Prozess startet…</string>
     <string name="flashing_process_started">Prozess gestartet</string>
-    <string name="flashing_enabling_dfu_mode">Aktivieren des DFU-Modus…</string>
-    <string name="flashing_firmware_validating">Validierung der Firmware…</string>
-    <string name="flashing_device_disconnecting">Gerät trennt die Verbindung…</string>
+    <string name="flashing_enabling_dfu_mode">DFU-Modus aktivieren…</string>
+    <string name="flashing_firmware_validating">Firmware validieren…</string>
+    <string name="flashing_device_disconnecting">Gerät trennt sich…</string>
     <string name="flashing_device_disconnected">Gerät getrennt</string>
     <string name="flashing_completed">Flashen abgeschlossen</string>
     <string name="flashing_aborted">Flashen abgebrochen</string>
     <string name="flashing_uploading">Hochladen…</string>
     <string name="flashing_error">Fehler (%d): %s</string>
-    <string name="flashing_connection_fail">Verbindung fehlgeschlagen</string>
-    <string name="flashing_status">Zustand %d</string>
-    <string name="title_dialog_edit_link">Link bearbeiten</string>
-    <string name="button_save">Speichern</string>
-    <string name="menu_fab_connect">Verbindung</string>
-    <string name="menu_fab_scripts">Programme</string>
-    <string name="menu_fab_full_screen">Vollbild</string>
-    <string name="error_snackbar_save_file_error">Fehler beim Speichern der Datei</string>
-    <string name="summary_custom">Link zum benutzerdefinierten Editor</string>
+    <string name="flashing_connection_fail">Verbindungsfehler</string>
+    <string name="flashing_status">Status %d</string>
+    <string name="partial_flashing_starting">Partielles Flashen startet…</string>
+    <string name="partial_flashing_failed">Partielles Flashen fehlgeschlagen, versuche vollständiges Flashen</string>
+
+    <!-- Settings -->
+    <string name="summary_auto_flashing">nach dem Herunterladen der .hex-Datei</string>
+    <string name="summary_rename_files">(n) angehängt, wenn Datei existiert</string>
     <string name="summary_partial_flashing">aktivieren oder deaktivieren</string>
     <string name="summary_background_flashing">aktivieren oder deaktivieren</string>
-    <string name="title_rename_files">Dateien umbenennen</string>
-    <string name="title_settings">Einstellungen</string>
-    <string name="bonding_started">Bindung begonnen</string>
-    <string name="bonding_succeeded">Bindung gelungen</string>
-    <string name="bonding_not_succeeded">Bindung nicht gelungen</string>
-    <string name="button_retry">Wiederholen</string>
-    <string name="summary_auto_flashing">Aunach dem Herunterladen der .hex-Datei.</string>
     <string name="title_partial_flashing">Partielles Flashen</string>
-    <string name="title_background_flashing">Hintergrund Flashen</string>
+    <string name="title_background_flashing">Hintergrund-Flashen</string>
     <string name="title_auto_flashing">Automatisches Flashen</string>
-    <string name="button_select">Auswählen</string>
-    <string name="button_ok">Ja</string>
-    <string name="summary_rename_files">angehängtes (n), wenn Datei vorhanden ist</string>
-    <string name="button_remove">Entfernen</string>
-    <string name="title_pattern_connected">%s angeschlossen</string>
-    <string name="title_info_сategory">Information</string>
-    <string name="title_contact">Contact Information</string>
+    <string name="title_rename_files">Dateien umbenennen</string>
+    <string name="title_pattern_connected">%s verbunden</string>
+    
+    <!-- Editor settings -->
+    <string name="title_editors_menu">Sichtbare Editoren</string>
+    <string name="summary_editors_menu">Einstellungen für sichtbare Editoren</string>
+    <string name="title_editor_visibility">Editor-Sichtbarkeit</string>
+    <string name="summary_editor_visibility">Bestimmte Editoren anzeigen oder ausblenden</string>
+    <string name="title_show_makecode">MakeCode anzeigen</string>
+    <string name="summary_show_makecode">MakeCode-Editor anzeigen oder ausblenden</string>
+    <string name="title_show_roberta">Open Roberta Lab anzeigen</string>
+    <string name="summary_show_roberta">Open Roberta Lab-Editor anzeigen oder ausblenden</string>
+    <string name="title_show_blocks">Calliope mini Blocks anzeigen</string>
+    <string name="summary_show_blocks">Calliope mini Blocks-Editor anzeigen oder ausblenden</string>
+    <string name="title_show_python">MicroPython anzeigen</string>
+    <string name="summary_show_python">MicroPython-Editor anzeigen oder ausblenden</string>
+    <string name="title_show_custom">Benutzerdefinierten Editor anzeigen</string>
+    <string name="summary_show_custom">Benutzerdefinierten Editor anzeigen oder ausblenden</string>
+    <string name="title_custom_editor">Benutzerdefinierter Editor</string>
+    <string name="title_editor_settings">Editor-Einstellungen</string>
+    <string name="summary_editor_settings">Editor-Sichtbarkeit und benutzerdefinierte Links konfigurieren</string>
+
+    <!-- Bonding -->
+    <string name="bonding_started">Paarung gestartet</string>
+    <string name="bonding_succeeded">Paarung erfolgreich</string>
+    <string name="bonding_not_succeeded">Paarung nicht erfolgreich</string>
+
+    <!-- Information and contacts -->
+    <string name="title_info_category">Information</string>
+    <string name="title_contact">Kontakte</string>
     <string name="text_contact">
         <![CDATA[
         Calliope gGmbH<br/>
         Raumerstrasse 11<br/>
         10437 Berlin<br/>
+        Germany<br/>
         E-Mail: <a href="mailto:info@calliope.cc">info@calliope.cc</a><br/>
         GitHub: <a href="https://github.com/calliope-edu/Calliope-Android-App">https://github.com/calliope-edu/Calliope-Android-App</a>
         ]]>
@@ -151,32 +177,31 @@
     <string name="info_mini_conected">Calliope mini %s verbunden</string>
     <string name="mini_version_1">1 oder 2</string>
     <string name="mini_version_2">3</string>
-    <string name="flashing_version_mismatch">Versionen stimmen nicht überein. Flashen nicht möglich!</string>
-    <string name="error_bluetooth_permissions">Bluetooth-Berechtigungen nicht erteilt</string>
-    <string name="error_connection_failed">Verbindung fehlgeschlagen</string>
-    <string name="error_device_null">Probleme mit dem Calliope mini Programm</string>
-    <string name="error_bluetooth_not_enabled">Bluetooth ist nicht aktiviert</string>
-    <string name="error_invalid_mac_address">Ungültige MAC-Adresse</string>
-    <string name="error_service_discovery">Suche nach einem benötigten Dienst fehlgeschlagen</string>
-    <string name="error_missing_characteristic">DFU-Merkmal kann nicht gefunden werden</string>
-    <string name="error_reading_characteristic">DFU konnte nicht gelesen werden</string>
-    <string name="pattern_removed">%s entfernt</string>
-    <string name="pattern_remove_failed">Gerät kann nicht entfernt werden</string>
-    <string name="flashing_timeout_v1">Bluetooth verfügbar?\nDrücken Sie AB + Reset.</string>
-    <string name="flashing_timeout_v2">Bluetooth verfügbar?\nDrücken Sie dreimal Reset.</string>
-    <string name="partial_flashing_starting">Teilweises Flashen wurde gestartet…</string>
-    <string name="partial_flashing_failed">Teilweises Flashen fehlgeschlagen, Versuch des vollständigen Flashen</string>
+    <string name="flashing_version_mismatch">Versionskonflikt. Flashen nicht möglich!</string>
+    <string name="flashing_timeout_v1">Bluetooth verfügbar?\nDrücke AB + Reset.</string>
+    <string name="flashing_timeout_v2">Bluetooth verfügbar?\nDrücke dreimal Reset.</string>
     <string name="info_web">Anleitung</string>
 
-    <string name="title_info">Information</string>
-    <string name="error_bluetooth_adapter_null">Bluetooth-Adapter ist nicht vorhanden oder deaktiviert</string>
-    <string name="error_missing_dfu_service">DFU-Legacy-Dienst konnte nicht gefunden werden.</string>
-    <string name="error_missing_dfu_characteristic">DFU-Legacy-Charakteristik konnte nicht gefunden werden.</string>
+    <!-- Device errors -->
+    <string name="error_bluetooth_permissions">Bluetooth-Berechtigungen nicht erteilt</string>
+    <string name="error_connection_failed">Verbindung fehlgeschlagen</string>
+    <string name="error_bluetooth_not_enabled">Bluetooth ist nicht aktiviert</string>
+    <string name="error_invalid_mac_address">Ungültige MAC-Adresse</string>
+    <string name="error_service_discovery">Service-Erkennung fehlgeschlagen</string>
+    <string name="error_missing_characteristic">DFU-Legacy-Charakteristik nicht gefunden</string>
+    <string name="error_reading_characteristic">Fehler beim Lesen der DFU-Steuerungscharakteristik</string>
+    <string name="pattern_removed">%s entfernt</string>
+    <string name="pattern_remove_failed">Gerät konnte nicht entfernt werden</string>
+    <string name="error_bluetooth_adapter_null">Bluetooth-Adapter ist null oder nicht aktiviert</string>
+    <string name="error_device_null">Gerät ist null</string>
+    <string name="error_missing_dfu_service">DFU-Legacy-Service nicht gefunden.</string>
+    <string name="error_missing_dfu_characteristic">DFU-Legacy-Charakteristik nicht gefunden.</string>
 
-    <string name="title_remove_all_devices">Calliope Mini entfernen</string>
-    <string name="summary_remove_all_devices">Alle verbundenen Calliope Mini löschen und Bindungen entfernen</string>
+    <!-- Device management -->
+    <string name="title_remove_all_devices">Alle Calliope Mini entfernen</string>
+    <string name="summary_remove_all_devices">Alle verbundenen Calliope Mini und Verbindungen löschen</string>
     <string name="title_dialog_delete_all_devices">Alle Calliope Mini entfernen</string>
-    <string name="info_dialog_delete_all_devices">Sollen %d verbundene Calliope Mini gelöscht werden?</string>
-    <string name="snackbar_no_calliope_connected">Keine Calliope Mini verbunden</string>
-    <string name="snackbar_calliope_removed">Alle Calliope Minis wurden entfernt</string>
+    <string name="info_dialog_delete_all_devices">Sind Sie sicher, dass Sie %d verbundene Calliope Mini entfernen möchten?</string>
+    <string name="snackbar_no_calliope_connected">Kein Calliope Mini verbunden</string>
+    <string name="snackbar_calliope_removed">Alle Calliope Mini entfernt</string>
 </resources>
