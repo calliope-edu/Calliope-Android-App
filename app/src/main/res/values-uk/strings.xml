@@ -194,4 +194,7 @@
     <string name="summary_show_python">Показати або приховати редактор MicroPython</string>
     <string name="title_show_custom">Показати Кастомний редактор</string>
     <string name="summary_show_custom">Показати або приховати кастомний редактор</string>
+    <string name="title_custom_editor">Кастомний редактор</string>
+    <string name="title_editor_settings">Налаштування редакторів</string>
+    <string name="summary_editor_settings">Налаштувати видимість редакторів та кастомні посилання</string>
 </resources>

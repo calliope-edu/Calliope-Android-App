@@ -69,6 +69,16 @@
         <action
             android:id="@+id/action_settings_to_help"
             app:destination="@id/navigation_help" />
+            
+        <action
+            android:id="@+id/action_settings_to_editor_settings"
+            app:destination="@id/navigation_editor_settings" />
     </fragment>
+
+    <fragment
+        android:id="@+id/navigation_editor_settings"
+        android:name="cc.calliope.mini.ui.fragment.settings.EditorSettingsFragment"
+        android:label="@string/title_editor_settings"
+        tools:layout="@layout/fragment_editor_settings" />
 
 </navigation>
