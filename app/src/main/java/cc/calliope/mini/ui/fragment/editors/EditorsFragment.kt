@@ -17,10 +17,11 @@ import cc.calliope.mini.ui.dialog.DialogUtils
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import cc.calliope.mini.ui.adapter.ItemMoveListener
-import com.google.android.material.snackbar.Snackbar
+import cc.calliope.mini.ui.SnackbarHelper
 import android.graphics.Canvas
 import android.graphics.drawable.VectorDrawable
 import android.graphics.Color
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.graphics.drawable.toDrawable
 
 class EditorsFragment : Fragment() {
@@ -72,7 +73,8 @@ class EditorsFragment : Fragment() {
                 if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
                     val itemView = viewHolder.itemView
                     val background = Color.RED.toDrawable()
-                    val icon = requireContext().getDrawable(R.drawable.delete_icon) as? VectorDrawable
+                    val context = requireContext()
+                    val icon = AppCompatResources.getDrawable(context, R.drawable.delete_icon) as? VectorDrawable
                     
                     if (dX < 0) { // Swiping to the left
                         background.setBounds(
@@ -168,17 +170,14 @@ class EditorsFragment : Fragment() {
     }
 
     private fun showUndoSnackbar(item: MenuItem) {
-        Snackbar.make(
+        SnackbarHelper.warningSnackbar(
             binding.root,
-            "${getString(item.titleResId)} ${getString(R.string.editor_hidden)}",
-            Snackbar.LENGTH_LONG
+            "${getString(item.titleResId)} ${getString(R.string.editor_hidden)}"
         ).setAction(getString(R.string.undo)) {
             // Show the editor again
             viewModel.setVisibility(item.id, true)
         }.show()
     }
-
-
 
     override fun onDestroyView() {
         super.onDestroyView()

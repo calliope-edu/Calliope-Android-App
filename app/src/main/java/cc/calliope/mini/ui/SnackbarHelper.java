@@ -40,8 +40,9 @@ public class SnackbarHelper {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
         );
-        params.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+        params.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
         params.topMargin = Utils.convertDpToPixel(view.getContext(), topMargin);
+        params.bottomMargin = Utils.convertDpToPixel(view.getContext(), 72);
 
         Snackbar snackbar = Snackbar.make(view, message, Snackbar.LENGTH_LONG);
         snackbar.getView().setBackgroundTintList(ContextCompat.getColorStateList(view.getContext(), color));

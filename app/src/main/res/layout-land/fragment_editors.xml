@@ -7,21 +7,6 @@
     android:layout_height="match_parent"
     tools:context=".ui.fragment.editors.EditorsFragment">
 
-    <!-- Title (optional) -->
-    <TextView
-        android:id="@+id/title_text_view"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="@string/title_select_editor"
-        android:textAppearance="?attr/textAppearanceHeadline6"
-        android:textStyle="bold"
-        android:gravity="center"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"
-        android:padding="8dp" />
-
     <!-- RecyclerView for menu items -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view"
@@ -30,11 +15,11 @@
         android:clipToPadding="false"
         android:paddingTop="16dp"
         android:paddingBottom="16dp"
-        tools:listitem="@layout/item_menu"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        app:layout_constraintTop_toBottomOf="@id/title_text_view"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        tools:listitem="@layout/item_menu" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
