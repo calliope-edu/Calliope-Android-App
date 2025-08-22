@@ -157,12 +157,19 @@ class EditorsFragment : Fragment() {
             if (boardVersion == 2) item.urlV2 else item.urlV3
         }
 
-        if (item.id == "cardboard_control") {
-            val action = EditorsFragmentDirections.actionEditorsToWebBle(url, item.id)
-            findNavController().navigate(action)
-        } else {
-            val action = EditorsFragmentDirections.actionEditorsToWeb(url, item.id)
-            findNavController().navigate(action)
+        when (item.id) {
+            "cardboard_control" -> {
+                val action = EditorsFragmentDirections.actionEditorsToWebBle(url, item.id)
+                findNavController().navigate(action)
+            }
+            "cardboard_face" -> {
+                val action = EditorsFragmentDirections.actionEditorsToWebBle2(url, item.id)
+                findNavController().navigate(action)
+            }
+            else -> {
+                val action = EditorsFragmentDirections.actionEditorsToWeb(url, item.id)
+                findNavController().navigate(action)
+            }
         }
     }
 

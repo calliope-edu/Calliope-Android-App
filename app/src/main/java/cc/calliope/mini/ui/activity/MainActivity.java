@@ -66,12 +66,13 @@ public class MainActivity extends BaseActivity {
         navMapping.put(R.id.navigation_info, R.id.navigation_home);
         navMapping.put(R.id.navigation_web, R.id.navigation_editors);
         navMapping.put(R.id.navigation_web_ble, R.id.navigation_editors);
+        navMapping.put(R.id.navigation_web_ble2, R.id.navigation_editors);
         navMapping.put(R.id.navigation_help, R.id.navigation_settings);
         navMapping.put(R.id.navigation_editor_settings, R.id.navigation_settings);
 
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
             int destId = destination.getId();
-            if (destId == R.id.navigation_web || destId == R.id.navigation_web_ble) {
+            if (destId == R.id.navigation_web || destId == R.id.navigation_web_ble || destId == R.id.navigation_web_ble2) {
                moveFabDown();
             } else {
                moveFabUp();

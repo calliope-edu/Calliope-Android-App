@@ -51,6 +51,17 @@
                 android:name="editorName"
                 app:argType="string" />
         </action>
+        
+        <action
+            android:id="@+id/action_editors_to_web_ble2"
+            app:destination="@id/navigation_web_ble2">
+            <argument
+                android:name="editorUrl"
+                app:argType="string" />
+            <argument
+                android:name="editorName"
+                app:argType="string" />
+        </action>
     </fragment>
 
     <fragment
@@ -76,6 +87,19 @@
     <fragment
         android:id="@+id/navigation_web_ble"
         android:name="cc.calliope.mini.ui.fragment.web.WebBleFragment"
+        android:label="@string/title_web"
+        tools:layout="@layout/fragment_web">
+        <argument
+            android:name="editorUrl"
+            app:argType="string" />
+        <argument
+            android:name="editorName"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/navigation_web_ble2"
+        android:name="cc.calliope.mini.ui.fragment.web.WebBleFragment2"
         android:label="@string/title_web"
         tools:layout="@layout/fragment_web">
         <argument
