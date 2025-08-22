@@ -33,6 +33,7 @@ import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -176,9 +177,25 @@ public class WebFragment extends Fragment implements DownloadListener {
         webView.addJavascriptInterface(new JavaScriptInterface(getContext()), "Android");
         webView.setWebChromeClient(new WebChromeClient());
         webView.setWebViewClient(new WebViewClient() {
-            @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                SnackbarHelper.errorSnackbar(webView, "Oh no! " + error.getDescription()).show();
+                // Only show error for main page, not for sub-resources
+                if (request.isForMainFrame()) {
+                    Log.e(TAG, "Main page error: " + error.getDescription() + " for URL: " + request.getUrl());
+                    SnackbarHelper.errorSnackbar(webView, "Oh no! " + error.getDescription()).show();
+                } else {
+                    // Log sub-resource errors but don't show to user
+                    Log.d(TAG, "Sub-resource error: " + error.getDescription() + " for URL: " + request.getUrl());
+                }
+            }
+
+            @Override
+            public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+                // Handle HTTP errors (4xx, 5xx)
+                if (request.isForMainFrame()) {
+                    Log.e(TAG, "HTTP Error: " + errorResponse.getStatusCode() + " for URL: " + request.getUrl());
+                } else {
+                    Log.d(TAG, "Sub-resource HTTP error: " + errorResponse.getStatusCode() + " for URL: " + request.getUrl());
+                }
             }
         });
         webView.setDownloadListener(this);

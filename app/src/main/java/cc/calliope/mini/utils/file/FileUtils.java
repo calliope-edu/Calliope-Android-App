@@ -1,8 +1,10 @@
 package cc.calliope.mini.utils.file;
 
 import android.content.Context;
+import android.net.Uri;
 import android.util.Log;
 import android.webkit.URLUtil;
+import androidx.core.content.FileProvider;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -122,5 +124,22 @@ public class FileUtils {
             e.printStackTrace();
             return false;
         }
+    }
+
+    // Camera file methods
+    public static File createImageFile(Context context) {
+        try {
+            String timeStamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date());
+            String imageFileName = "JPEG_" + timeStamp + "_";
+            File storageDir = context.getCacheDir();
+            return File.createTempFile(imageFileName, ".jpg", storageDir);
+        } catch (IOException e) {
+            Log.e(TAG, "Error creating image file", e);
+            return null;
+        }
+    }
+
+    public static Uri getUriForFile(Context context, File file) {
+        return FileProvider.getUriForFile(context, "cc.calliope.file_provider", file);
     }
 }
