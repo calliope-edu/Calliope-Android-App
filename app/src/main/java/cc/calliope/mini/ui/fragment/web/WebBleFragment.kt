@@ -74,6 +74,10 @@ class WebBleFragment : Fragment() {
         val preferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         deviceMac = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
         
+        // Логуємо, що WebBleFragment використовується тільки для CARDBOARD_CONTROL
+        android.util.Log.d("WebBleFragment", "WebBleFragment created for editor: $editorName, URL: $pageUrl")
+        android.util.Log.d("WebBleFragment", "Bluetooth device MAC: $deviceMac")
+        
         requestBlePermissionsIfNeeded()
     }
 
@@ -108,6 +112,7 @@ class WebBleFragment : Fragment() {
                 injectBridgeJs()
             }
         }
+        android.util.Log.d("WebBleFragment", "Loading URL in WebBleFragment: $pageUrl")
         webView.loadUrl(pageUrl)
     }
 

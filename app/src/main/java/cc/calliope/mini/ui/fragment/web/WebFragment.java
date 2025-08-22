@@ -151,6 +151,9 @@ public class WebFragment extends Fragment implements DownloadListener {
             editorUrl = arguments.getString(TARGET_URL);
             editorName = arguments.getString(TARGET_NAME);
         }
+        
+        // Логуємо, що WebFragment використовується для звичайних редакторів
+        Log.d(TAG, "WebFragment created for editor: " + editorName + ", URL: " + editorUrl);
     }
 
     public int getLayoutId() {
@@ -203,6 +206,7 @@ public class WebFragment extends Fragment implements DownloadListener {
         if (savedInstanceState != null) {
             webView.restoreState(savedInstanceState.getBundle("webViewState"));
         } else {
+            Log.d(TAG, "Loading URL in WebFragment: " + editorUrl);
             webView.loadUrl(editorUrl);
         }
         return view;
