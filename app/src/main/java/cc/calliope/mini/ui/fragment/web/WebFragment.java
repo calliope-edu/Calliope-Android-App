@@ -165,7 +165,6 @@ public class WebFragment extends Fragment implements DownloadListener {
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
 
-        webView.addJavascriptInterface(new AndroidBleBridge(requireContext(), webView), "AndroidBle");
         webView.setWebChromeClient(new WebChromeClient());
 
         webView.setWebViewClient(new WebViewClient() {

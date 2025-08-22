@@ -17,6 +17,8 @@ import android.widget.FrameLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.preference.PreferenceManager
+import cc.calliope.mini.utils.Constants
 import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -25,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class WebBleFragment : Fragment() {
 
     private var pageUrl: String = "https://cardboard.lofirobot.com/control-calliope/"
-    private val deviceMac = "D8:0F:45:61:FE:65"
+    private var deviceMac: String = ""
     private var editorUrl: String? = null
     private var editorName: String? = null
 
@@ -68,6 +70,10 @@ class WebBleFragment : Fragment() {
             editorName = it.getString(TARGET_NAME)
             if (editorUrl != null) pageUrl = editorUrl!!
         }
+        
+        val preferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        deviceMac = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
+        
         requestBlePermissionsIfNeeded()
     }
 
