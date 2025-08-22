@@ -13,6 +13,8 @@
     <string name="info_location_permission">Ab Android 6.0 (Marshmallow) benötigt die Anwendung eine Standortberechtigung, um nach Bluetooth-Geräten zu suchen.
         \n\nDies liegt daran, dass Bluetoothn verwendet werden kannn, um den Standort des Telefons und des Benutzers zu bestimmen. <b>Calliope</b> wird diese Informationen in keiner Weise verwenden.</string>
     <string name="info_bluetooth_permission">Um die Bluetooth-Funktionen für die Kommunikation der App mit deinem <b>Calliope mini</b> zu nutzen, musst du mehrere Berechtigungen vergeben.</string>
+    <string name="title_camera_permission">KAMERA-BERECHTIGUNG ERFORDERLICH</string>
+    <string name="info_camera_permission">Kamera-Berechtigung ist erforderlich, um Gesichtserkennung und Kamerafunktionen im Cardboard Face Editor zu nutzen.</string>
     <string name="info_notification_permission">Klicken Sie auf \"Zulassen\", damit die App Ihnen Benachrichtigungen über den Status der Firmware senden kann.</string>
     <string name="settings_btn_permission">Einstellungen</string>
     <string name="action_btn_permission">Erlaubnis erteilen</string>

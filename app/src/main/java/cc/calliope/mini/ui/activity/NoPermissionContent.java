@@ -11,6 +11,8 @@ public enum NoPermissionContent {
 
     LOCATION(R.drawable.ic_location_disabled, R.string.title_location_permission, R.string.info_location_permission, Permission.LOCATION_PERMISSIONS),
 
+    CAMERA(R.drawable.ic_camera, R.string.title_camera_permission, R.string.info_camera_permission, Permission.CAMERA_PERMISSIONS),
+
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     NOTIFICATIONS(R.drawable.ic_notifications, R.string.title_notification_permission, R.string.info_notification_permission, Permission.POST_NOTIFICATIONS);
 

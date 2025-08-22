@@ -25,6 +25,7 @@ public class Permission {
     }
 
     public static final String[] LOCATION_PERMISSIONS = {Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION};
+    public static final String[] CAMERA_PERMISSIONS = {Manifest.permission.CAMERA};
     @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
     public static final String[] POST_NOTIFICATIONS = {Manifest.permission.POST_NOTIFICATIONS};
 

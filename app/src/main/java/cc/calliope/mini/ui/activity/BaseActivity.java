@@ -353,10 +353,11 @@ public abstract class BaseActivity extends AppCompatActivity
         boolean isBluetoothAccessGranted = Permission.isAccessGranted(this, Permission.BLUETOOTH_PERMISSIONS);
         boolean isLocationAccessGranted = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
                 || Permission.isAccessGranted(this, Permission.LOCATION_PERMISSIONS);
+        boolean isCameraAccessGranted = Permission.isAccessGranted(this, Permission.CAMERA_PERMISSIONS);
         boolean isNotificationAccessGranted = Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
                 || Permission.isAccessGranted(this, Permission.POST_NOTIFICATIONS);
 
-        if (!isBluetoothAccessGranted || !isLocationAccessGranted || !isNotificationAccessGranted) {
+        if (!isBluetoothAccessGranted || !isLocationAccessGranted || !isCameraAccessGranted || !isNotificationAccessGranted) {
             startNoPermissionActivity();
             return;
         }

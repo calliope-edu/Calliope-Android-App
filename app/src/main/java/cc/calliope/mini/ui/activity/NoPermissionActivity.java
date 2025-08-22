@@ -40,6 +40,8 @@ public class NoPermissionActivity extends AppCompatActivity implements View.OnCl
             prepareUIUpdate(Permission.BLUETOOTH_PERMISSIONS, NoPermissionContent.BLUETOOTH);
         } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && !Permission.isAccessGranted(this, Permission.LOCATION_PERMISSIONS)) {
             prepareUIUpdate(Permission.LOCATION_PERMISSIONS, NoPermissionContent.LOCATION);
+        } else if (!Permission.isAccessGranted(this, Permission.CAMERA_PERMISSIONS)) {
+            prepareUIUpdate(Permission.CAMERA_PERMISSIONS, NoPermissionContent.CAMERA);
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !Permission.isAccessGranted(this, Permission.POST_NOTIFICATIONS)) {
             prepareUIUpdate(Permission.POST_NOTIFICATIONS, NoPermissionContent.NOTIFICATIONS);
         } else {

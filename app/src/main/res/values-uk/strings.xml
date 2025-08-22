@@ -13,6 +13,8 @@
     <string name="info_location_permission">Починаючи з Android 6.0 Marshmallow, для сканування Bluetooth-пристроїв програмі потрібен дозвіл на використання геолокації.
         \n\nЦе пов\'язано з тим, що Bluetooth може використовуватися для визначення місцезнаходження телефону і користувача, <b>Calliope</b> не використовуватиме цю інформацію жодним чином.</string>
     <string name="info_bluetooth_permission">Щоб використовувати функції Bluetooth для зв\'язку програми з вашим <b>Calliope mini</b>, вам потрібно надати кілька дозволів.</string>
+    <string name="title_camera_permission">ПОТРІБЕН ДОЗВІЛ НА ВИКОРИСТАННЯ КАМЕРИ</string>
+    <string name="info_camera_permission">Дозвіл камери потрібен для використання розпізнавання обличчя та функцій камери в редакторі Cardboard Face.</string>
     <string name="info_notification_permission">Натисніть \"дозволити\" щоб аплікація могла надсилати вам сповіщення про стан прошивання.</string>
     <string name="settings_btn_permission">Налаштування</string>
     <string name="action_btn_permission">Надати дозвіл</string>

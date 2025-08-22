@@ -15,6 +15,8 @@
     <string name="info_location_permission">From Android 6.0 Marshmallow onwards the application requires Location permission in order to scan for Bluetooth devices.
         \n\nThis is because Bluetooth may be used to determine the phone\'s and user\'s location, <b>Calliope</b> will not use this information in any way.</string>
     <string name="info_bluetooth_permission">To use Bluetooth features to communicate APP with your <b>Calliope mini</b> you must granted several permissions.</string>
+    <string name="title_camera_permission">CAMERA PERMISSION REQUIRED</string>
+    <string name="info_camera_permission">Camera permission is required to use face recognition and camera features in Cardboard Face editor.</string>
     <string name="info_notification_permission">Click "Allow" to allow the app to send you notifications about the flashing status.</string>
     <string name="settings_btn_permission">Settings</string>
     <string name="action_btn_permission">Grant permission</string>
