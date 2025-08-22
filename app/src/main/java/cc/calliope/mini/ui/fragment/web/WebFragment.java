@@ -31,6 +31,9 @@ import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
 import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -158,54 +161,51 @@ public class WebFragment extends Fragment implements DownloadListener {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
         View view = inflater.inflate(getLayoutId(), container, false);
 
         webView = view.findViewById(R.id.webView);
         WebSettings webSettings = webView.getSettings();
+
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
+        webSettings.setUseWideViewPort(true);
+        webSettings.setLoadWithOverviewMode(true);
+        webSettings.setDatabaseEnabled(true);
+        webSettings.setDefaultTextEncodingName("utf-8");
 
+        webView.addJavascriptInterface(new JavaScriptInterface(getContext()), "Android");
         webView.setWebChromeClient(new WebChromeClient());
-
         webView.setWebViewClient(new WebViewClient() {
-            @Override public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                String js =
-                        "javascript:(function(){"
-                                + "console.log('Inject BLE bridge');"
-                                + "window.sendUART = function(s){ AndroidBle.writeText(String(s)); };"
-                                + "window.connectButtonPressed = function(){ AndroidBle.connect(); };"
-                                + "})();";
-                view.loadUrl(js);
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                // Only show error for main page, not for sub-resources
+                if (request.isForMainFrame()) {
+                    Log.e(TAG, "Main page error: " + error.getDescription() + " for URL: " + request.getUrl());
+                    SnackbarHelper.errorSnackbar(webView, "Oh no! " + error.getDescription()).show();
+                } else {
+                    // Log sub-resource errors but don't show to user
+                    Log.d(TAG, "Sub-resource error: " + error.getDescription() + " for URL: " + request.getUrl());
+                }
+            }
+
+            @Override
+            public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
+                // Handle HTTP errors (4xx, 5xx)
+                if (request.isForMainFrame()) {
+                    Log.e(TAG, "HTTP Error: " + errorResponse.getStatusCode() + " for URL: " + request.getUrl());
+                } else {
+                    Log.d(TAG, "Sub-resource HTTP error: " + errorResponse.getStatusCode() + " for URL: " + request.getUrl());
+                }
             }
         });
-
         webView.setDownloadListener(this);
-        webView.loadUrl(editorUrl);
+
+        if (savedInstanceState != null) {
+            webView.restoreState(savedInstanceState.getBundle("webViewState"));
+        } else {
+            webView.loadUrl(editorUrl);
+        }
         return view;
-    }
-
-    private static class AndroidBridge {
-        private final Context context;
-        AndroidBridge(Context ctx) { this.context = ctx; }
-
-        @JavascriptInterface
-        public void logMessage(String msg) {
-            Log.d(TAG, "From JS: " + msg);
-        }
-
-        @JavascriptInterface
-        public void saveFile(String base64, String name) {
-            try {
-                byte[] data = Base64.decode(base64, Base64.DEFAULT);
-                File file = FileUtils.getFile(context, "mock", name);
-                if (file != null) {
-                    Log.i(TAG, "File saved: " + file);
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "saveFile failed", e);
-            }
-        }
     }
 
     @Override
