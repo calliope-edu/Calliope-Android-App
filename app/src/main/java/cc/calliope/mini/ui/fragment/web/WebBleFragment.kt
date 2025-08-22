@@ -7,8 +7,10 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.*
 import android.webkit.JavascriptInterface
+import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -63,6 +65,15 @@ class WebBleFragment : Fragment() {
         ActivityResultContracts.RequestMultiplePermissions()
     ) { }
 
+    private var cameraPermissionCallback: ((Boolean) -> Unit)? = null
+    private val cameraPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        Log.d("WebBleFragment", "Camera permission result: $granted")
+        cameraPermissionCallback?.invoke(granted)
+        cameraPermissionCallback = null
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -70,14 +81,21 @@ class WebBleFragment : Fragment() {
             editorName = it.getString(TARGET_NAME)
             if (editorUrl != null) pageUrl = editorUrl!!
         }
-        
+
         val preferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         deviceMac = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
+
+        Log.d("WebBleFragment", "WebBleFragment created for editor: $editorName, URL: $pageUrl")
+        Log.d("WebBleFragment", "Bluetooth device MAC: $deviceMac")
+        Log.d("WebBleFragment", "Camera permission available: ${has(Manifest.permission.CAMERA)}")
         
-        // Логуємо, що WebBleFragment використовується тільки для CARDBOARD_CONTROL
-        android.util.Log.d("WebBleFragment", "WebBleFragment created for editor: $editorName, URL: $pageUrl")
-        android.util.Log.d("WebBleFragment", "Bluetooth device MAC: $deviceMac")
-        
+        // Логуємо тип редактора
+        when (editorName) {
+            "cardboard_control" -> Log.d("WebBleFragment", "Editor type: CARDBOARD_CONTROL (BLE + basic features)")
+            "cardboard_face" -> Log.d("WebBleFragment", "Editor type: CARDBOARD_FACE (BLE + camera support)")
+            else -> Log.d("WebBleFragment", "Editor type: $editorName (BLE + basic features)")
+        }
+
         requestBlePermissionsIfNeeded()
     }
 
@@ -102,17 +120,43 @@ class WebBleFragment : Fragment() {
             defaultTextEncodingName = "utf-8"
             useWideViewPort = true
             loadWithOverviewMode = true
+
+            mediaPlaybackRequiresUserGesture = false
+            javaScriptCanOpenWindowsAutomatically = true
+            allowFileAccessFromFileURLs = true
+            allowUniversalAccessFromFileURLs = true
         }
         bridge = AndroidBleBridge(requireContext())
         webView.addJavascriptInterface(bridge, "AndroidBle")
-        webView.webChromeClient = WebChromeClient()
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onPermissionRequest(request: PermissionRequest) {
+                Log.d("WebBleFragment", "onPermissionRequest: ${request.resources.joinToString()}")
+                if (request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
+                    if (has(Manifest.permission.CAMERA)) {
+                        Log.d("WebBleFragment", "Granting camera permission to WebView")
+                        request.grant(request.resources)
+                    } else {
+                        Log.d("WebBleFragment", "Camera permission not granted, requesting...")
+                        requestCameraPermission { granted ->
+                            if (granted) {
+                                request.grant(request.resources)
+                            } else {
+                                request.deny()
+                            }
+                        }
+                    }
+                } else {
+                    request.grant(request.resources)
+                }
+            }
+        }
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(v: WebView, url: String) {
                 super.onPageFinished(v, url)
                 injectBridgeJs()
             }
         }
-        android.util.Log.d("WebBleFragment", "Loading URL in WebBleFragment: $pageUrl")
+        Log.d("WebBleFragment", "Loading URL in WebBleFragment: $pageUrl")
         webView.loadUrl(pageUrl)
     }
 
@@ -126,11 +170,25 @@ class WebBleFragment : Fragment() {
                 window.connectButtonPressed = function(){ try{ AndroidBle.connect(); }catch(e){} };
                 window.onUart = window.onUart || function(s){ console.log('[UART RX]', s); };
                 window.onBleReady = window.onBleReady || function(){ console.log('[BLE] Ready'); };
+                
+                // Camera functions
+                window.isCameraAvailable = function(){ 
+                  try{ return AndroidBle.isCameraAvailable(); }catch(e){ return false; } 
+                };
+                window.requestCameraPermission = function(){ 
+                  try{ return AndroidBle.requestCameraPermission(); }catch(e){ return false; } 
+                };
+                
+                console.log('[Bridge] Camera support injected');
+                console.log('[Bridge] Editor type: $editorName');
               }
               function ensure(){
                 try{
                   if(String(window.sendUART||'').indexOf('AndroidBle.writeText')===-1){ window.sendUART = function(s){ SEND(s); }; }
                   if(String(window.buttonPressed||'').indexOf('SEND(')===-1){ window.buttonPressed = function(name){ SEND(name); }; }
+                  if(String(window.isCameraAvailable||'').indexOf('AndroidBle.isCameraAvailable')===-1){ 
+                    window.isCameraAvailable = function(){ try{ return AndroidBle.isCameraAvailable(); }catch(e){ return false; } }; 
+                  }
                 }catch(e){}
                 setTimeout(ensure,1000);
               }
@@ -142,6 +200,8 @@ class WebBleFragment : Fragment() {
 
     private fun requestBlePermissionsIfNeeded() {
         val perms = mutableListOf<String>()
+
+        // Bluetooth permissions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (!has(Manifest.permission.BLUETOOTH_CONNECT)) perms += Manifest.permission.BLUETOOTH_CONNECT
             if (!has(Manifest.permission.BLUETOOTH_SCAN)) perms += Manifest.permission.BLUETOOTH_SCAN
@@ -150,11 +210,20 @@ class WebBleFragment : Fragment() {
             if (!has(Manifest.permission.BLUETOOTH)) perms += Manifest.permission.BLUETOOTH
             if (!has(Manifest.permission.BLUETOOTH_ADMIN)) perms += Manifest.permission.BLUETOOTH_ADMIN
         }
+
+        // Camera permission
+        if (!has(Manifest.permission.CAMERA)) perms += Manifest.permission.CAMERA
+
         if (perms.isNotEmpty()) permissionLauncher.launch(perms.toTypedArray())
     }
 
     private fun has(p: String): Boolean =
         ContextCompat.checkSelfPermission(requireContext(), p) == PackageManager.PERMISSION_GRANTED
+
+    private fun requestCameraPermission(callback: (Boolean) -> Unit) {
+        cameraPermissionCallback = callback
+        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+    }
 
     @SuppressLint("MissingPermission")
     inner class AndroidBleBridge(private val appCtx: Context) {
@@ -179,6 +248,19 @@ class WebBleFragment : Fragment() {
         }
         @JavascriptInterface
         fun disconnect() { runOnUi { closeGatt("disconnect") } }
+
+        @JavascriptInterface
+        fun requestCameraPermission(): Boolean {
+            Log.d("WebBleFragment", "JavaScript requested camera permission")
+            return has(Manifest.permission.CAMERA)
+        }
+
+        @JavascriptInterface
+        fun isCameraAvailable(): Boolean {
+            val available = has(Manifest.permission.CAMERA)
+            Log.d("WebBleFragment", "Camera availability check: $available")
+            return available
+        }
     }
 
     @SuppressLint("MissingPermission")

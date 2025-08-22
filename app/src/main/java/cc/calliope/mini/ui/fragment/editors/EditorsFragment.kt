@@ -158,12 +158,8 @@ class EditorsFragment : Fragment() {
         }
 
         when (item.id) {
-            "cardboard_control" -> {
+            "cardboard_control", "cardboard_face" -> {
                 val action = EditorsFragmentDirections.actionEditorsToWebBle(url, item.id)
-                findNavController().navigate(action)
-            }
-            "cardboard_face" -> {
-                val action = EditorsFragmentDirections.actionEditorsToWebBle2(url, item.id)
                 findNavController().navigate(action)
             }
             else -> {
