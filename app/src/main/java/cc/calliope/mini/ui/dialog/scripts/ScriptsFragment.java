@@ -156,18 +156,18 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     }
 
     private void openDfuActivity(FileWrapper file) {
-        if(!Utils.isBluetoothEnabled()){
+        if (!Utils.isBluetoothEnabled()) {
             ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
             dismiss();
             return;
         }
 
-        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()){
+        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()) {
             ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
             return;
         }
 
-        if(!Settings.isBackgroundFlashingEnable(activity)){
+        if (!Settings.isBackgroundFlashingEnable(activity)) {
             final Intent intent = new Intent(activity, FlashingActivity.class);
             intent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
             startActivity(intent);
@@ -343,9 +343,19 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
             Log.d("USB_Device", "Device Protocol: " + device.getDeviceProtocol());
 
             String productName = device.getProductName();
-            if (productName != null && productName.contains("Calliope")) {
-                Log.d(TAG, "it`s Calliope");
-                return true;
+            if (productName != null) {
+                if (productName.contains("Calliope") ||
+                        productName.contains("mini") ||
+                        productName.contains("CALLIOPE") ||
+                        productName.contains("MINI") ||
+                        productName.contains("micro:bit") ||
+                        productName.contains("Microbit") ||
+                        productName.contains("MICRO:BIT") ||
+                        productName.contains("MICROBIT")
+                ) {
+                    Log.d(TAG, "it`s Calliope");
+                    return true;
+                }
             }
         }
         return false;
