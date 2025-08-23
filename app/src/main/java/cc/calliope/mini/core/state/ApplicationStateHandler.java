@@ -15,7 +15,7 @@ public class ApplicationStateHandler {
     private static final MutableLiveData<Boolean> isDeviceAvailable = new MutableLiveData<>();
 
     public static void updateState(@State.StateType int type){
-        stateLiveData.setValue(new State(type));
+        stateLiveData.postValue(new State(type));
     }
 
     public static void updateNotification(@Notification.NotificationType int type, String message){
