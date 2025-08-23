@@ -208,6 +208,9 @@ public abstract class BaseActivity extends AppCompatActivity
                 case State.STATE_FLASHING -> {
                     patternFab.setColor(R.color.blue_light);
                 }
+                case State.STATE_CONTROL -> {
+                    patternFab.setColor(R.color.orange);
+                }
                 case State.STATE_ERROR -> {
                     patternFab.setColor(R.color.red);
                 }
@@ -228,12 +231,9 @@ public abstract class BaseActivity extends AppCompatActivity
         String message = notification.getMessage();
 
         switch (type) {
-            case Notification.INFO ->
-                    SnackbarHelper.infoSnackbar(rootView, message).show();
-            case Notification.WARNING ->
-                    SnackbarHelper.warningSnackbar(rootView, message).show();
-            case Notification.ERROR ->
-                    SnackbarHelper.errorSnackbar(rootView, message).show();
+            case Notification.INFO -> SnackbarHelper.infoSnackbar(rootView, message).show();
+            case Notification.WARNING -> SnackbarHelper.warningSnackbar(rootView, message).show();
+            case Notification.ERROR -> SnackbarHelper.errorSnackbar(rootView, message).show();
         }
     };
 
@@ -341,11 +341,11 @@ public abstract class BaseActivity extends AppCompatActivity
         this.patternFab.setOnClickListener(this::onFabClick);
     }
 
-    public void moveFabUp(){
+    public void moveFabUp() {
         patternFab.moveUp();
     }
 
-    public void moveFabDown(){
+    public void moveFabDown() {
         patternFab.moveDown();
     }
 
@@ -536,6 +536,7 @@ public abstract class BaseActivity extends AppCompatActivity
     private void checkDeviceAvailability() {
         if (currentState.getType() == State.STATE_BUSY
                 || currentState.getType() == State.STATE_FLASHING
+                || currentState.getType() == State.STATE_CONTROL
                 || hasOpenedPatternDialog()) {
             return;
         }

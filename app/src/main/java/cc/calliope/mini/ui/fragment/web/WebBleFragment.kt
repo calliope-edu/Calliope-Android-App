@@ -2,13 +2,21 @@ package cc.calliope.mini.ui.fragment.web
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.bluetooth.*
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattCallback
+import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
+import android.bluetooth.BluetoothProfile
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
@@ -20,9 +28,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
+import cc.calliope.mini.R
+import cc.calliope.mini.core.state.ApplicationStateHandler
+import cc.calliope.mini.core.state.Notification.INFO
+import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.Constants
 import java.nio.charset.StandardCharsets
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -239,6 +251,9 @@ class WebBleFragment : Fragment() {
                 } else {
                     dev.connectGatt(appCtx, false, gattCallback)
                 }
+                Log.d("WebBleFragment", "Initiating GATT connection to $deviceMac")
+                ApplicationStateHandler.updateNotification(INFO, R.string.flashing_device_connected)
+                ApplicationStateHandler.updateState(State.STATE_CONTROL)
             }
         }
         @JavascriptInterface
@@ -392,5 +407,6 @@ class WebBleFragment : Fragment() {
         closeGatt("onDestroyView")
         try { (webView.parent as? ViewGroup)?.removeView(webView) } catch (_: Throwable) {}
         webView.destroy()
+        ApplicationStateHandler.updateState(State.STATE_IDLE)
     }
 }
