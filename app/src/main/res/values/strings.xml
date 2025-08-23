@@ -318,4 +318,15 @@
     <string name="gatt_insufficient_authentication">Insufficient Authentication</string>
     <string name="gatt_read_not_permitted">Read Not Permitted</string>
 
+    <!-- USB file copy messages -->
+    <string name="usb_copy_access_denied">Access to directory denied</string>
+    <string name="usb_copy_started">File copy started...</string>
+    <string name="usb_copy_finished">File copy finished. You can disconnect the USB device.</string>
+    <string name="usb_copy_finished_warnings">File copy finished with warnings.</string>
+    <string name="usb_copy_failed">File copy failed: %s</string>
+    <string name="usb_copy_unexpected_error">Unexpected error: %s</string>
+
+    <!-- Web errors -->
+    <string name="web_error_oh_no">Oh no! %s</string>
+
 </resources>

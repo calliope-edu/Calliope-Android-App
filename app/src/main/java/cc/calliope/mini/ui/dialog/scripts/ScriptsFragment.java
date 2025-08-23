@@ -266,7 +266,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                         writeFile(treeUri);
                     } catch (SecurityException e) {
                         Log.e(TAG, "Persistable URI permission failed", e);
-                        SnackbarHelper.errorSnackbar(binding.getRoot(), "Access to directory denied").show();
+                        SnackbarHelper.errorSnackbar(binding.getRoot(), getString(R.string.usb_copy_access_denied)).show();
                     }
                 }
             }
@@ -284,7 +284,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                 ParcelFileDescriptor pfd = activity.getContentResolver().openFileDescriptor(file.getUri(), "w");
                 FileOutputStream outputStream = new FileOutputStream(pfd.getFileDescriptor());
 
-                SnackbarHelper.infoSnackbar(binding.getRoot(), "File copy started...").show();
+                SnackbarHelper.infoSnackbar(binding.getRoot(), getString(R.string.usb_copy_started)).show();
                 activity.runOnUiThread(() -> {
                     ApplicationStateHandler.updateState(State.STATE_BUSY);
                 });
@@ -307,22 +307,22 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                 outputStream.close();
 
                 if (totalBytesWritten == sourceFileSize) {
-                    SnackbarHelper.infoSnackbar(binding.getRoot(), "File copy finished. You can disconnect the USB device.").show();
+                    SnackbarHelper.infoSnackbar(binding.getRoot(), getString(R.string.usb_copy_finished)).show();
                 } else {
-                    SnackbarHelper.warningSnackbar(binding.getRoot(), "File copy finished with warnings.").show();
+                    SnackbarHelper.warningSnackbar(binding.getRoot(), getString(R.string.usb_copy_finished_warnings)).show();
                 }
                 activity.runOnUiThread(() -> {
                     ApplicationStateHandler.updateState(State.STATE_IDLE);
                 });
             } catch (IOException e) {
                 Log.e(TAG, "File copy error", e);
-                SnackbarHelper.errorSnackbar(binding.getRoot(), "File copy failed: " + e.getMessage()).show();
+                SnackbarHelper.errorSnackbar(binding.getRoot(), String.format(getString(R.string.usb_copy_failed), e.getMessage())).show();
                 activity.runOnUiThread(() -> {
                     ApplicationStateHandler.updateState(State.STATE_ERROR);
                 });
             } catch (Exception e) {
                 Log.e(TAG, "Unexpected error", e);
-                SnackbarHelper.errorSnackbar(binding.getRoot(), "Unexpected error: " + e.getMessage()).show();
+                SnackbarHelper.errorSnackbar(binding.getRoot(), String.format(getString(R.string.usb_copy_unexpected_error), e.getMessage())).show();
                 activity.runOnUiThread(() -> {
                     ApplicationStateHandler.updateState(State.STATE_ERROR);
                 });

@@ -247,4 +247,16 @@
     <string name="editor_hidden">приховано</string>
     <string name="undo">Скасувати</string>
     <string name="swipe_to_hide_hint">Свайпніть вліво, щоб приховати редактори</string>
+
+    <!-- USB file copy messages -->
+    <string name="usb_copy_access_denied">Доступ до директорії заборонено</string>
+    <string name="usb_copy_started">Копіювання файлу розпочато...</string>
+    <string name="usb_copy_finished">Копіювання файлу завершено. Можна відключати USB пристрій.</string>
+    <string name="usb_copy_finished_warnings">Копіювання файлу завершено з попередженнями.</string>
+    <string name="usb_copy_failed">Копіювання файлу не вдалося: %s</string>
+    <string name="usb_copy_unexpected_error">Неочікувана помилка: %s</string>
+
+    <!-- Web errors -->
+    <string name="web_error_oh_no">Ой ні! %s</string>
+
 </resources>

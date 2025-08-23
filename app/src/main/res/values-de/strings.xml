@@ -249,4 +249,16 @@
     <string name="editor_hidden">ausgeblendet</string>
     <string name="undo">Rückgängig</string>
     <string name="swipe_to_hide_hint">Nach links wischen, um Editoren auszublenden</string>
+
+    <!-- USB file copy messages -->
+    <string name="usb_copy_access_denied">Zugriff auf Verzeichnis verweigert</string>
+    <string name="usb_copy_started">Dateikopie gestartet...</string>
+    <string name="usb_copy_finished">Dateikopie abgeschlossen. Sie können das USB-Gerät trennen.</string>
+    <string name="usb_copy_finished_warnings">Dateikopie mit Warnungen abgeschlossen.</string>
+    <string name="usb_copy_failed">Dateikopie fehlgeschlagen: %s</string>
+    <string name="usb_copy_unexpected_error">Unerwarteter Fehler: %s</string>
+
+    <!-- Web errors -->
+    <string name="web_error_oh_no">Oh nein! %s</string>
+
 </resources>

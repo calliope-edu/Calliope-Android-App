@@ -184,7 +184,7 @@ public class WebFragment extends Fragment implements DownloadListener {
                 // Only show error for main page, not for sub-resources
                 if (request.isForMainFrame()) {
                     Log.e(TAG, "Main page error: " + error.getDescription() + " for URL: " + request.getUrl());
-                    SnackbarHelper.errorSnackbar(webView, "Oh no! " + error.getDescription()).show();
+                    SnackbarHelper.errorSnackbar(webView, String.format(getString(R.string.web_error_oh_no), error.getDescription())).show();
                 } else {
                     // Log sub-resource errors but don't show to user
                     Log.d(TAG, "Sub-resource error: " + error.getDescription() + " for URL: " + request.getUrl());
