@@ -27,7 +27,7 @@ import androidx.core.content.ContextCompat;
 import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityHexBinding;
-import cc.calliope.mini.ui.fragment.editors.Editor;
+import cc.calliope.mini.ui.model.EditorType;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.file.FileUtils;
 import cc.calliope.mini.utils.Constants;
@@ -80,7 +80,7 @@ public class OpenHexActivity extends BaseActivity {
 
             binding.flashButton.setOnClickListener(v -> {
                 try {
-                    File file = FileUtils.getFile(this, Editor.CUSTOM.toString(), name);
+                    File file = FileUtils.getFile(this, EditorType.CUSTOM.toString(), name);
                     if (file == null) {
                         return;
                     }

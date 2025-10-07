@@ -1,22 +1,27 @@
 <resources>
+    <!-- App name and navigation -->
     <string name="title_home">Головна</string>
     <string name="title_editors">Редактори</string>
     <string name="title_help">Допомога</string>
+    <string name="title_settings">Налаштування</string>
+    <string name="title_info">Інформація</string>
 
+    <!-- Permissions -->
     <string name="title_location_permission">ПОТРІБЕН ДОЗВІЛ НА ВИКОРИСТАННЯ ГЕОЛОКАЦІЇ</string>
     <string name="title_bluetooth_permission">ПОТРІБЕН ДОЗВІЛ НА ВИКОРИСТАННЯ BLUETOOTH</string>
     <string name="title_notification_permission">ПОТРІБЕН ДОЗВІЛ НА НАДСИЛАННЯ СПОВІЩЕНЬ</string>
     <string name="info_location_permission">Починаючи з Android 6.0 Marshmallow, для сканування Bluetooth-пристроїв програмі потрібен дозвіл на використання геолокації.
         \n\nЦе пов\'язано з тим, що Bluetooth може використовуватися для визначення місцезнаходження телефону і користувача, <b>Calliope</b> не використовуватиме цю інформацію жодним чином.</string>
     <string name="info_bluetooth_permission">Щоб використовувати функції Bluetooth для зв\'язку програми з вашим <b>Calliope mini</b>, вам потрібно надати кілька дозволів.</string>
-
+    <string name="title_camera_permission">ПОТРІБЕН ДОЗВІЛ НА ВИКОРИСТАННЯ КАМЕРИ</string>
+    <string name="info_camera_permission">Дозвіл камери потрібен для використання розпізнавання обличчя та функцій камери в редакторі Cardboard Face.</string>
     <string name="info_notification_permission">Натисніть \"дозволити\" щоб аплікація могла надсилати вам сповіщення про стан прошивання.</string>
     <string name="settings_btn_permission">Налаштування</string>
     <string name="action_btn_permission">Надати дозвіл</string>
 
+    <!-- Editor names and descriptions -->
     <string name="title_custom">Кастомний редактор</string>
     <string name="title_scripts">Ваші програми</string>
-
     <string name="info_make_code">Редактор MakeCode забезпечує повний контроль над Calliope mini та інтеграцію будь-яких зовнішніх датчиків за допомогою (користувацьких) розширень. Програмування можна здійснювати шляхом розташування блоків коду, використання JavaScript або Python.</string>
     <string name="info_roberta">У "Open Roberta Lab" можна навчитися програмувати за допомогою графічної мови NEPO!</string>
     <string name="info_python">MicroPython — це версія Python, спеціально адаптована для мікроконтролерів. Python є чудовою першою текстовою мовою програмування.</string>
@@ -24,13 +29,11 @@
 
     <string name="info_custom">Тут ви можете перейти до кастомного редактору.</string>
     <string name="info_scripts">Тут будуть ваші програми.</string>
-
     <string name="summary_custom">Посилання на кастомний редактор</string>
-    <string name="summary_partial_flashing">увімкнути або вимкнути</string>
 
+    <!-- Welcome and tutorial -->
     <string name="title_welcome">Розпочнімо!</string>
     <string name="info_welcome">На цій сторінці ви дізнаєтеся, як крок за кроком підготувати Calliope mini до роботи. У першому кроці показано, як правильно під\'єднати Calliope mini до джерела живлення.</string>
-
     <string name="title_battery">Під\'єднання батарейок</string>
     <string name="info_battery"><![CDATA[
     Перед початком роботи Calliope mini необхідно увімкнути.
@@ -41,7 +44,6 @@
     <br/>
     <br/>Переконайтеся, що закрита сторона штекера знаходиться зверху, а напрямна посередині. Якщо роз\'єм кабелю легко вставляється в роз\'єм акумулятора на платі, ви під\'єднуєте правильно.
     ]]></string>
-
     <string name="title_demo">Демо-послідовність</string>
     <string name="info_demo"><![CDATA[
     Знайомтеся з Calliope mini. Calliope mini покаже вам на дисплеї, що саме ви маєте зробити.
@@ -52,15 +54,12 @@
     <br/>4. струсіть Calliope mini.
     <br/>5. готово!
     ]]></string>
-
     <string name="hello_text">Ласкаво просимо до додатку Calliope mini!</string>
-
     <string name="info_app">
         <![CDATA[
         <br/>Тут ви можете підключати, кодувати і прошивати програми до вашого <b>Calliope mini</b> через Bluetooth.
         ]]>
     </string>
-
     <string name="info_app2">
         <![CDATA[
         <br/>Ви можете знайти надихаючі та цікаві проекти на сайті Calliope за посиланням <a href="https://calliope.cc">calliope.cc</a>!
@@ -68,37 +67,49 @@
         <br/>Розважайтеся!
         ]]>
     </string>
-
     <string name="welcome">ласкаво просимо</string>
 
+    <!-- Common UI elements -->
     <string name="title_copy">Копіювати по USB</string>
     <string name="title_rename">Перейменувати</string>
     <string name="title_share">Поділитися</string>
     <string name="title_delete">Видалити</string>
-
     <string name="title_dialog_rename">Перейменувати файл</string>
     <string name="title_dialog_delete">Видалити файл</string>
     <string name="title_dialog_share">Поділитися файлом</string>
-
+    <string name="title_dialog_edit_link">Редагувати посилання</string>
     <string name="button_cancel">Скасувати</string>
+    <string name="button_select">Вибрати</string>
+    <string name="button_ok">Так</string>
     <string name="button_rename">Так</string>
     <string name="button_continue">Так</string>
     <string name="button_enable">Увімкнути</string>
-
+    <string name="button_remove">Видалити</string>
+    <string name="button_save">Зберегти</string>
+    <string name="button_retry">Повторити</string>
     <string name="info_dialog_delete">Ви назавжди видалите \"%s\".</string>
     <string name="subject_dialog_share">Поділитися файлом…</string>
     <string name="text_dialog_share">Calliope mini firmware</string>
+    <string name="menu_fab_connect">Під\'єднання</string>
+    <string name="menu_fab_scripts">Програми</string>
+    <string name="menu_fab_full_screen">На весь екран</string>
+    <string name="title_select_editor">Редактори</string>
 
-    <string name="error_no_connected">Calliope Calliope mini не під\`єднано</string>
+    <!-- Errors and messages -->
+    <string name="error_no_connected">Calliope mini не під\'єднано</string>
     <string name="error_snackbar_name_exists">Файл з такою назвою існує</string>
     <string name="error_snackbar_no_internet">Немає доступу до інтернету</string>
     <string name="error_snackbar_download_error">Помилка завантаження</string>
     <string name="error_snackbar_bluetooth_disabled">Bluetooth вимкнено</string>
     <string name="error_snackbar_location_disable">Визначення місцезнаходження вимкнено</string>
+    <string name="error_snackbar_save_file_error">Помилка збереження файлу</string>
+
+    <!-- Hex file operations -->
     <string name="open_hex_info">Ви намагаєтеся відкрити файл \"%s\" і прошити його до вашого Calliope mini.
         \n\nЯкщо ви прошиєте неправильний або пошкоджений файл, можливо, вам доведеться під\'єднати Calliope mini до комп\'ютера, щоб перепрошити його.</string>
     <string name="open_hex_button">Прошити</string>
 
+    <!-- Flashing status -->
     <string name="flashing_device_connecting">Під\'єднання пристрою…</string>
     <string name="flashing_device_connected">Пристрій під\'єднано</string>
     <string name="flashing_process_starting">Розпочинаємо процес…</string>
@@ -113,30 +124,46 @@
     <string name="flashing_error">Помилка (%d): %s</string>
     <string name="flashing_connection_fail">Помилка з\'єднання</string>
     <string name="flashing_status">Статус %d</string>
-    <string name="title_dialog_edit_link">Редагувати посилання</string>
-    <string name="button_save">Зберегти</string>
-    <string name="menu_fab_connect">Під\'єднання</string>
-    <string name="menu_fab_scripts">Програми</string>
-    <string name="menu_fab_full_screen">На весь екран</string>
-    <string name="error_snackbar_save_file_error">Помилка збереження файлу</string>
-    <string name="title_rename_files">Перейменування файлів</string>
-    <string name="title_settings">Налаштування</string>
-    <string name="bonding_started">Створення пари</string>
-    <string name="bonding_succeeded">Пару створено</string>
-    <string name="bonding_not_succeeded">Не вдалося створити пару</string>
-    <string name="button_retry">Повторити</string>
+    <string name="partial_flashing_starting">Часткове прошивання розпочато…</string>
+    <string name="partial_flashing_failed">Часткове прошивання не вдалося, спроба повного прошивання</string>
 
+    <!-- Settings -->
     <string name="summary_auto_flashing">після завантаження .hex файлу.</string>
+    <string name="summary_rename_files">додається (n), якщо файл існує</string>
+    <string name="summary_partial_flashing">увімкнути або вимкнути</string>
     <string name="summary_background_flashing">увімкнути або вимкнути</string>
     <string name="title_partial_flashing">Часткове прошивання</string>
     <string name="title_background_flashing">Фонове прошивання</string>
     <string name="title_auto_flashing">Автоматичне прошивання</string>
-    <string name="button_select">Вибрати</string>
-    <string name="button_ok">Так</string>
-    <string name="summary_rename_files">додається (n), якщо файл існує</string>
-    <string name="button_remove">Видалити</string>
+    <string name="title_rename_files">Перейменування файлів</string>
     <string name="title_pattern_connected">%s підключено</string>
-    <string name="title_info_сategory">Інформація</string>
+
+    <!-- Editor settings -->
+    <string name="title_editors_menu">Видимі редактори</string>
+    <string name="summary_editors_menu">Налаштування видимих редакторів</string>
+    <string name="title_editor_visibility">Видимість редакторів</string>
+    <string name="summary_editor_visibility">Показати або приховати конкретні редактори</string>
+    <string name="title_show_makecode">Показати MakeCode</string>
+    <string name="summary_show_makecode">Показати або приховати редактор MakeCode</string>
+    <string name="title_show_roberta">Показати Open Roberta Lab</string>
+    <string name="summary_show_roberta">Показати або приховати редактор Open Roberta Lab</string>
+    <string name="title_show_blocks">Показати Calliope mini Blocks</string>
+    <string name="summary_show_blocks">Показати або приховати редактор Calliope mini Blocks</string>
+    <string name="title_show_python">Показати MicroPython</string>
+    <string name="summary_show_python">Показати або приховати редактор MicroPython</string>
+    <string name="title_show_custom">Показати Кастомний редактор</string>
+    <string name="summary_show_custom">Показати або приховати кастомний редактор</string>
+    <string name="title_custom_editor">Кастомний редактор</string>
+    <string name="title_editor_settings">Налаштування редакторів</string>
+    <string name="summary_editor_settings">Налаштувати видимість редакторів та кастомні посилання</string>
+
+    <!-- Bonding -->
+    <string name="bonding_started">Створення пари</string>
+    <string name="bonding_succeeded">Пару створено</string>
+    <string name="bonding_not_succeeded">Не вдалося створити пару</string>
+
+    <!-- Information and contacts -->
+    <string name="title_info_category">Інформація</string>
     <string name="title_contact">Контакти</string>
     <string name="text_contact">
         <![CDATA[
@@ -152,14 +179,11 @@
     <string name="mini_version_1">1 або 2</string>
     <string name="mini_version_2">3</string>
     <string name="flashing_version_mismatch">Версії не співпадають. Прошивка неможлива!</string>
-
     <string name="flashing_timeout_v1">Bluetooth доступний?\nНатисніть AB + Reset.</string>
     <string name="flashing_timeout_v2">Bluetooth доступний?\nНатисніть тричі Reset.</string>
-    <string name="partial_flashing_starting">Часткове прошивання розпочато…</string>
-    <string name="partial_flashing_failed">Часткове прошивання не вдалося, спроба повного прошивання</string>
     <string name="info_web">Інструкція</string>
 
-    <string name="title_info">Інформація</string>
+    <!-- Device errors -->
     <string name="error_bluetooth_permissions">Не надано дозволи на Bluetooth</string>
     <string name="error_connection_failed">Не вдалося підключитися</string>
     <string name="error_bluetooth_not_enabled">Bluetooth вимкнено</string>
@@ -174,10 +198,65 @@
     <string name="error_missing_dfu_service">Не вдалося знайти DFU-сервіс</string>
     <string name="error_missing_dfu_characteristic">Не вдалося знайти характеристику DFU</string>
 
+    <!-- Device management -->
     <string name="title_remove_all_devices">Видалити всі Calliope Mini</string>
     <string name="summary_remove_all_devices">Очистити всі підключені Calliope Mini та видалити сполучення</string>
     <string name="title_dialog_delete_all_devices">Видалити всі Calliope Mini</string>
     <string name="info_dialog_delete_all_devices">Ви впевнені, що хочете видалити %d підключених Calliope Mini?</string>
     <string name="snackbar_no_calliope_connected">Немає підключених Calliope Mini</string>
     <string name="snackbar_calliope_removed">Усі Calliope Mini видалені</string>
+
+    <!-- File versions -->
+    <string name="version_universal">v1,2,3</string>
+    <string name="version_v2">v1,2</string>
+    <string name="version_v3">v3</string>
+    <string name="version_error">помилка</string>
+
+    <!-- Pattern matrix errors -->
+    <string name="error_pattern_length">Рядок повинен містити %d літер.</string>
+    <string name="error_letter_not_found">Літера \'%s\' не знайдена в матриці.</string>
+
+    <!-- Service errors -->
+    <string name="error_bluetooth_not_enabled_service">Bluetooth вимкнено. Будь ласка, увімкніть його і спробуйте знову.</string>
+    <string name="error_device_address_incorrect">Адреса пристрою неправильна. Сервіс буде зупинено.</string>
+    <string name="error_device_version_incorrect">Версія пристрою неправильна. Сервіс буде зупинено.</string>
+    <string name="error_file_path_missing">Шлях до файлу відсутній. Сервіс буде зупинено.</string>
+    <string name="error_dfu_failed">DFU не вдався. Сервіс буде зупинено.</string>
+    <string name="error_unsupported_board_version">Непідтримувана версія плати: %d</string>
+    <string name="error_failed_prepare_firmware_zip">Не вдалося підготувати ZIP файл прошивки</string>
+
+    <!-- GATT status descriptions -->
+    <string name="gatt_connection_congested">З\'єднання перевантажено</string>
+    <string name="gatt_connection_timeout">Таймаут з\'єднання</string>
+    <string name="gatt_failure">Помилка</string>
+    <string name="gatt_insufficient_authentication">Недостатня автентифікація</string>
+    <string name="gatt_insufficient_authorization">Недостатня авторизація</string>
+    <string name="gatt_insufficient_encryption">Недостатнє шифрування</string>
+    <string name="gatt_invalid_attribute_length">Неправильна довжина атрибуту</string>
+    <string name="gatt_invalid_offset">Неправильне зміщення</string>
+    <string name="gatt_read_not_permitted">Читання не дозволено</string>
+    <string name="gatt_request_not_supported">Запит не підтримується</string>
+    <string name="gatt_success">Успішно</string>
+    <string name="gatt_write_not_permitted">Запис не дозволено</string>
+    <string name="info_cardboard_control">Керуйте вашим Calliope mini через інтерфейс Cardboard Control.</string>
+    <string name="info_cardboard_face">Створюйте та анімуйте обличчя за допомогою редактора Cardboard Face.</string>
+    <string name="title_show_cardboard_control">Показати Cardboard Control</string>
+    <string name="summary_show_cardboard_control">Показати або приховати редактор Cardboard Control</string>
+    <string name="title_show_cardboard_face">Показати Cardboard Face</string>
+    <string name="summary_show_cardboard_face">Показати або приховати редактор Cardboard Face</string>
+    <string name="editor_hidden">приховано</string>
+    <string name="undo">Скасувати</string>
+    <string name="swipe_to_hide_hint">Свайпніть вліво, щоб приховати редактори</string>
+
+    <!-- USB file copy messages -->
+    <string name="usb_copy_access_denied">Доступ до директорії заборонено</string>
+    <string name="usb_copy_started">Копіювання файлу розпочато...</string>
+    <string name="usb_copy_finished">Копіювання файлу завершено. Можна відключати USB пристрій.</string>
+    <string name="usb_copy_finished_warnings">Копіювання файлу завершено з попередженнями.</string>
+    <string name="usb_copy_failed">Копіювання файлу не вдалося: %s</string>
+    <string name="usb_copy_unexpected_error">Неочікувана помилка: %s</string>
+
+    <!-- Web errors -->
+    <string name="web_error_oh_no">Ой ні! %s</string>
+
 </resources>

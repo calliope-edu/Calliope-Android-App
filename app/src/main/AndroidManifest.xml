@@ -44,10 +44,18 @@
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
+    <!-- Camera permission for WebBleFragment2 -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
+
+    <!-- Network permissions -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
 
@@ -104,6 +112,9 @@
             android:exported="false" />
         <activity
             android:name=".ui.activity.NoPermissionActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ui.activity.CameraPermissionActivity"
             android:exported="false" />
         <activity
             android:name=".ui.activity.SettingsActivity"

@@ -148,7 +148,7 @@ public class PatternMatrixView extends View {
 
     public void setPattern(String pattern) {
         if (pattern == null || pattern.length() != SIZE) {
-            throw new IllegalArgumentException("The string must contain " + SIZE + " letters.");
+            throw new IllegalArgumentException(String.format(getContext().getString(R.string.error_pattern_length), SIZE));
         }
 
         for (int i = 0; i < pattern.length(); i++) {
@@ -164,6 +164,6 @@ public class PatternMatrixView extends View {
                 return i;
             }
         }
-        throw new IllegalArgumentException("The letter '" + letterToFind + "' is not found in the matrix.");
+        throw new IllegalArgumentException(String.format(getContext().getString(R.string.error_letter_not_found), letterToFind));
     }
 }

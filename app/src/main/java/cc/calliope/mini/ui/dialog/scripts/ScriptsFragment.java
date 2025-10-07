@@ -27,7 +27,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -44,7 +43,7 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import cc.calliope.mini.ui.SnackbarHelper;
+import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.utils.file.FileWrapper;
 import cc.calliope.mini.R;
@@ -53,17 +52,18 @@ import cc.calliope.mini.ui.dialog.DialogUtils;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.databinding.FragmentScriptsBinding;
-import cc.calliope.mini.ui.fragment.editors.Editor;
+import cc.calliope.mini.ui.model.EditorType;
 import cc.calliope.mini.utils.settings.Settings;
 import cc.calliope.mini.utils.Utils;
 
 import static android.app.Activity.RESULT_OK;
 import static cc.calliope.mini.core.state.Notification.ERROR;
-
+import static cc.calliope.mini.core.state.Notification.INFO;
 
 public class ScriptsFragment extends BottomSheetDialogFragment {
-    private static final String TAG = "ScriptsFragment";
+    private static final String TAG = "Scripts";
     private static final String FILE_EXTENSION = ".hex";
+
     private FragmentScriptsBinding binding;
     private FragmentActivity activity;
     private ScriptsRecyclerAdapter scriptsRecyclerAdapter;
@@ -87,8 +87,8 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         BottomSheetDialog dialog = (BottomSheetDialog) super.onCreateDialog(savedInstanceState);
-        dialog.setOnShowListener(dialogInterface -> {
-            BottomSheetDialog d = (BottomSheetDialog) dialogInterface;
+        dialog.setOnShowListener(di -> {
+            BottomSheetDialog d = (BottomSheetDialog) di;
             bottomSheet = d.findViewById(com.google.android.material.R.id.design_bottom_sheet);
             if (bottomSheet != null) {
                 BottomSheetBehavior.from(bottomSheet).addBottomSheetCallback(bottomSheetCallback);
@@ -103,7 +103,6 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                              ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentScriptsBinding.inflate(inflater, container, false);
         activity = requireActivity();
-
         return binding.getRoot();
     }
 
@@ -117,7 +116,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         ArrayList<FileWrapper> filesList = new ArrayList<>();
-        for (Editor editor : Editor.values()) {
+        for (EditorType editor : EditorType.values()) {
             filesList.addAll(getFiles(editor));
         }
         TextView infoTextView = binding.infoTextView;
@@ -135,15 +134,12 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
             scriptsRecyclerAdapter.setOnItemClickListener(this::openDfuActivity);
             scriptsRecyclerAdapter.setOnItemLongClickListener(this::openPopupMenu);
             recyclerView.setAdapter(scriptsRecyclerAdapter);
-            //recyclerView.addItemDecoration(new SimpleDividerItemDecoration(activity));
         }
     }
 
-    private ArrayList<FileWrapper> getFiles(Editor editor) {
+    private ArrayList<FileWrapper> getFiles(EditorType editor) {
         File[] filesArray = new File(activity.getFilesDir().toString() + File.separator + editor).listFiles();
-
         ArrayList<FileWrapper> filesList = new ArrayList<>();
-
         if (filesArray != null) {
             for (File file : filesArray) {
                 String name = file.getName();
@@ -156,34 +152,30 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     }
 
     private void openDfuActivity(FileWrapper file) {
-        if(!Utils.isBluetoothEnabled()){
+        if (!Utils.isBluetoothEnabled()) {
             ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
             dismiss();
             return;
         }
-
-        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()){
+        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null
+                || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()) {
             ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
             return;
         }
-
-        if(!Settings.isBackgroundFlashingEnable(activity)){
+        if (!Settings.isBackgroundFlashingEnable(activity)) {
             final Intent intent = new Intent(activity, FlashingActivity.class);
             intent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
             startActivity(intent);
         }
-
         Intent serviceIntent = new Intent(activity, FlashingService.class);
         serviceIntent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
         activity.startService(serviceIntent);
-
         dismiss();
     }
 
     private void openPopupMenu(View view, FileWrapper file) {
         PopupMenu popup = new PopupMenu(view.getContext(), view);
         popup.setOnMenuItemClickListener(item -> {
-            //Non-constant Fields
             int id = item.getItemId();
             if (id == R.id.copy) {
                 copyFile(file);
@@ -199,16 +191,16 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                 return true;
             }
             return false;
-
         });
-        popup.inflate(isMiniConnected() ? R.menu.scripts_popup_menu_ex : R.menu.scripts_popup_menu);
+        boolean miniConnected = isMiniConnected();
+        int menuResource = miniConnected ? R.menu.scripts_popup_menu_ex : R.menu.scripts_popup_menu;
+        popup.inflate(menuResource);
         popup.show();
     }
 
     private void renameFile(FileWrapper file) {
         String title = getResources().getString(R.string.title_dialog_rename);
         String input = FilenameUtils.removeExtension(file.getName());
-
         DialogUtils.showEditDialog(activity, title, input, output -> {
             File dir = new File(FilenameUtils.getFullPath(file.getAbsolutePath()));
             if (dir.exists()) {
@@ -217,7 +209,10 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                     if (!dest.exists() && file.renameTo(dest.file())) {
                         scriptsRecyclerAdapter.change(file, dest);
                     } else {
-                        SnackbarHelper.errorSnackbar(binding.getRoot(), getString(R.string.error_snackbar_name_exists)).show();
+                        activity.runOnUiThread(() -> {
+                            ApplicationStateHandler.updateNotification(ERROR, R.string.error_snackbar_name_exists);
+                            ApplicationStateHandler.updateState(State.STATE_ERROR);
+                        });
                     }
                 }
             }
@@ -227,7 +222,6 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     private void removeFile(FileWrapper file) {
         String title = getResources().getString(R.string.title_dialog_delete);
         String message = String.format(getString(R.string.info_dialog_delete), FilenameUtils.removeExtension(file.getName()));
-
         DialogUtils.showWarningDialog(activity, title, message, () -> {
             if (file.delete()) {
                 scriptsRecyclerAdapter.remove(file);
@@ -239,24 +233,17 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
         if (file.exists()) {
             Uri uri = FileProvider.getUriForFile(activity, "cc.calliope.file_provider", file.file());
             Intent intent = new Intent(Intent.ACTION_SEND);
-
             intent.setType("text/plain");
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             intent.putExtra(Intent.EXTRA_STREAM, uri);
             intent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.subject_dialog_share));
             intent.putExtra(Intent.EXTRA_TEXT, getString(R.string.text_dialog_share));
-
             startActivity(Intent.createChooser(intent, getString(R.string.title_dialog_share)));
         }
     }
 
     public void copyFile(FileWrapper file) {
-        //TODO if(...)
-        boolean connected = isMiniConnected();
-        Log.d(TAG, "Mini connected: " + connected);
-
         sourceFilePath = file.getAbsolutePath();
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             openDocumentTreeNewApi();
         } else {
@@ -268,8 +255,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     private void openDocumentTreeNewApi() {
         StorageManager storageManager = (StorageManager) activity.getSystemService(Context.STORAGE_SERVICE);
         Intent intent = storageManager.getPrimaryStorageVolume().createOpenDocumentTreeIntent();
-
-        String targetDirectory = "MINI"; // add your directory to be selected by the user
+        String targetDirectory = "MINI";
         Uri uri = intent.getParcelableExtra("android.provider.extra.INITIAL_URI");
         String scheme = uri.toString();
         scheme = scheme.replace("/root/", "/document/");
@@ -286,65 +272,93 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
 
     ActivityResultLauncher<Intent> treeUriResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
-                Log.d(TAG, "getResultCode: " + result.getResultCode());
-                Log.d(TAG, "getData: " + result.getData());
-                int resultCode = result.getResultCode();
-                Intent data = result.getData();
-
-                if (resultCode == RESULT_OK) {
-                    if (data != null) {
-                        Uri treeUri = data.getData();
-
-                        // treeUri is the Uri of the file
-                        // If lifelong access is required, use takePersistableUriPermission()
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Uri treeUri = result.getData().getData();
+                    try {
                         activity.getContentResolver().takePersistableUriPermission(
                                 treeUri,
-                                Intent.FLAG_GRANT_READ_URI_PERMISSION |
-                                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                         );
-                        Log.d(TAG, "treeUri: " + treeUri);
                         writeFile(treeUri);
+                    } catch (SecurityException e) {
+                        Log.e(TAG, "Persistable URI permission failed", e);
+                        activity.runOnUiThread(() -> {
+                            ApplicationStateHandler.updateNotification(ERROR, R.string.usb_copy_access_denied);
+                            ApplicationStateHandler.updateState(State.STATE_ERROR);
+                        });
                     }
                 }
             }
     );
 
     public void writeFile(Uri uri) {
-        try {
-            DocumentFile directory = DocumentFile.fromTreeUri(activity, uri);
-            DocumentFile file = directory.createFile("application/octet-stream", "firmware.hex");
+        new Thread(() -> {
+            try {
+                DocumentFile directory = DocumentFile.fromTreeUri(activity, uri);
+                DocumentFile file = directory.createFile("application/octet-stream", "firmware.hex");
 
-            FileInputStream inputStream = new FileInputStream(sourceFilePath);
+                FileInputStream inputStream = new FileInputStream(sourceFilePath);
+                long sourceFileSize = new File(sourceFilePath).length();
 
-            ParcelFileDescriptor parcelFileDescriptor = activity.getContentResolver().openFileDescriptor(file.getUri(), "w");
-            FileOutputStream outputStream = new FileOutputStream(parcelFileDescriptor.getFileDescriptor());
+                ParcelFileDescriptor pfd = activity.getContentResolver().openFileDescriptor(file.getUri(), "w");
+                FileOutputStream outputStream = new FileOutputStream(pfd.getFileDescriptor());
 
-            FileChannel sourceChannel = inputStream.getChannel();
-            FileChannel destinationChannel = outputStream.getChannel();
+                activity.runOnUiThread(() -> {
+                    ApplicationStateHandler.updateNotification(INFO, R.string.usb_copy_started);
+                    ApplicationStateHandler.updateState(State.STATE_BUSY);
+                });
 
-            destinationChannel.transferFrom(sourceChannel, 0, sourceChannel.size());
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                long totalBytesWritten = 0;
 
-            sourceChannel.close();
-            destinationChannel.close();
-            inputStream.close();
-            outputStream.close();
-        } catch (IOException e) {
-            Log.e(TAG, "IOException: " + e.getMessage());
-        }
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                    totalBytesWritten += bytesRead;
+                }
+
+                outputStream.flush();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    try {
+                        outputStream.getFD().sync();
+                    } catch (Exception ignored) {
+                    }
+                }
+
+                inputStream.close();
+                outputStream.close();
+
+                activity.runOnUiThread(() -> {
+                    ApplicationStateHandler.updateNotification(INFO, R.string.usb_copy_finished);
+                    ApplicationStateHandler.updateState(State.STATE_IDLE);
+                });
+            } catch (IOException e) {
+                Log.e(TAG, "File copy error", e);
+                activity.runOnUiThread(() -> {
+                    ApplicationStateHandler.updateNotification(ERROR, R.string.usb_copy_failed);
+                    ApplicationStateHandler.updateState(State.STATE_ERROR);
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Unexpected error", e);
+                activity.runOnUiThread(() -> {
+                    ApplicationStateHandler.updateNotification(ERROR, R.string.usb_copy_unexpected_error);
+                    ApplicationStateHandler.updateState(State.STATE_ERROR);
+                });
+            }
+        }).start();
     }
 
     private boolean isMiniConnected() {
         UsbManager manager = (UsbManager) activity.getSystemService(Context.USB_SERVICE);
         HashMap<String, UsbDevice> deviceList = manager.getDeviceList();
+        if (deviceList.isEmpty()) return false;
         for (UsbDevice device : deviceList.values()) {
-            Log.d("USB_Device", "Device Name: " + device.getDeviceName());
-            Log.d("USB_Device", "Product Name: " + device.getProductName());
-            Log.d("USB_Device", "Manufacturer Name: " + device.getManufacturerName());
-            Log.d("USB_Device", "Device Protocol: " + device.getDeviceProtocol());
-
             String productName = device.getProductName();
-            if (productName != null && productName.contains("Calliope")) {
-                Log.d(TAG, "it`s Calliope");
+            if (productName != null &&
+                    (productName.contains("Calliope") ||
+                            productName.contains("mini") ||
+                            productName.contains("micro:bit") ||
+                            productName.contains("Microbit"))) {
                 return true;
             }
         }

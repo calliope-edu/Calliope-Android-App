@@ -1,40 +1,47 @@
 <resources>
+    <!-- App name and navigation -->
     <string name="app_name" translatable="false">Calliope mini</string>
     <string name="title_home">Home</string>
     <string name="title_editors">Editors</string>
     <string name="title_help">Help</string>
+    <string name="title_settings">Settings</string>
+    <string name="title_info">Info</string>
+    <string name="title_web" translatable="false">WEB</string>
 
+    <!-- Permissions -->
     <string name="title_location_permission">LOCATION PERMISSION REQUIRED</string>
     <string name="title_bluetooth_permission">BLUETOOTH PERMISSION REQUIRED</string>
     <string name="title_notification_permission">NOTIFICATION PERMISSION REQUIRED</string>
-
     <string name="info_location_permission">From Android 6.0 Marshmallow onwards the application requires Location permission in order to scan for Bluetooth devices.
         \n\nThis is because Bluetooth may be used to determine the phone\'s and user\'s location, <b>Calliope</b> will not use this information in any way.</string>
     <string name="info_bluetooth_permission">To use Bluetooth features to communicate APP with your <b>Calliope mini</b> you must granted several permissions.</string>
+    <string name="title_camera_permission">CAMERA PERMISSION REQUIRED</string>
+    <string name="info_camera_permission">Camera permission is required to use face recognition and camera features in Cardboard Face editor.</string>
     <string name="info_notification_permission">Click "Allow" to allow the app to send you notifications about the flashing status.</string>
-
-
     <string name="settings_btn_permission">Settings</string>
     <string name="action_btn_permission">Grant permission</string>
 
+    <!-- Editor names and descriptions -->
     <string name="title_make_code" translatable="false">MakeCode</string>
     <string name="title_roberta" translatable="false">Open Roberta Lab</string>
     <string name="title_blocks" translatable="false">Calliope mini Blocks</string>
     <string name="title_python" translatable="false">MicroPython</string>
     <string name="title_custom">Custom editor</string>
+    <string name="title_cardboard_control" translatable="false">Cardboard Control</string>
+    <string name="title_cardboard_face" translatable="false">Cardboard Face</string>
     <string name="title_scripts">Your programs</string>
-
     <string name="info_make_code">The MakeCode editor enables full control over the Calliope mini and the integration of any external sensors through (custom) extensions. Programming can be done by arranging code blocks, using JavaScript, or Python.</string>
     <string name="info_roberta">In the "Open Roberta Lab," you learn to program with the graphical language NEPO!</string>
     <string name="info_python">MicroPython is a version of Python specifically adapted for microcontrollers. Python is an excellent first text-based programming language.</string>
     <string name="info_blocks">The Calliope mini Blocks editor enables programming of the Calliope mini using the Scratch programming language. This allows applications to be controlled on the computer with the Calliope mini and vice versa.</string>
-
     <string name="info_custom">Here you can enter to the custom editor.</string>
+    <string name="info_cardboard_control">Control your Calliope mini with Cardboard Control interface.</string>
+    <string name="info_cardboard_face">Create and animate faces with the Cardboard Face editor.</string>
     <string name="info_scripts">Your programs will be here.</string>
 
+    <!-- Welcome and tutorial -->
     <string name="title_welcome">Let\'s Go</string>
     <string name="info_welcome">On this page you will learn how to get the Calliope mini up and running step by step. The first step shows you how to connect the Calliope mini correctly to the power supply.</string>
-
     <string name="title_battery">"Connect "</string>
     <string name="info_battery"><![CDATA[
     Before you can start, the Calliope mini must be powered.
@@ -45,7 +52,6 @@
     <br/>
     <br/>Make sure that the closed end of the plug is at the top with the raised part in the middle. If the cable connector fits easily into the battery connector on the board, it is correct.
     ]]></string>
-
     <string name="title_demo">Demo sequence</string>
     <string name="info_demo">
         <![CDATA[
@@ -58,42 +64,35 @@
         <br/>5. Ready!
         ]]>
     </string>
-
     <string name="hello_text">Hello and welcome to the Calliope mini app!</string>
-
     <string name="info_app"><![CDATA[
     <br/>By using this app you can connect, code and flash programs to your <b>Calliope mini</b> via Bluetooth.
     ]]></string>
-
     <string name="info_app2"><![CDATA[
     <br/>You can find inspiring and fun projects at the Calliope website at <a href="https://calliope.cc">calliope.cc</a>!
     <br/>
     <br/>Have fun!
     ]]></string>
-
     <string name="info_app_text" translatable="false">
     Hello and welcome to the Calliope mini app!
     By using this app you can connect, code and flash programs to your Calliope mini via Bluetooth.
     </string>
-
     <string name="info_app_text2" translatable="false">
     You can find inspiring and fun projects at the Calliope website at https://calliope.cc!
     Have fun!
     </string>
-
     <string name="welcome">welcome</string>
 
+    <!-- Common UI elements -->
     <string name="title_copy">Copy by USB</string>
     <string name="title_rename">Rename</string>
     <string name="title_share">Share</string>
     <string name="title_delete">Delete</string>
     <string name="button_save">Save</string>
-
     <string name="title_dialog_rename">Rename file</string>
     <string name="title_dialog_delete">Delete file</string>
     <string name="title_dialog_share">Share File</string>
     <string name="title_dialog_edit_link">Edit link</string>
-
     <string name="button_cancel">Cancel</string>
     <string name="button_select">Select</string>
     <string name="button_ok">Ok</string>
@@ -101,11 +100,20 @@
     <string name="button_continue">Continue</string>
     <string name="button_enable">Enable</string>
     <string name="button_remove">Remove</string>
-
     <string name="info_dialog_delete">You will permanently delete \"%s\".</string>
     <string name="subject_dialog_share">Sharing File…</string>
     <string name="text_dialog_share">Calliope mini firmware</string>
+    <string name="title_select_editor">Editors</string>
 
+    <!-- Layout placeholders and titles -->
+    <string name="placeholder_menu_item" translatable="false">Menu Item</string>
+    <string name="placeholder_demo_file" translatable="false">demo</string>
+    <string name="placeholder_file_date" translatable="false">01.01.2022 11.25 - 2h. ago</string>
+    <string name="placeholder_file_version" translatable="false">v2</string>
+    <string name="content_description_menu_icon" translatable="false">menu_item_icon</string>
+    <string name="content_description_menu_info" translatable="false">menu_item_info</string>
+
+    <!-- Errors and messages -->
     <string name="error_no_connected">No Calliope mini connected</string>
     <string name="error_snackbar_name_exists">The file with this name exists</string>
     <string name="error_snackbar_bluetooth_disabled">Bluetooth is disable</string>
@@ -114,10 +122,12 @@
     <string name="error_snackbar_download_error">Download error</string>
     <string name="error_snackbar_save_file_error">Save file error</string>
 
+    <!-- Hex file operations -->
     <string name="open_hex_info">You are trying to open the \"%s\" file and flash it to your Calliope mini.
         \n\nIf you flash an incorrect or damaged file, you may have to connect your Calliope mini to the computer to reflash it.</string>
     <string name="open_hex_button">Flash</string>
 
+    <!-- Flashing status -->
     <string name="flashing_device_connecting">Device connecting…</string>
     <string name="flashing_device_connected">Device connected</string>
     <string name="flashing_process_starting">Process starting…</string>
@@ -136,11 +146,12 @@
     <string name="partial_flashing_starting">Partial flashing starting…</string>
     <string name="partial_flashing_failed">Partial flashing failed, attempting full flashing</string>
     <string name="points" translatable="false">…</string>
-    <string name="title_web" translatable="false">WEB</string>
     <string name="menu_fab_connect">Connection</string>
     <string name="menu_fab_scripts">Programs</string>
     <string name="menu_fab_full_screen">Full screen</string>
     <string name="summary_custom">Link to the custom editor</string>
+
+    <!-- Settings -->
     <string name="summary_auto_flashing">after downloading the .hex file</string>
     <string name="summary_rename_files">appended (n) if file exists</string>
     <string name="summary_partial_flashing">enable or disable</string>
@@ -149,13 +160,41 @@
     <string name="title_auto_flashing">Automatic flashing</string>
     <string name="title_background_flashing">Background flashing</string>
     <string name="title_rename_files">Rename files</string>
-    <string name="title_settings">Settings</string>
     <string name="title_pattern_connected">%s connected</string>
+    
+    <!-- Editor settings -->
+    <string name="title_editors_menu">Visible editors</string>
+    <string name="summary_editors_menu">Settings of visible editors</string>
+    <string name="title_editor_visibility">Editor visibility</string>
+    <string name="summary_editor_visibility">Show or hide specific editors</string>
+    <string name="title_show_makecode">Show MakeCode</string>
+    <string name="summary_show_makecode">Show or hide MakeCode editor</string>
+    <string name="title_show_roberta">Show Open Roberta Lab</string>
+    <string name="summary_show_roberta">Show or hide Open Roberta Lab editor</string>
+    <string name="title_show_blocks">Show Calliope mini Blocks</string>
+    <string name="summary_show_blocks">Show or hide Calliope mini Blocks editor</string>
+    <string name="title_show_python">Show MicroPython</string>
+    <string name="summary_show_python">Show or hide MicroPython editor</string>
+    <string name="title_show_custom">Show Custom editor</string>
+    <string name="summary_show_custom">Show or hide Custom editor</string>
+    <string name="title_show_cardboard_control">Show Cardboard Control</string>
+    <string name="summary_show_cardboard_control">Show or hide Cardboard Control editor</string>
+    <string name="title_show_cardboard_face">Show Cardboard Face</string>
+    <string name="summary_show_cardboard_face">Show or hide Cardboard Face editor</string>
+    <string name="editor_hidden">hidden</string>
+    <string name="undo">Undo</string>
+    <string name="swipe_to_hide_hint">Swipe left to hide editors</string>
+    <string name="title_custom_editor">Custom editor</string>
+    <string name="title_editor_settings">Editor settings</string>
+    <string name="summary_editor_settings">Configure editor visibility and custom links</string>
+
+    <!-- Bonding -->
     <string name="bonding_started">Bonding started</string>
     <string name="bonding_succeeded">Bonding succeeded</string>
     <string name="bonding_not_succeeded">Bonding not succeeded</string>
     <string name="button_retry">Retry</string>
 
+    <!-- GATT errors (non-translatable) -->
     <string name="gatt_success" translatable="false">GATT SUCCESS</string>
     <string name="gatt_invalid_handle" translatable="false">GATT INVALID HANDLE</string>
     <string name="gatt_read_not_permit" translatable="false">GATT READ NOT PERMIT</string>
@@ -196,7 +235,8 @@
     <string name="gatt_failure" translatable="false">GATT FAILURE</string>
     <string name="gatt_unidentified" translatable="false">GATT UNIDENTIFIED</string>
 
-    <string name="title_info_сategory">Information</string>
+    <!-- Information and contacts -->
+    <string name="title_info_category">Information</string>
     <string name="title_contact">Contacts</string>
     <string name="summary_contact" translatable="false">Calliope gGmbH</string>
     <string name="text_contact">
@@ -217,6 +257,7 @@
     <string name="flashing_timeout_v2">Bluetooth available?\nPress three times Reset.</string>
     <string name="info_web">Instructions</string>
 
+    <!-- Device errors -->
     <string name="error_device_null">Device is null</string>
     <string name="error_bluetooth_permissions">Bluetooth permissions not granted</string>
     <string name="error_connection_failed">Connection failed</string>
@@ -227,16 +268,65 @@
     <string name="error_reading_characteristic">Failed to read DFU control characteristic</string>
     <string name="pattern_removed">%s removed</string>
     <string name="pattern_remove_failed">Failed to remove device</string>
-    <string name="title_info">Info</string>
     <string name="error_bluetooth_adapter_null">Bluetooth adapter is null or not enabled</string>
     <string name="error_missing_dfu_service">Cannot find DFU legacy service.</string>
     <string name="error_missing_dfu_characteristic">Cannot find DFU legacy characteristic.</string>
 
+    <!-- Device management -->
     <string name="title_remove_all_devices">Remove All Calliope Mini</string>
     <string name="summary_remove_all_devices">Clear all connected Calliope Mini and bonds</string>
     <string name="title_dialog_delete_all_devices">Remove All Calliope Mini</string>
     <string name="info_dialog_delete_all_devices">Are you sure you want to remove %d connected Calliope Minis?</string>
     <string name="snackbar_no_calliope_connected">No Calliope Mini connected</string>
     <string name="snackbar_calliope_removed">All Calliope Minis removed</string>
+
+    <!-- File versions -->
+    <string name="version_universal">v1,2,3</string>
+    <string name="version_v2">v1,2</string>
+    <string name="version_v3">v3</string>
+    <string name="version_error">error</string>
+
+    <!-- Pattern matrix errors -->
+    <string name="error_pattern_length">The string must contain %d letters.</string>
+    <string name="error_letter_not_found">The letter \'%s\' is not found in the matrix.</string>
+
+    <!-- Service errors -->
+    <string name="error_bluetooth_not_enabled_service">Bluetooth is not enabled. Please enable it and try again.</string>
+    <string name="error_device_address_incorrect">Device address is incorrect. Service will stop.</string>
+    <string name="error_device_version_incorrect">Device version is incorrect. Service will stop.</string>
+    <string name="error_file_path_missing">File path is missing. Service will stop.</string>
+    <string name="error_dfu_failed">DFU failed. Service will stop.</string>
+    <string name="error_unsupported_board_version">Unsupported board version: %d</string>
+    <string name="error_failed_prepare_firmware_zip">Failed to prepare firmware ZIP</string>
+
+    <!-- Camera errors -->
+    <string name="error_camera_permission_denied">Camera permission denied</string>
+    <string name="error_camera_no_app_found">No camera app found</string>
+    <string name="error_camera_failed_create_file">Failed to create image file</string>
+    <string name="error_camera_general">Error opening camera</string>
+
+    <!-- Network errors -->
+    <string name="error_no_internet_connection">No internet connection. Please check your network settings.</string>
+    <string name="error_connection_refused">Connection refused. Please try again later.</string>
+
+    <!-- Bluetooth Web API -->
+    <string name="bluetooth_permissions_granted">Bluetooth permissions granted</string>
+    <string name="bluetooth_permissions_required">Bluetooth permissions required for device connection</string>
+
+    <!-- GATT status descriptions -->
+    <string name="gatt_connection_timeout">Connection Timeout</string>
+    <string name="gatt_insufficient_authentication">Insufficient Authentication</string>
+    <string name="gatt_read_not_permitted">Read Not Permitted</string>
+
+    <!-- USB file copy messages -->
+    <string name="usb_copy_access_denied">Access to directory denied</string>
+    <string name="usb_copy_started">File copy started...</string>
+    <string name="usb_copy_finished">File copy finished. You can disconnect the USB device.</string>
+    <string name="usb_copy_finished_warnings">File copy finished with warnings.</string>
+    <string name="usb_copy_failed">File copy failed: %s</string>
+    <string name="usb_copy_unexpected_error">Unexpected error: %s</string>
+
+    <!-- Web errors -->
+    <string name="web_error_oh_no">Oh no! %s</string>
 
 </resources>
