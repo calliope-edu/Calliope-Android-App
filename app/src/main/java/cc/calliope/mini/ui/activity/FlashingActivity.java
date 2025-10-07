@@ -17,6 +17,7 @@ import cc.calliope.mini.core.service.DfuService;
 import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.Event;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.Progress;
 import cc.calliope.mini.core.state.State;
@@ -33,11 +34,11 @@ public class FlashingActivity extends AppCompatActivity {
     private final Handler timerHandler = new Handler();
     private final Runnable deferredFinish = this::finish;
 
-    private final Observer<Notification> notificationObserver = new Observer<>() {
-        @Override
-        public void onChanged(Notification notification) {
-            status.setText(notification.getMessage());
-        }
+    private final Observer<Event<Notification>> notificationObserver = event -> {
+        Notification notification = event.getContentIfNotHandled();
+        if (notification == null) return;
+
+        status.setText(notification.getMessage());
     };
 
     private final Observer<Progress> progressObserver = new Observer<>() {

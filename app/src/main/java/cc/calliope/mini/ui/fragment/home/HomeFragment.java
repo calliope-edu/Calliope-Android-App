@@ -14,7 +14,6 @@ import android.view.animation.Animation;
 import android.view.animation.ScaleAnimation;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -52,7 +51,7 @@ public class HomeFragment extends Fragment {
         ImageView imageView = binding.openWebButton.findViewById(R.id.icon_image_view);
         TextView textView = binding.openWebButton.findViewById(R.id.title_text_view);
 
-        imageView.setImageResource(R.drawable.btn_ab);
+        imageView.setImageResource(R.drawable.document_ic);
         textView.setText(R.string.info_web);
 
         return binding.getRoot();
@@ -76,19 +75,12 @@ public class HomeFragment extends Fragment {
         }
 
         Locale locale = Locale.getDefault();
-        String language;
-
-        switch (locale.getLanguage()) {
-            case "de":
-                language = "de";
-                break;
-            case "uk":
-                language = "uk";
-                break;
-            default:
-                language = "";
-                break;
-        }
+        String language = locale.getLanguage();
+//        String language = switch (locale.getLanguage()) {
+//            case "de" -> "de";
+//            case "uk" -> "uk";
+//            default -> "";
+//        };
 
         String url = "https://app.calliope.cc/android/" + language;
 

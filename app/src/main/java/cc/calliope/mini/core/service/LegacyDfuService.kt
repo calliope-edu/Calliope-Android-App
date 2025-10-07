@@ -18,6 +18,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.os.ResultReceiver
 import android.util.Log
+import cc.calliope.mini.R
 import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.Notification.ERROR
 import cc.calliope.mini.core.state.State
@@ -186,7 +187,7 @@ open class LegacyDfuService : Service() {
         val adapter: BluetoothAdapter? = bluetoothManager.adapter
 
         if (adapter == null || !adapter.isEnabled || !BluetoothUtils.isValidBluetoothMAC(address)) {
-            ApplicationStateHandler.updateNotification(ERROR, "Bluetooth adapter is null or not enabled")
+            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_bluetooth_adapter_null));
             ApplicationStateHandler.updateState(State.STATE_IDLE)
             stopSelf()
             return
@@ -195,7 +196,7 @@ open class LegacyDfuService : Service() {
         val device = adapter.getRemoteDevice(address)
         if (device == null) {
             Log.e(TAG, "Device is null")
-            ApplicationStateHandler.updateNotification(ERROR, "Device is null")
+            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_device_null));
             stopSelf()
             return
         }
@@ -258,7 +259,7 @@ open class LegacyDfuService : Service() {
                 return
             }
             Log.e(TAG, "Cannot find DFU legacy service. Attempts: $attempts")
-            ApplicationStateHandler.updateNotification(ERROR, "Cannot find DFU legacy service.")
+            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_missing_dfu_service));
             ApplicationStateHandler.updateState(State.STATE_IDLE)
             gatt.disconnect()
             return
@@ -269,7 +270,7 @@ open class LegacyDfuService : Service() {
         )
         if (dfuControlCharacteristic == null) {
             Log.e(TAG, "Cannot find DFU legacy characteristic")
-            ApplicationStateHandler.updateNotification(ERROR, "Cannot find DFU legacy characteristic.")
+            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_missing_dfu_characteristic));
             ApplicationStateHandler.updateState(State.STATE_IDLE)
             gatt.disconnect()
             return

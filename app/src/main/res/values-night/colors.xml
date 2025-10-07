@@ -5,4 +5,9 @@
     <color name="ic_fill_primary">#FFFFFFFF</color>
     <color name="ic_fill_secondary">#FF131720</color>
     <color name="ic_fill_pattern">#FF232730</color>
+
+    <color name="item_text">#FFFFFFFF</color>
+    <color name="item_icon">#FFFFFFFF</color>
+    <color name="item_background">#FF232730</color>
+    <color name="nav_background">#FF232730</color>
 </resources>

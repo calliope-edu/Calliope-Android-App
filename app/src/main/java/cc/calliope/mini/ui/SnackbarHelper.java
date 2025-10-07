@@ -1,5 +1,6 @@
 package cc.calliope.mini.ui;
 
+import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -29,12 +30,18 @@ public class SnackbarHelper {
     }
 
     private static Snackbar baseSnackbar(View view, @NotNull String message, int color) {
+        int topMargin = 8;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) { // API 34+
+            topMargin += 32;
+        }
+
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
         );
         params.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-        params.topMargin = Utils.convertDpToPixel(view.getContext(), 8);
+        params.topMargin = Utils.convertDpToPixel(view.getContext(), topMargin);
 
         Snackbar snackbar = Snackbar.make(view, message, Snackbar.LENGTH_LONG);
         snackbar.getView().setBackgroundTintList(ContextCompat.getColorStateList(view.getContext(), color));

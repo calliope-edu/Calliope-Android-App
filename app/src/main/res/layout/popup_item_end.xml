@@ -12,8 +12,8 @@
     <TextView
         android:id="@+id/custom_menu_item_title"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:maxHeight="32dp"
+        android:layout_height="32dp"
+        android:maxHeight="40dp"
         android:gravity="center"
         android:background="@drawable/btn_grey_transparent"
         android:paddingHorizontal="@dimen/fab_title_horizontal_padding"
@@ -28,8 +28,8 @@
 
     <ImageView
         android:id="@+id/custom_menu_item_icon"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_gravity="center"
         android:src="@drawable/ic_connect"
         android:background="@drawable/circle_shape"

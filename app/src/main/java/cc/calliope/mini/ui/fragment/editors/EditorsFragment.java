@@ -6,6 +6,7 @@ import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -13,6 +14,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.ScaleAnimation;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -62,9 +64,14 @@ public class EditorsFragment extends Fragment {
 
         ImageView imageView = view.findViewById(R.id.icon_image_view);
         TextView textView = view.findViewById(R.id.title_text_view);
+        ImageButton infoButton = view.findViewById(R.id.info_button);
 
         imageView.setImageResource(editor.getIconResId());
         textView.setText(editor.getTitleResId());
+        infoButton.setOnClickListener(v -> onLongPress(v, editor));
+        if (editor == Editor.CUSTOM) {
+            infoButton.setVisibility(View.GONE);
+        }
     }
 
     @Override

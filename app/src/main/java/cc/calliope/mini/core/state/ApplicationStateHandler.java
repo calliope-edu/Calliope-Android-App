@@ -9,7 +9,7 @@ import cc.calliope.mini.AppContext;
 public class ApplicationStateHandler {
 
     private static final MutableLiveData<State> stateLiveData = new MutableLiveData<>();
-    private static final MutableLiveData<Notification> notificationLiveData = new MutableLiveData<>();
+    private static final MutableLiveData<Event<Notification>> notificationLiveData = new MutableLiveData<>();
     private static final MutableLiveData<Progress> progressLiveData = new MutableLiveData<>();
     private static final MutableLiveData<Error> errorLiveData = new MutableLiveData<>();
     private static final MutableLiveData<Boolean> isDeviceAvailable = new MutableLiveData<>();
@@ -19,12 +19,12 @@ public class ApplicationStateHandler {
     }
 
     public static void updateNotification(@Notification.NotificationType int type, String message){
-        notificationLiveData.postValue(new Notification(type, message));
+        notificationLiveData.postValue(new Event<>(new Notification(type, message)));
     }
 
     public static void updateNotification(@Notification.NotificationType int type, int stringId){
         String message = getString(stringId);
-        notificationLiveData.postValue(new Notification(type, message));
+        notificationLiveData.postValue(new Event<>(new Notification(type, message)));
     }
 
     public static void updateProgress(int percent){
@@ -43,7 +43,7 @@ public class ApplicationStateHandler {
         return stateLiveData;
     }
 
-    public static LiveData<Notification> getNotificationLiveData() {
+    public static LiveData<Event<Notification>> getNotificationLiveData() {
         return notificationLiveData;
     }
 

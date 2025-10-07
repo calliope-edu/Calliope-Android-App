@@ -39,6 +39,7 @@ import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.bluetooth.BluetoothUtils;
+import cc.calliope.mini.utils.bluetooth.ConnectedDevicesManager;
 import cc.calliope.mini.utils.settings.Preference;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.ui.views.FobParams;
@@ -59,8 +60,8 @@ public class PatternDialogFragment extends DialogFragment {
     private String currentAddress;
     private String currentPattern;
     private Context context;
-    private record Position(int x, int y) {
-    }
+    private record Position(int x, int y) {}
+    private ConnectedDevicesManager deviceManager;
 
     private final BroadcastReceiver bluetoothStateBroadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -99,6 +100,7 @@ public class PatternDialogFragment extends DialogFragment {
                              Bundle savedInstanceState) {
         context = requireContext();
         context.registerReceiver(bluetoothStateBroadcastReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
+        deviceManager = new ConnectedDevicesManager(context);
         binding = DialogPatternBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
@@ -188,28 +190,9 @@ public class PatternDialogFragment extends DialogFragment {
         return new Position(posX, posY);
     }
 
-    private void saveCurrentDevice() {
-        SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(context).edit();
-        editor.putString(Constants.CURRENT_DEVICE_ADDRESS, currentDevice.getAddress());
-        editor.putString(Constants.CURRENT_DEVICE_PATTERN, currentDevice.getPattern());
-        editor.apply();
-    }
-
-    private void removeCurrentDevice() {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        SharedPreferences.Editor editor = preferences.edit();
-        if(preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "").equals(currentDevice.getAddress())){
-            ApplicationStateHandler.updateState(State.STATE_IDLE);
-            editor.remove(Constants.CURRENT_DEVICE_ADDRESS);
-            editor.remove(Constants.CURRENT_DEVICE_PATTERN);
-            editor.apply();
-        }
-    }
-
     private void restoreCurrentDevice() {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-        currentAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
-        currentPattern = preferences.getString(Constants.CURRENT_DEVICE_PATTERN, "ZUZUZ");
+        currentAddress = deviceManager.getCurrentAddress();
+        currentPattern = deviceManager.getCurrentPattern();
     }
 
     private void onActionClick(View view){
@@ -218,7 +201,7 @@ public class PatternDialogFragment extends DialogFragment {
             ApplicationStateHandler.updateNotification(Notification.WARNING, R.string.flashing_device_connecting);
 
             //removeBond(currentDevice.getAddress());
-            saveCurrentDevice();
+            deviceManager.saveCurrentDevice(currentDevice.getAddress(), currentDevice.getPattern());
 
             if(!currentAddress.equals(currentDevice.getAddress())){
                 Preference.putInt(context, Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
@@ -233,15 +216,11 @@ public class PatternDialogFragment extends DialogFragment {
     }
 
     private void onRemoveClick(View view) {
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if (bluetoothAdapter == null) {
-            return;
-        }
         String address = currentDevice == null ? currentAddress : currentDevice.getAddress();
-        if(BluetoothUtils.removeBond(bluetoothAdapter.getRemoteDevice(address))){
-            String message = getString(R.string.pattern_removed, currentPattern);
+        if (deviceManager.removeBond(address)) {
+            String message = getString(R.string.pattern_removed, deviceManager.getCurrentPattern());
             ApplicationStateHandler.updateNotification(Notification.INFO, message);
-            removeCurrentDevice();
+            deviceManager.removeCurrentDevice(address);
         } else {
             String message = getString(R.string.pattern_remove_failed);
             ApplicationStateHandler.updateNotification(Notification.ERROR, message);
