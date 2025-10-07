@@ -10,6 +10,7 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothProfile
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -32,6 +33,7 @@ import cc.calliope.mini.R
 import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.Notification.INFO
 import cc.calliope.mini.core.state.State
+import cc.calliope.mini.ui.activity.CameraPermissionActivity
 import cc.calliope.mini.utils.Constants
 import java.nio.charset.StandardCharsets
 import java.util.UUID
@@ -79,8 +81,9 @@ class WebBleFragment : Fragment() {
 
     private var cameraPermissionCallback: ((Boolean) -> Unit)? = null
     private val cameraPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val granted = result.resultCode == android.app.Activity.RESULT_OK
         Log.d("WebBleFragment", "Camera permission result: $granted")
         cameraPermissionCallback?.invoke(granted)
         cameraPermissionCallback = null
@@ -144,6 +147,13 @@ class WebBleFragment : Fragment() {
             override fun onPermissionRequest(request: PermissionRequest) {
                 Log.d("WebBleFragment", "onPermissionRequest: ${request.resources.joinToString()}")
                 if (request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
+                    // Only allow camera access for CARDBOARD_FACE editor
+                    if (editorName != "cardboard_face") {
+                        Log.d("WebBleFragment", "Camera access denied - not CARDBOARD_FACE editor")
+                        request.deny()
+                        return
+                    }
+                    
                     if (has(Manifest.permission.CAMERA)) {
                         Log.d("WebBleFragment", "Granting camera permission to WebView")
                         request.grant(request.resources)
@@ -223,8 +233,8 @@ class WebBleFragment : Fragment() {
             if (!has(Manifest.permission.BLUETOOTH_ADMIN)) perms += Manifest.permission.BLUETOOTH_ADMIN
         }
 
-        // Camera permission
-        if (!has(Manifest.permission.CAMERA)) perms += Manifest.permission.CAMERA
+        // Camera permission will be requested separately through CameraPermissionActivity when needed
+        // No automatic camera permission request here
 
         if (perms.isNotEmpty()) permissionLauncher.launch(perms.toTypedArray())
     }
@@ -234,7 +244,8 @@ class WebBleFragment : Fragment() {
 
     private fun requestCameraPermission(callback: (Boolean) -> Unit) {
         cameraPermissionCallback = callback
-        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        val intent = Intent(requireContext(), CameraPermissionActivity::class.java)
+        cameraPermissionLauncher.launch(intent)
     }
 
     @SuppressLint("MissingPermission")
@@ -267,13 +278,15 @@ class WebBleFragment : Fragment() {
         @JavascriptInterface
         fun requestCameraPermission(): Boolean {
             Log.d("WebBleFragment", "JavaScript requested camera permission")
-            return has(Manifest.permission.CAMERA)
+            // Only allow camera for CARDBOARD_FACE editor
+            return editorName == "cardboard_face" && has(Manifest.permission.CAMERA)
         }
 
         @JavascriptInterface
         fun isCameraAvailable(): Boolean {
-            val available = has(Manifest.permission.CAMERA)
-            Log.d("WebBleFragment", "Camera availability check: $available")
+            // Only allow camera for CARDBOARD_FACE editor
+            val available = editorName == "cardboard_face" && has(Manifest.permission.CAMERA)
+            Log.d("WebBleFragment", "Camera availability check: $available (editor: $editorName)")
             return available
         }
     }

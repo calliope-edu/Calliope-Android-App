@@ -114,6 +114,9 @@
             android:name=".ui.activity.NoPermissionActivity"
             android:exported="false" />
         <activity
+            android:name=".ui.activity.CameraPermissionActivity"
+            android:exported="false" />
+        <activity
             android:name=".ui.activity.SettingsActivity"
             android:exported="false" />
         <service
