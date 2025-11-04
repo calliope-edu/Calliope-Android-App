@@ -129,7 +129,6 @@ public class ScriptsRecyclerAdapter extends RecyclerView.Adapter<ScriptsRecycler
             icon = view.findViewById(R.id.hex_file_icon);
         }
 
-        //TODO: Move to string resources
         void setItem(FileWrapper file) {
             String name = FilenameUtils.removeExtension(file.getName());
             String date = Utils.dateFormat(file.lastModified());
@@ -137,17 +136,17 @@ public class ScriptsRecyclerAdapter extends RecyclerView.Adapter<ScriptsRecycler
 
             switch (version) {
                 case UNIVERSAL:
-                    this.version.setText("v1,2,3");
+                    this.version.setText(R.string.version_universal);
                     break;
                 case VERSION_2:
-                    this.version.setText("v1,2");
+                    this.version.setText(R.string.version_v2);
                     break;
                 case VERSION_3:
-                    this.version.setText("v3");
+                    this.version.setText(R.string.version_v3);
                     break;
                 case UNDEFINED:
                 default:
-                    this.version.setText("error");
+                    this.version.setText(R.string.version_error);
                     break;
             }
 

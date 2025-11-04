@@ -129,7 +129,7 @@ public class FlashingService extends LifecycleService {
     private boolean isBluetoothEnabled() {
         if (!Utils.isBluetoothEnabled()) {
             Log.e(TAG, "Bluetooth is not enabled");
-            handleError("Bluetooth is not enabled. Please enable it and try again.");
+            handleError(getString(R.string.error_bluetooth_not_enabled_service));
             return false;
         }
         return true;
@@ -151,14 +151,14 @@ public class FlashingService extends LifecycleService {
 
         if (!checkBluetoothMAC(currentAddress)) {
             Log.e(TAG, "Device address is incorrect");
-            handleError("Device address is incorrect. Service will stop.");
+            handleError(getString(R.string.error_device_address_incorrect));
             return false;
         }
 
         boardVersion = preferences.getInt(Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
         if (boardVersion == UNIDENTIFIED) {
             Log.e(TAG, "Device version is incorrect");
-            handleError("Device version is incorrect. Service will stop.");
+            handleError(getString(R.string.error_device_version_incorrect));
             return false;
         }
 
@@ -177,7 +177,7 @@ public class FlashingService extends LifecycleService {
 
         if (currentPath == null || currentPath.isEmpty()) {
             Log.e(TAG, "File path is missing");
-            handleError("File path is missing. Service will stop.");
+            handleError(getString(R.string.error_file_path_missing));
             return false;
         }
 
@@ -226,7 +226,7 @@ public class FlashingService extends LifecycleService {
                     startDfu();
                 } else {
                     Log.e(TAG, "DFU failed");
-                    handleError("DFU failed. Service will stop.");
+                    handleError(getString(R.string.error_dfu_failed));
                 }
             }
         }
@@ -308,7 +308,7 @@ public class FlashingService extends LifecycleService {
             startDfu();
         } else {
             Log.e(TAG, "Unsupported board version: " + boardVersion);
-            handleError("Unsupported board version: " + boardVersion);
+            handleError(String.format(getString(R.string.error_unsupported_board_version), boardVersion));
         }
     }
 
@@ -358,7 +358,7 @@ public class FlashingService extends LifecycleService {
         String zipPath = prepareFirmwareZip();
         if (zipPath == null) {
             Log.e(TAG, "Failed to prepare firmware ZIP");
-            handleError("Failed to prepare firmware ZIP");
+            handleError(getString(R.string.error_failed_prepare_firmware_zip));
             return;
         }
 

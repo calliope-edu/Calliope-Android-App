@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        android:title="@string/title_editor_visibility"
+        android:summary="@string/summary_editor_visibility"
+        app:iconSpaceReserved="false">
+
+        <CheckBoxPreference
+            android:key="pref_key_editor_visibility_makecode"
+            android:title="@string/title_show_makecode"
+            android:summary="@string/summary_show_makecode"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
+
+        <CheckBoxPreference
+            android:key="pref_key_editor_visibility_roberta"
+            android:title="@string/title_show_roberta"
+            android:summary="@string/summary_show_roberta"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
+
+        <CheckBoxPreference
+            android:key="pref_key_editor_visibility_blocks"
+            android:title="@string/title_show_blocks"
+            android:summary="@string/summary_show_blocks"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
+
+        <CheckBoxPreference
+            android:key="pref_key_editor_visibility_python"
+            android:title="@string/title_show_python"
+            android:summary="@string/summary_show_python"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
+
+        <CheckBoxPreference
+            android:key="pref_key_editor_visibility_custom"
+            android:title="@string/title_show_custom"
+            android:summary="@string/summary_show_custom"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
+
+        <CheckBoxPreference
+            android:key="pref_key_editor_visibility_cardboard_control"
+            android:title="@string/title_show_cardboard_control"
+            android:summary="@string/summary_show_cardboard_control"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
+
+        <CheckBoxPreference
+            android:key="pref_key_editor_visibility_cardboard_face"
+            android:title="@string/title_show_cardboard_face"
+            android:summary="@string/summary_show_cardboard_face"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/title_custom_editor"
+        app:iconSpaceReserved="false">
+
+        <cc.calliope.mini.ui.dialog.CustomLinkDialogPreference
+            android:key="pref_key_custom_link"
+            android:title="@string/title_custom"
+            android:summary="@string/summary_custom"
+            android:defaultValue="https://makecode.calliope.cc"
+            app:iconSpaceReserved="false"/>
+    </PreferenceCategory>
+
+</PreferenceScreen> 

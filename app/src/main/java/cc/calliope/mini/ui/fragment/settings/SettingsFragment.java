@@ -34,6 +34,10 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             NavController navController = Navigation.findNavController(requireActivity(), R.id.navigation_host_fragment);
             navController.navigate(R.id.action_settings_to_help);
             return true;
+        } else if ("pref_key_editors_menu".equals(preference.getKey())) {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.navigation_host_fragment);
+            navController.navigate(R.id.action_settings_to_editor_settings);
+            return true;
         } else if ("pref_key_remove_all_devices".equals(preference.getKey())) {
             removeAllDevices();
             return true;
