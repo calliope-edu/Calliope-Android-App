@@ -151,8 +151,6 @@ public class WebFragment extends Fragment implements DownloadListener {
             editorUrl = arguments.getString(TARGET_URL);
             editorName = arguments.getString(TARGET_NAME);
         }
-        
-        // Логуємо, що WebFragment використовується для звичайних редакторів
         Log.d(TAG, "WebFragment created for editor: " + editorName + ", URL: " + editorUrl);
     }
 
@@ -253,6 +251,7 @@ public class WebFragment extends Fragment implements DownloadListener {
         boolean result = false;
 
         if (file == null) {
+            Log.e(TAG, "File is null");
             SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_save_file_error)).show();
         } else {
             if (url.startsWith("data:text/hex")) {
@@ -336,17 +335,17 @@ public class WebFragment extends Fragment implements DownloadListener {
             return;
         }
 
-        if(!Utils.isBluetoothEnabled()){
+        if (!Utils.isBluetoothEnabled()) {
             ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
             return;
         }
 
-        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()){
+        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()) {
             ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
             return;
         }
 
-        if(!Settings.isBackgroundFlashingEnable(getActivity())){
+        if (!Settings.isBackgroundFlashingEnable(getActivity())) {
             final Intent intent = new Intent(getActivity(), FlashingActivity.class);
             intent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
             startActivity(intent);
