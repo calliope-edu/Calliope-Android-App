@@ -25,7 +25,7 @@
             android:key="pref_key_enable_background_flashing"
             android:title="@string/title_background_flashing"
             android:summary="@string/summary_background_flashing"
-            android:defaultValue="true"
+            android:defaultValue="false"
             app:iconSpaceReserved="false"/>
 
         <CheckBoxPreference
