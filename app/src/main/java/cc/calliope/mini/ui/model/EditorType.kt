@@ -12,7 +12,7 @@ enum class EditorType(
     val defaultOrder: Int
 ) {
     MAKECODE(
-        id = "makecode",
+        id = "MAKECODE",
         titleResId = R.string.title_make_code,
         iconResId = R.drawable.ic_make_code_inset,
         infoResId = R.string.info_make_code,
@@ -22,7 +22,7 @@ enum class EditorType(
     ),
 
     ROBERTA(
-        id = "roberta",
+        id = "ROBERTA",
         titleResId = R.string.title_roberta,
         iconResId = R.drawable.ic_roberta_inset,
         infoResId = R.string.info_roberta,
@@ -32,7 +32,7 @@ enum class EditorType(
     ),
 
     BLOCKS(
-        id = "blocks",
+        id = "BLOCKS",
         titleResId = R.string.title_blocks,
         iconResId = R.drawable.ic_blocks_inset,
         infoResId = R.string.info_blocks,
@@ -42,7 +42,7 @@ enum class EditorType(
     ),
 
     PYTHON(
-        id = "python",
+        id = "PYTHON",
         titleResId = R.string.title_python,
         iconResId = R.drawable.ic_python_inset,
         infoResId = R.string.info_python,
@@ -52,7 +52,7 @@ enum class EditorType(
     ),
 
     CUSTOM(
-        id = "custom",
+        id = "CUSTOM",
         titleResId = R.string.title_custom,
         iconResId = R.drawable.ic_custom_inset,
         infoResId = R.string.info_custom,
@@ -62,7 +62,7 @@ enum class EditorType(
     ),
 
     CARDBOARD_CONTROL(
-        id = "cardboard_control",
+        id = "CARDBOARD_CONTROL",
         titleResId = R.string.title_cardboard_control,
         iconResId = R.drawable.ic_editors_cardboard_control,
         infoResId = R.string.info_cardboard_control,
@@ -72,7 +72,7 @@ enum class EditorType(
     ),
 
     CARDBOARD_FACE(
-        id = "cardboard_face",
+        id = "CARDBOARD_FACE",
         titleResId = R.string.title_cardboard_face,
         iconResId = R.drawable.ic_editors_cardboard_face,
         infoResId = R.string.info_cardboard_face,
