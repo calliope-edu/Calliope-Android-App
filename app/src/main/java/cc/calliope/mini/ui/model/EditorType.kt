@@ -16,8 +16,8 @@ enum class EditorType(
         titleResId = R.string.title_make_code,
         iconResId = R.drawable.ic_make_code_inset,
         infoResId = R.string.info_make_code,
-        urlV2 = "https://makecode.calliope.cc/?androidapp=1",
-        urlV3 = "https://makecode.calliope.cc/?androidapp=1",
+        urlV2 = "https://makecode.calliope.cc",
+        urlV3 = "https://makecode.calliope.cc",
         defaultOrder = 0
     ),
 
