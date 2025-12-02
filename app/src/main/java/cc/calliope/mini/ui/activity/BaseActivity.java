@@ -139,7 +139,9 @@ public abstract class BaseActivity extends AppCompatActivity
     }
 
     /**
-     * Check if it's the holiday season (Dec 20 - Jan 10).
+     * Check if it's the holiday season:
+     * - Dec 6 (St. Nicholas Day)
+     * - Dec 20 - Jan 10 (Christmas/New Year)
      */
     private boolean isHolidaySeason() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -147,7 +149,10 @@ public abstract class BaseActivity extends AppCompatActivity
             int month = cal.get(Calendar.MONTH) + 1;
             int day = cal.get(Calendar.DAY_OF_MONTH);
 
-            return ((month == 12 && day >= 20) || (month == 1 && day <= 10));
+            boolean isStNicholasDay = (month == 12 && day == 6);
+            boolean isChristmasSeason = (month == 12 && day >= 20) || (month == 1 && day <= 10);
+
+            return isStNicholasDay || isChristmasSeason;
         }
         return false;
     }
