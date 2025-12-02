@@ -149,10 +149,7 @@ public abstract class BaseActivity extends AppCompatActivity
             int month = cal.get(Calendar.MONTH) + 1;
             int day = cal.get(Calendar.DAY_OF_MONTH);
 
-            boolean isStNicholasDay = (month == 12 && day == 6);
-            boolean isChristmasSeason = (month == 12 && day >= 20) || (month == 1 && day <= 10);
-
-            return isStNicholasDay || isChristmasSeason;
+            return (month == 12 && day >= 6) || (month == 1 && day <= 10);
         }
         return false;
     }
