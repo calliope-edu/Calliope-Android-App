@@ -37,6 +37,7 @@ import cc.calliope.mini.utils.settings.Preference;
 import cc.calliope.mini.utils.settings.Settings;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
+import cc.calliope.mini.core.service.partialflashing.PartialFlashingService;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
 
 
@@ -232,26 +233,6 @@ public class FlashingService extends LifecycleService {
         }
     }
 
-    private class PartialFlashingInitReceiver extends ResultReceiver {
-        public PartialFlashingInitReceiver(Handler handler) {
-            super(handler);
-        }
-
-        @Override
-        protected void onReceiveResult(int resultCode, Bundle resultData) {
-            if (resultCode == RESULT_OK) {
-                boolean isSuccess = resultData.getBoolean("result");
-                if (isSuccess) {
-                    Log.d(TAG, "Partial flashing initiated");
-                    startPartialFlashing();
-                } else {
-                    Log.e(TAG, "Failed to initiate partial flashing");
-                    handleFullFlashing();
-                }
-            }
-        }
-    }
-
     private class PartialFlashingReceiver extends ResultReceiver {
         public PartialFlashingReceiver(Handler handler) {
             super(handler);
@@ -266,21 +247,11 @@ public class FlashingService extends LifecycleService {
                     Log.d(TAG, "Partial flashing completed");
                     stopSelf();
                 } else {
-                    Log.e(TAG, "Partial flashing failed");
-                    startDfu();
+                    Log.w(TAG, "Partial flashing failed, falling back to DFU");
+                    handleFullFlashing();
                 }
             }
         }
-    }
-
-    private void startPartialFlashing() {
-        PartialFlashingReceiver resultReceiver = new PartialFlashingReceiver(new Handler());
-
-        Intent intent = new Intent(this, PartialFlashingService.class);
-        intent.putExtra("filepath", currentPath);
-        intent.putExtra("deviceAddress", currentAddress);
-        intent.putExtra("resultReceiver", resultReceiver);
-        startService(intent);
     }
 
     private void initFlashing() {
@@ -292,12 +263,13 @@ public class FlashingService extends LifecycleService {
     }
 
     private void handlePartialFlashing() {
-        PartialFlashingInitReceiver resultReceiver = new PartialFlashingInitReceiver(new Handler());
+        Log.d(TAG, "Starting partial flashing service");
+        PartialFlashingReceiver resultReceiver = new PartialFlashingReceiver(new Handler());
 
-        // Start the service
-        Intent service = new Intent(this, PartialFlashingInitService.class);
-        service.putExtra(Constants.CURRENT_DEVICE_ADDRESS, currentAddress);
-        service.putExtra("resultReceiver", resultReceiver);
+        Intent service = new Intent(this, PartialFlashingService.class);
+        service.putExtra(PartialFlashingService.EXTRA_DEVICE_ADDRESS, currentAddress);
+        service.putExtra(PartialFlashingService.EXTRA_FILE_PATH, currentPath);
+        service.putExtra(PartialFlashingService.EXTRA_RESULT_RECEIVER, resultReceiver);
         startService(service);
     }
 

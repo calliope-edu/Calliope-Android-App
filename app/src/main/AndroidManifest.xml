@@ -133,11 +133,16 @@
             android:name=".core.service.LegacyDfuService"
             android:enabled="true" />
         <service
+            android:name=".core.service.partialflashing.PartialFlashingService"
+            android:enabled="true" />
+        <!-- Old services - disabled, using new unified PartialFlashingService
+        <service
             android:name=".core.service.PartialFlashingService"
             android:enabled="true" />
         <service
             android:name=".core.service.PartialFlashingInitService"
             android:enabled="true" />
+        -->
         <service
             android:name=".core.bluetooth.CheckService"
             android:enabled="true" />
