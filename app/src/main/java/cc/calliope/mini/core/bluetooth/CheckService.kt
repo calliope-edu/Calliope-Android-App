@@ -67,7 +67,8 @@ class CheckService : Service() {
                 val macAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
 
                 if (!Permission.isAccessGranted(applicationContext, *Permission.BLUETOOTH_PERMISSIONS)) {
-                    Log.e(LegacyDfuService.TAG, "BLUETOOTH permission no granted")
+                    Log.e(TAG, "BLUETOOTH permission not granted")
+                    resultReceiver?.send(RESULT_CANCELED, null)
                     stopSelf()
                     break
                 }
@@ -102,21 +103,29 @@ class CheckService : Service() {
                     null
                 )
 
+                var deviceFound = false
+
                 val scanJob = scanner.scan(filters, settings)
                     .map { aggregator.aggregateDevices(it) }
                     .onEach { devices ->
-                        if (devices.isNotEmpty()) {
-                            Log.d(TAG, "Device with MAC: $macAddress is available.")
-                            resultReceiver?.send(RESULT_OK, null)
-                            stopSelf()
+                        if (devices.isNotEmpty() && !deviceFound) {
+                            deviceFound = true
                         }
                     }
                     .launchIn(this)
 
                 delay(duration)
 
-                Log.w(TAG, "Device with MAC: $macAddress not found after $duration ms.")
                 scanJob.cancel()
+
+                if (deviceFound) {
+                    Log.d(TAG, "Device with MAC: $macAddress is available.")
+                    resultReceiver?.send(RESULT_OK, null)
+                } else {
+                    Log.w(TAG, "Device with MAC: $macAddress not found after $duration ms.")
+                    resultReceiver?.send(RESULT_CANCELED, null)
+                }
+                // Continue scanning in the next iteration
             }
         }
     }
