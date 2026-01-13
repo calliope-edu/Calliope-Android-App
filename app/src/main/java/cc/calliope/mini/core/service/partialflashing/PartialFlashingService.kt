@@ -49,7 +49,15 @@ class PartialFlashingService : Service() {
         private val PARTIAL_FLASHING_SERVICE: UUID = UUID.fromString("e97dd91d-251d-470a-a062-fa1922dfa9a8")
         private val PARTIAL_FLASH_CHARACTERISTIC: UUID = UUID.fromString("e97d3b10-251d-470a-a062-fa1922dfa9a8")
         private val CLIENT_CHARACTERISTIC_CONFIG: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
-        private val MICROBIT_SECURE_DFU_SERVICE: UUID = UUID.fromString("0000fe59-0000-1000-8000-00805f9b34fb")
+        private val SECURE_DFU_SERVICE: UUID = UUID.fromString("0000fe59-0000-1000-8000-00805f9b34fb")
+
+        // Generic Attribute Service UUIDs (for Service Changed handling)
+        private val GENERIC_ATTRIBUTE_SERVICE: UUID = UUID.fromString("00001801-0000-1000-8000-00805f9b34fb")
+        private val SERVICE_CHANGED_CHARACTERISTIC: UUID = UUID.fromString("00002a05-0000-1000-8000-00805f9b34fb")
+
+        // Flash memory page sizes
+        private const val PAGE_SIZE_NRF51 = 0x400   // 1KB for V1/V2 (nRF51)
+        private const val PAGE_SIZE_NRF52 = 0x1000  // 4KB for V3 (nRF52)
 
         // Status commands
         private const val STATUS_REQUEST: Byte = 0xEE.toByte()
@@ -83,10 +91,6 @@ class PartialFlashingService : Service() {
         private const val UPY_MAGIC2 = "9DD7B1C1"
         private const val UPY_MAGIC_REGEX = ".*FE307F59.{16}9DD7B1C1.*"
 
-        // Hardware types
-        private const val HARDWARE_V1 = 1
-        private const val HARDWARE_V2 = 2
-
         // Timeouts (optimized)
         private const val CONNECTION_TIMEOUT_MS = 10_000L
         private const val SERVICE_DISCOVERY_DELAY_MS = 600L  // Reduced from 1600-2000ms
@@ -118,7 +122,7 @@ class PartialFlashingService : Service() {
     private var partialFlashCharacteristic: BluetoothGattCharacteristic? = null
 
     // Flashing state
-    private var hardwareType = HARDWARE_V1
+    private var isNrf52 = false  // true = nRF52 (V3), false = nRF51 (V1/V2)
     private var isPython = false
     private var dalHash: String? = null
     private var fileHash: String? = null
@@ -137,6 +141,7 @@ class PartialFlashingService : Service() {
     @Volatile private var servicesDiscovered = false
     @Volatile private var mtuNegotiated = false
     @Volatile private var descriptorWritten = false
+    @Volatile private var descriptorReadValue: ByteArray? = null
     @Volatile private var characteristicWritten = false
     @Volatile private var currentMode: Byte = MODE_APPLICATION
     @Volatile private var statusResponseReceived = false  // Track if status response notification arrived
@@ -329,6 +334,13 @@ class PartialFlashingService : Service() {
             return false
         }
 
+        // Enable Service Changed indications for proper GATT cache handling (Android P+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            if (!ensureServiceChangedEnabled()) {
+                Log.w(TAG, "Failed to enable Service Changed indications, continuing anyway")
+            }
+        }
+
         return setupPartialFlashingCharacteristic()
     }
 
@@ -361,6 +373,110 @@ class PartialFlashingService : Service() {
 
         Log.d(TAG, "MTU negotiation completed: $negotiatedMtu bytes")
         return mtuNegotiated
+    }
+
+    /**
+     * Ensures Service Changed indications are enabled for proper GATT cache handling.
+     * This is important for bonded devices to receive cache invalidation notifications.
+     */
+    private fun ensureServiceChangedEnabled(): Boolean {
+        val gatt = bluetoothGatt ?: return false
+
+        val serviceChangedChar = getServiceChangedCharacteristic(gatt)
+        if (serviceChangedChar == null) {
+            Log.d(TAG, "Service Changed characteristic not found (normal for some devices)")
+            return true  // Not an error, some devices don't have it
+        }
+
+        // Check if already enabled
+        if (isServiceChangedIndicationEnabled(gatt, serviceChangedChar)) {
+            Log.d(TAG, "Service Changed indication already enabled")
+            return true
+        }
+
+        // Enable indication
+        Log.d(TAG, "Enabling Service Changed indication")
+        return enableServiceChangedIndication(gatt, serviceChangedChar)
+    }
+
+    private fun getServiceChangedCharacteristic(gatt: BluetoothGatt): BluetoothGattCharacteristic? {
+        val gasService = gatt.getService(GENERIC_ATTRIBUTE_SERVICE) ?: return null
+        return gasService.getCharacteristic(SERVICE_CHANGED_CHARACTERISTIC)
+    }
+
+    private fun isServiceChangedIndicationEnabled(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic): Boolean {
+        val descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG) ?: return false
+
+        descriptorReadValue = null
+
+        // Read current descriptor value
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            gatt.readDescriptor(descriptor)
+        } else {
+            @Suppress("DEPRECATION")
+            gatt.readDescriptor(descriptor)
+        }
+
+        // Wait for read callback
+        synchronized(operationLock) {
+            val startTime = SystemClock.elapsedRealtime()
+            while (descriptorReadValue == null && SystemClock.elapsedRealtime() - startTime < OPERATION_TIMEOUT_MS) {
+                try {
+                    operationLock.wait(500)
+                } catch (e: InterruptedException) {
+                    return false
+                }
+            }
+        }
+
+        val value = descriptorReadValue ?: return false
+        if (value.size != 2) return false
+
+        // Check if indication is enabled (0x02, 0x00)
+        return value[0] == BluetoothGattDescriptor.ENABLE_INDICATION_VALUE[0] &&
+               value[1] == BluetoothGattDescriptor.ENABLE_INDICATION_VALUE[1]
+    }
+
+    private fun enableServiceChangedIndication(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic): Boolean {
+        val descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG) ?: return false
+
+        // Enable local notification
+        if (!gatt.setCharacteristicNotification(characteristic, true)) {
+            Log.e(TAG, "Failed to enable Service Changed notification locally")
+            return false
+        }
+
+        descriptorWritten = false
+
+        // Write indication enable to descriptor
+        val writeResult = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_INDICATION_VALUE)
+        } else {
+            @Suppress("DEPRECATION")
+            descriptor.value = BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
+            @Suppress("DEPRECATION")
+            gatt.writeDescriptor(descriptor)
+        }
+
+        if (writeResult != BluetoothStatusCodes.SUCCESS && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Log.e(TAG, "Failed to write Service Changed descriptor")
+            return false
+        }
+
+        // Wait for write callback
+        synchronized(operationLock) {
+            val startTime = SystemClock.elapsedRealtime()
+            while (!descriptorWritten && SystemClock.elapsedRealtime() - startTime < OPERATION_TIMEOUT_MS) {
+                try {
+                    operationLock.wait(500)
+                } catch (e: InterruptedException) {
+                    return false
+                }
+            }
+        }
+
+        Log.d(TAG, "Service Changed indication enabled: $descriptorWritten")
+        return descriptorWritten
     }
 
     private fun setupPartialFlashingCharacteristic(): Boolean {
@@ -823,9 +939,6 @@ class PartialFlashingService : Service() {
                 BluetoothProfile.STATE_CONNECTED -> {
                     isConnected = true
 
-                    // Detect hardware type
-                    hardwareType = HARDWARE_V1
-
                     // Use Handler for delayed service discovery (don't block Bluetooth thread)
                     // After reboot we need more time for device to stabilize
                     val delay = if (waitingForReboot) 1600L else SERVICE_DISCOVERY_DELAY_MS
@@ -868,14 +981,9 @@ class PartialFlashingService : Service() {
                 }
                 Log.d(TAG, "=== End of services ===")
 
-                // Detect V2 hardware
-                if (gatt.getService(MICROBIT_SECURE_DFU_SERVICE) != null) {
-                    hardwareType = HARDWARE_V2
-                    Log.d(TAG, "Detected V2 hardware (has Secure DFU service)")
-                } else {
-                    hardwareType = HARDWARE_V1
-                    Log.d(TAG, "Detected V1 hardware (no Secure DFU service)")
-                }
+                // Detect hardware type by presence of Secure DFU service
+                isNrf52 = gatt.getService(SECURE_DFU_SERVICE) != null
+                Log.d(TAG, "Hardware: ${if (isNrf52) "nRF52 (V3)" else "nRF51 (V1/V2)"}, page size: ${if (isNrf52) "4KB" else "1KB"}")
 
                 // Check for Partial Flashing service
                 val pfService = gatt.getService(PARTIAL_FLASHING_SERVICE)
@@ -915,6 +1023,26 @@ class PartialFlashingService : Service() {
         override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
             Log.d(TAG, "onDescriptorWrite: status=$status")
             descriptorWritten = status == BluetoothGatt.GATT_SUCCESS
+
+            synchronized(operationLock) {
+                operationLock.notifyAll()
+            }
+        }
+
+        @Deprecated("Deprecated in API 33")
+        override fun onDescriptorRead(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
+            Log.d(TAG, "onDescriptorRead: status=$status")
+            @Suppress("DEPRECATION")
+            descriptorReadValue = if (status == BluetoothGatt.GATT_SUCCESS) descriptor.value else null
+
+            synchronized(operationLock) {
+                operationLock.notifyAll()
+            }
+        }
+
+        override fun onDescriptorRead(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int, value: ByteArray) {
+            Log.d(TAG, "onDescriptorRead: status=$status, value=${bytesToHex(value)}")
+            descriptorReadValue = if (status == BluetoothGatt.GATT_SUCCESS) value else null
 
             synchronized(operationLock) {
                 operationLock.notifyAll()
@@ -1089,8 +1217,9 @@ class PartialFlashingService : Service() {
         if (version != 1) return null
         if (tableLen != numReg * 16) return null
 
-        val page = if (hardwareType == HARDWARE_V1) 0x400 else 0x1000
-        if (1 shl pageLog2 != page) return null
+        // Page size depends on hardware: nRF52 (V3) = 4KB, nRF51 (V1/V2) = 1KB
+        val pageSize = if (isNrf52) PAGE_SIZE_NRF52 else PAGE_SIZE_NRF51
+        if (1 shl pageLog2 != pageSize) return null
 
         var codeStart = -1L
         var codeLength = -1L
@@ -1145,7 +1274,7 @@ class PartialFlashingService : Service() {
             when (regionID) {
                 2 -> fileHash = regionHash
                 3 -> {
-                    codeStart = startPage.toLong() * page
+                    codeStart = startPage.toLong() * pageSize
                     codeLength = length
                 }
             }
