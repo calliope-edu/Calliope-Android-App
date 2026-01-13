@@ -107,6 +107,7 @@ class PartialFlashingService : Service() {
         private const val GATT_ERROR = 133  // Generic timeout/disconnect
         private const val GATT_BUSY = 22    // Device busy
         private const val GATT_AUTH_FAIL = 5  // Authentication failure
+        private const val GATT_DISCONNECTED_BY_DEVICE = 19  // Device initiated disconnect (reboot)
     }
 
     // Service state
@@ -135,6 +136,7 @@ class PartialFlashingService : Service() {
     private val operationLock = Object()
     private val regionLock = Object()
     private val packetLock = Object()  // Separate lock for packet acknowledgments
+    private val disconnectLock = Object()  // For waiting device-initiated disconnect
 
     // Callbacks tracking
     @Volatile private var isConnected = false
@@ -146,6 +148,7 @@ class PartialFlashingService : Service() {
     @Volatile private var currentMode: Byte = MODE_APPLICATION
     @Volatile private var statusResponseReceived = false  // Track if status response notification arrived
     @Volatile private var waitingForReboot = false
+    @Volatile private var disconnectedByDevice = false  // Track if device initiated disconnect (reboot)
     @Volatile private var negotiatedMtu = 23  // Default BLE MTU
 
     // Handler for delayed operations (avoid blocking Bluetooth thread)
@@ -538,7 +541,7 @@ class PartialFlashingService : Service() {
     }
 
     private fun prepareDeviceForFlashing(): Boolean {
-        Log.d(TAG, "Preparing device for flashing")
+        Log.d(TAG, "Preparing device for flashing (hardware: ${if (isNrf52) "nRF52/V3" else "nRF51/V2"})")
 
         // Reset status tracking
         statusResponseReceived = false
@@ -569,16 +572,40 @@ class PartialFlashingService : Service() {
             // Need to reboot device into pairing mode
             Log.d(TAG, "Sending reset command to enter pairing mode")
 
+            // Reset disconnect tracking
+            disconnectedByDevice = false
+            waitingForReboot = true
+
             if (!sendResetCommand()) {
                 Log.e(TAG, "Failed to send reset command")
+                waitingForReboot = false
                 return false
             }
 
-            // Wait for device to reboot and reconnect
-            waitingForReboot = true
-            disconnectAndClose()
+            // Wait for the device to disconnect itself (it will reboot after receiving reset command)
+            // Don't actively disconnect - the device needs time to process the command
+            Log.d(TAG, "Waiting for device to reboot and disconnect...")
 
-            Log.d(TAG, "Waiting ${REBOOT_WAIT_MS}ms for device to reboot...")
+            synchronized(disconnectLock) {
+                val startTime = SystemClock.elapsedRealtime()
+                while (!disconnectedByDevice && SystemClock.elapsedRealtime() - startTime < OPERATION_TIMEOUT_MS) {
+                    try {
+                        disconnectLock.wait(500)
+                    } catch (e: InterruptedException) {
+                        waitingForReboot = false
+                        return false
+                    }
+                }
+            }
+
+            if (!disconnectedByDevice) {
+                Log.w(TAG, "Device did not disconnect after reset command, forcing disconnect")
+            }
+
+            // Clean up GATT connection (device may have already disconnected)
+            closeGatt()
+
+            Log.d(TAG, "Waiting ${REBOOT_WAIT_MS}ms for device to complete reboot...")
             Thread.sleep(REBOOT_WAIT_MS)
 
             // Try to reconnect with multiple attempts
@@ -596,6 +623,8 @@ class PartialFlashingService : Service() {
                     Thread.sleep(1000)
                 }
             }
+
+            waitingForReboot = false
 
             if (!reconnected) {
                 Log.e(TAG, "Failed to reconnect after reboot")
@@ -723,6 +752,8 @@ class PartialFlashingService : Service() {
         var part = dataPos.part
         var line0 = 0
         var part0 = 0
+        var addr0Lo = 0
+        var addr0Hi = 0
         var count = 0
         var endOfFile = false
 
@@ -741,11 +772,20 @@ class PartialFlashingService : Service() {
 
             val hexData: String
             val partData: String
+            val addr: Long
 
             if (endOfFile) {
+                // Padding mode - complete the batch with FF bytes
+                // Don't read address from hex file - use previous value
                 hexData = "F".repeat(32)
                 partData = hexData
+                addr = 0 // Address not used for padding (offset is 0 for count >= 2)
             } else {
+                // Read data and address from hex file
+                val addrLo = hex.getRecordAddressFromIndex(dataPos.line + lineCount)
+                val addrHi = hex.getSegmentAddress(dataPos.line + lineCount)
+                addr = addrLo.toLong() + addrHi.toLong() * 256 * 256
+
                 hexData = hex.getDataFromIndex(dataPos.line + lineCount)
                 partData = if (part + 32 > hexData.length) {
                     hexData.substring(part)
@@ -754,22 +794,18 @@ class PartialFlashingService : Service() {
                 }
             }
 
-            val addrLo = hex.getRecordAddressFromIndex(dataPos.line + lineCount)
-            val addrHi = hex.getSegmentAddress(dataPos.line + lineCount)
-            val addr = addrLo.toLong() + addrHi.toLong() * 256 * 256
-
             val offsetToSend = when (count) {
                 0 -> {
+                    // Save start position of this batch
                     line0 = lineCount
                     part0 = part
                     val addr0 = addr + part / 2
-                    (addr0 % (256 * 256)).toInt()
+                    addr0Lo = (addr0 % (256 * 256)).toInt()
+                    addr0Hi = (addr0 / (256 * 256)).toInt()
+                    addr0Lo
                 }
-                1 -> {
-                    val addr0 = addr + part0 / 2
-                    (addr0 / (256 * 256)).toInt()
-                }
-                else -> 0
+                1 -> addr0Hi  // Use saved high address from count 0
+                else -> 0     // Padding packets use offset 0
             }
 
             // Build and send packet
@@ -829,7 +865,11 @@ class PartialFlashingService : Service() {
         // Send end of flash
         Thread.sleep(100)
         writeCharacteristicNoResponse(byteArrayOf(END_OF_FLASH_COMMAND))
-        Thread.sleep(100)
+        Log.d(TAG, "End of flash command sent, waiting for device to process...")
+
+        // Wait longer for V2 (nRF51) to process the end of flash command and start rebooting
+        // V2 is slower and needs more time before we disconnect
+        Thread.sleep(if (isNrf52) 100 else 500)
 
         ApplicationStateHandler.updateProgress(100)
         return RESULT_SUCCESS
@@ -930,6 +970,22 @@ class PartialFlashingService : Service() {
             val statusDesc = GattStatus.fromCode(status)?.description ?: "Unknown ($status)"
             Log.d(TAG, "onConnectionStateChange: status=$statusDesc, newState=$newState")
 
+            // Handle device-initiated disconnect (reboot)
+            if (status == GATT_DISCONNECTED_BY_DEVICE) {
+                Log.d(TAG, "Device initiated disconnect (reboot)")
+                isConnected = false
+                if (waitingForReboot) {
+                    disconnectedByDevice = true
+                    synchronized(disconnectLock) {
+                        disconnectLock.notifyAll()
+                    }
+                }
+                synchronized(connectionLock) {
+                    connectionLock.notifyAll()
+                }
+                return
+            }
+
             // Handle GATT errors
             if (status != BluetoothGatt.GATT_SUCCESS) {
                 handleGattError(status)
@@ -960,6 +1016,16 @@ class PartialFlashingService : Service() {
                     isConnected = false
                     // Remove any pending callbacks
                     bleHandler.removeCallbacksAndMessages(null)
+
+                    // Signal if we were waiting for device to reboot
+                    if (waitingForReboot) {
+                        Log.d(TAG, "Device disconnected during reboot wait")
+                        disconnectedByDevice = true
+                        synchronized(disconnectLock) {
+                            disconnectLock.notifyAll()
+                        }
+                    }
+
                     synchronized(connectionLock) {
                         connectionLock.notifyAll()
                     }
@@ -1132,7 +1198,22 @@ class PartialFlashingService : Service() {
             // Clear GATT cache before closing - important after device reboot
             refreshDeviceCache(gatt)
             gatt.disconnect()
-            Thread.sleep(200)
+            // Wait for disconnect to complete - V2 (nRF51) needs more time
+            Thread.sleep(2000)
+            gatt.close()
+        }
+        bluetoothGatt = null
+        partialFlashCharacteristic = null
+    }
+
+    /**
+     * Close GATT without actively disconnecting.
+     * Used when device has already disconnected itself (e.g., after reboot command).
+     */
+    private fun closeGatt() {
+        bluetoothGatt?.let { gatt ->
+            refreshDeviceCache(gatt)
+            // Don't call disconnect() - device already disconnected or will disconnect
             gatt.close()
         }
         bluetoothGatt = null
