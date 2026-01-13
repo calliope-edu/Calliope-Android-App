@@ -224,7 +224,8 @@ public class FlashingService extends LifecycleService {
             if (resultCode == RESULT_OK) {
                 boolean isSuccess = resultData.getBoolean("result");
                 if (isSuccess) {
-                    startDfu();
+                    // Wait for device to reboot into DFU mode before starting Nordic DFU
+                    new Handler().postDelayed(() -> startDfuLegacy(), 3000);
                 } else {
                     Log.e(TAG, "DFU failed");
                     handleError(getString(R.string.error_dfu_failed));
@@ -340,6 +341,35 @@ public class FlashingService extends LifecycleService {
                 .setNumberOfRetries(NUMBER_OF_RETRIES)
                 .setRebootTime(REBOOT_TIME)
                 .setKeepBond(true)
+                .setZip(zipPath)
+                .start(this, DfuService.class);
+    }
+
+    /**
+     * Start DFU for V2 (Legacy) devices that are already in DFU bootloader mode
+     * after being triggered by LegacyDfuService.
+     * Note: Bond is removed in LegacyDfuService to prevent Nordic DFU 2.7.0+
+     * from waiting for Service Changed indication (which V2 bootloader doesn't send).
+     */
+    private void startDfuLegacy() {
+        String zipPath = prepareFirmwareZip();
+        if (zipPath == null) {
+            Log.e(TAG, "Failed to prepare firmware ZIP");
+            handleError(getString(R.string.error_failed_prepare_firmware_zip));
+            return;
+        }
+
+        new DfuServiceInitiator(currentAddress)
+                .setDeviceName(currentPattern)
+                .setPrepareDataObjectDelay(300L)
+                .setNumberOfRetries(NUMBER_OF_RETRIES)
+                .setRebootTime(REBOOT_TIME)
+                .setKeepBond(false)
+                .setForceDfu(true)
+                .setForceScanningForNewAddressInLegacyDfu(true)
+                // V2 (nRF51) needs PRN enabled - it can't handle data sent too fast
+                .setPacketsReceiptNotificationsEnabled(true)
+                .setPacketsReceiptNotificationsValue(10)
                 .setZip(zipPath)
                 .start(this, DfuService.class);
     }

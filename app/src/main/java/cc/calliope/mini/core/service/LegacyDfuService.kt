@@ -116,6 +116,12 @@ open class LegacyDfuService : Service() {
             if (status == GATT_SUCCESS) {
                 Log.d(TAG, "Flash command written successfully")
                 isComplete = true
+                // Remove bond so Nordic DFU library won't wait for Service Changed indication
+                // V2 DFU bootloader doesn't send Service Changed, causing timeout on DFU 2.7.0+
+                if (gatt.device.bondState == BluetoothDevice.BOND_BONDED) {
+                    Log.d(TAG, "Removing bond before DFU...")
+                    BluetoothUtils.removeBond(gatt.device)
+                }
             } else {
                 Log.e(TAG, "Error writing characteristic: $status")
             }
