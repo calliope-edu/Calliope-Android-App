@@ -94,6 +94,15 @@ class PartialFlashingService : Service() {
         private const val OPERATION_TIMEOUT_MS = 5_000L
         private const val FLASH_TIMEOUT_MS = 60_000L
         private const val MAX_RECONNECT_ATTEMPTS = 3
+
+        // BLE optimization
+        private const val PREFERRED_MTU = 247  // Maximum for BLE 4.2+
+        private const val MTU_TIMEOUT_MS = 5_000L
+
+        // GATT error codes that warrant retry
+        private const val GATT_ERROR = 133  // Generic timeout/disconnect
+        private const val GATT_BUSY = 22    // Device busy
+        private const val GATT_AUTH_FAIL = 5  // Authentication failure
     }
 
     // Service state
@@ -126,10 +135,16 @@ class PartialFlashingService : Service() {
     // Callbacks tracking
     @Volatile private var isConnected = false
     @Volatile private var servicesDiscovered = false
+    @Volatile private var mtuNegotiated = false
     @Volatile private var descriptorWritten = false
     @Volatile private var characteristicWritten = false
     @Volatile private var currentMode: Byte = MODE_APPLICATION
+    @Volatile private var statusResponseReceived = false  // Track if status response notification arrived
     @Volatile private var waitingForReboot = false
+    @Volatile private var negotiatedMtu = 23  // Default BLE MTU
+
+    // Handler for delayed operations (avoid blocking Bluetooth thread)
+    private val bleHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -174,6 +189,7 @@ class PartialFlashingService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         serviceJob.cancel()
+        bleHandler.removeCallbacksAndMessages(null)  // Clean up pending callbacks
         disconnectAndClose()
         Log.d(TAG, "Service destroyed")
     }
@@ -282,6 +298,20 @@ class PartialFlashingService : Service() {
             return false
         }
 
+        // Request high connection priority for faster transfers
+        bluetoothGatt?.let { gatt ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                gatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH)
+                Log.d(TAG, "Requested high connection priority")
+            }
+        }
+
+        // Request larger MTU for faster data transfer
+        if (!requestMtuNegotiation()) {
+            Log.w(TAG, "MTU negotiation failed, using default MTU")
+            // Continue anyway with default MTU
+        }
+
         // Wait for service discovery
         synchronized(connectionLock) {
             val startTime = SystemClock.elapsedRealtime()
@@ -300,6 +330,37 @@ class PartialFlashingService : Service() {
         }
 
         return setupPartialFlashingCharacteristic()
+    }
+
+    private fun requestMtuNegotiation(): Boolean {
+        val gatt = bluetoothGatt ?: return false
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            Log.d(TAG, "MTU negotiation not supported on this API level")
+            return true  // Not an error, just not supported
+        }
+
+        mtuNegotiated = false
+
+        if (!gatt.requestMtu(PREFERRED_MTU)) {
+            Log.e(TAG, "Failed to request MTU")
+            return false
+        }
+
+        // Wait for MTU callback
+        synchronized(connectionLock) {
+            val startTime = SystemClock.elapsedRealtime()
+            while (!mtuNegotiated && SystemClock.elapsedRealtime() - startTime < MTU_TIMEOUT_MS) {
+                try {
+                    connectionLock.wait(500)
+                } catch (e: InterruptedException) {
+                    return false
+                }
+            }
+        }
+
+        Log.d(TAG, "MTU negotiation completed: $negotiatedMtu bytes")
+        return mtuNegotiated
     }
 
     private fun setupPartialFlashingCharacteristic(): Boolean {
@@ -363,19 +424,27 @@ class PartialFlashingService : Service() {
     private fun prepareDeviceForFlashing(): Boolean {
         Log.d(TAG, "Preparing device for flashing")
 
-        // Send status request
-        if (!sendStatusRequest()) {
-            Log.e(TAG, "Failed to send status request")
-            return false
+        // Reset status tracking
+        statusResponseReceived = false
+
+        // Send status request (don't fail if write callback is slow - we'll check notification)
+        sendStatusRequest()
+
+        // Wait for status response notification
+        synchronized(operationLock) {
+            val startTime = SystemClock.elapsedRealtime()
+            while (!statusResponseReceived && SystemClock.elapsedRealtime() - startTime < OPERATION_TIMEOUT_MS) {
+                try {
+                    operationLock.wait(500)
+                } catch (e: InterruptedException) {
+                    return false
+                }
+            }
         }
 
-        // Wait for response and check mode
-        synchronized(operationLock) {
-            try {
-                operationLock.wait(OPERATION_TIMEOUT_MS)
-            } catch (e: InterruptedException) {
-                return false
-            }
+        if (!statusResponseReceived) {
+            Log.e(TAG, "No status response received from device")
+            return false
         }
 
         Log.d(TAG, "Device mode: ${if (currentMode == MODE_APPLICATION) "Application" else "Pairing"}")
@@ -713,11 +782,42 @@ class PartialFlashingService : Service() {
         }
     }
 
+    /**
+     * Handle specific GATT errors with appropriate logging and potential recovery hints
+     */
+    private fun handleGattError(status: Int) {
+        when (status) {
+            GATT_ERROR -> {
+                // Error 133 - most common, usually timeout or device went out of range
+                Log.e(TAG, "GATT Error 133: Connection timeout or device disconnected unexpectedly. " +
+                        "This often occurs when device is out of range or busy.")
+            }
+            GATT_BUSY -> {
+                // Error 22 - device is busy with another operation
+                Log.e(TAG, "GATT Error 22: Device is busy. " +
+                        "Another BLE operation may be in progress.")
+            }
+            GATT_AUTH_FAIL -> {
+                // Error 5 - authentication/pairing failed
+                Log.e(TAG, "GATT Error 5: Authentication failed. " +
+                        "Device may need to be re-paired.")
+            }
+            else -> {
+                Log.e(TAG, "GATT Error $status: ${GattStatus.fromCode(status)?.description ?: "Unknown error"}")
+            }
+        }
+    }
+
     // GATT Callback
     private val gattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             val statusDesc = GattStatus.fromCode(status)?.description ?: "Unknown ($status)"
             Log.d(TAG, "onConnectionStateChange: status=$statusDesc, newState=$newState")
+
+            // Handle GATT errors
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                handleGattError(status)
+            }
 
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
@@ -726,15 +826,18 @@ class PartialFlashingService : Service() {
                     // Detect hardware type
                     hardwareType = HARDWARE_V1
 
-                    // Delay before service discovery
+                    // Use Handler for delayed service discovery (don't block Bluetooth thread)
                     // After reboot we need more time for device to stabilize
                     val delay = if (waitingForReboot) 1600L else SERVICE_DISCOVERY_DELAY_MS
-                    Log.d(TAG, "Waiting ${delay}ms before service discovery")
-                    Thread.sleep(delay)
+                    Log.d(TAG, "Scheduling service discovery after ${delay}ms")
 
-                    if (!gatt.discoverServices()) {
-                        Log.e(TAG, "Failed to start service discovery")
-                    }
+                    bleHandler.postDelayed({
+                        if (isConnected && bluetoothGatt != null) {
+                            if (!gatt.discoverServices()) {
+                                Log.e(TAG, "Failed to start service discovery")
+                            }
+                        }
+                    }, delay)
 
                     synchronized(connectionLock) {
                         connectionLock.notifyAll()
@@ -742,6 +845,8 @@ class PartialFlashingService : Service() {
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     isConnected = false
+                    // Remove any pending callbacks
+                    bleHandler.removeCallbacksAndMessages(null)
                     synchronized(connectionLock) {
                         connectionLock.notifyAll()
                     }
@@ -753,15 +858,55 @@ class PartialFlashingService : Service() {
             Log.d(TAG, "onServicesDiscovered: status=$status")
 
             if (status == BluetoothGatt.GATT_SUCCESS) {
+                // Log all discovered services for debugging
+                Log.d(TAG, "=== Discovered ${gatt.services.size} services ===")
+                gatt.services.forEach { service ->
+                    Log.d(TAG, "Service: ${service.uuid}")
+                    service.characteristics.forEach { char ->
+                        Log.d(TAG, "  - Characteristic: ${char.uuid}")
+                    }
+                }
+                Log.d(TAG, "=== End of services ===")
+
                 // Detect V2 hardware
                 if (gatt.getService(MICROBIT_SECURE_DFU_SERVICE) != null) {
                     hardwareType = HARDWARE_V2
-                    Log.d(TAG, "Detected V2 hardware")
+                    Log.d(TAG, "Detected V2 hardware (has Secure DFU service)")
+                } else {
+                    hardwareType = HARDWARE_V1
+                    Log.d(TAG, "Detected V1 hardware (no Secure DFU service)")
+                }
+
+                // Check for Partial Flashing service
+                val pfService = gatt.getService(PARTIAL_FLASHING_SERVICE)
+                if (pfService != null) {
+                    Log.d(TAG, "Partial Flashing service found!")
+                } else {
+                    Log.w(TAG, "Partial Flashing service NOT found. Expected UUID: $PARTIAL_FLASHING_SERVICE")
                 }
 
                 servicesDiscovered = true
+            } else {
+                Log.e(TAG, "Service discovery failed with status: $status")
             }
 
+            synchronized(connectionLock) {
+                connectionLock.notifyAll()
+            }
+        }
+
+        override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+            Log.d(TAG, "onMtuChanged: mtu=$mtu, status=$status")
+
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                negotiatedMtu = mtu
+                Log.i(TAG, "MTU successfully changed to $mtu bytes (payload: ${mtu - 3} bytes)")
+            } else {
+                Log.w(TAG, "MTU change failed, using default MTU")
+                negotiatedMtu = 23  // Default
+            }
+
+            mtuNegotiated = true
             synchronized(connectionLock) {
                 connectionLock.notifyAll()
             }
@@ -805,6 +950,8 @@ class PartialFlashingService : Service() {
                     // Status response
                     if (value.size >= 3) {
                         currentMode = value[2]
+                        statusResponseReceived = true
+                        Log.d(TAG, "Status response: mode=${if (currentMode == MODE_APPLICATION) "Application" else "Pairing"}")
                     }
                     synchronized(operationLock) {
                         operationLock.notifyAll()
@@ -845,6 +992,15 @@ class PartialFlashingService : Service() {
 
     private fun disconnectAndClose() {
         bluetoothGatt?.let { gatt ->
+            // Reset connection priority to balanced before disconnecting (saves battery)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                try {
+                    gatt.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_BALANCED)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to reset connection priority: ${e.message}")
+                }
+            }
+
             // Clear GATT cache before closing - important after device reboot
             refreshDeviceCache(gatt)
             gatt.disconnect()
