@@ -168,19 +168,14 @@
     <string name="title_editor_visibility">Editor visibility</string>
     <string name="summary_editor_visibility">Show or hide specific editors</string>
     <string name="title_show_makecode" translatable="false">MakeCode</string>
-    <string name="summary_show_makecode">Show or hide MakeCode editor</string>
     <string name="title_show_roberta" translatable="false">Open Roberta Lab</string>
-    <string name="summary_show_roberta">Show or hide Open Roberta Lab editor</string>
     <string name="title_show_blocks" translatable="false">Calliope mini Blocks</string>
-    <string name="summary_show_blocks">Show or hide Calliope mini Blocks editor</string>
     <string name="title_show_python" translatable="false">MicroPython</string>
-    <string name="summary_show_python">Show or hide MicroPython editor</string>
     <string name="title_show_custom">Custom editor</string>
-    <string name="summary_show_custom">Show or hide Custom editor</string>
     <string name="title_show_cardboard_control" translatable="false">Cardboard Control</string>
-    <string name="summary_show_cardboard_control">Show or hide Cardboard Control editor</string>
     <string name="title_show_cardboard_face" translatable="false">Cardboard Face</string>
-    <string name="summary_show_cardboard_face">Show or hide Cardboard Face editor</string>
+    <string name="summary_editor_visible">Editor is visible</string>
+    <string name="summary_editor_hidden">Editor is hidden</string>
     <string name="editor_hidden">hidden</string>
     <string name="undo">Undo</string>
     <string name="swipe_to_hide_hint">Swipe left to hide editors</string>

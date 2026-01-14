@@ -145,12 +145,9 @@
     <string name="summary_editors_menu">Einstellungen für sichtbare Editoren</string>
     <string name="title_editor_visibility">Editor-Sichtbarkeit</string>
     <string name="summary_editor_visibility">Bestimmte Editoren anzeigen oder ausblenden</string>
-    <string name="summary_show_makecode">MakeCode-Editor anzeigen oder ausblenden</string>
-    <string name="summary_show_roberta">Open Roberta Lab-Editor anzeigen oder ausblenden</string>
-    <string name="summary_show_blocks">Calliope mini Blocks-Editor anzeigen oder ausblenden</string>
-    <string name="summary_show_python">MicroPython-Editor anzeigen oder ausblenden</string>
     <string name="title_show_custom">Benutzerdefinierter Editor</string>
-    <string name="summary_show_custom">Benutzerdefinierten Editor anzeigen oder ausblenden</string>
+    <string name="summary_editor_visible">Editor ist sichtbar</string>
+    <string name="summary_editor_hidden">Editor ist ausgeblendet</string>
     <string name="title_custom_editor">Benutzerdefinierter Editor</string>
     <string name="title_editor_settings">Editor-Einstellungen</string>
     <string name="summary_editor_settings">Editor-Sichtbarkeit und benutzerdefinierte Links konfigurieren</string>
@@ -238,8 +235,6 @@
     <string name="gatt_write_not_permitted">Schreiben nicht erlaubt</string>
     <string name="info_cardboard_control">Steuern Sie Ihr Calliope mini mit der Cardboard Control-Oberfläche.</string>
     <string name="info_cardboard_face">Erstellen und animieren Sie Gesichter mit dem Cardboard Face Editor.</string>
-    <string name="summary_show_cardboard_control">Cardboard Control Editor ein- oder ausblenden</string>
-    <string name="summary_show_cardboard_face">Cardboard Face Editor ein- oder ausblenden</string>
     <string name="editor_hidden">ausgeblendet</string>
     <string name="undo">Rückgängig</string>
     <string name="swipe_to_hide_hint">Nach links wischen, um Editoren auszublenden</string>
