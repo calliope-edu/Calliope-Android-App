@@ -130,10 +130,14 @@
     <string name="partial_flashing_failed">Partielles Flashen fehlgeschlagen, versuche vollständiges Flashen</string>
 
     <!-- Settings -->
-    <string name="summary_auto_flashing">nach dem Herunterladen der .hex-Datei</string>
-    <string name="summary_rename_files">(n) angehängt, wenn Datei existiert</string>
-    <string name="summary_partial_flashing">aktivieren oder deaktivieren</string>
-    <string name="summary_background_flashing">aktivieren oder deaktivieren</string>
+    <string name="summary_auto_flashing_on">Flasht automatisch nach dem Download</string>
+    <string name="summary_auto_flashing_off">Speichert nur die Datei</string>
+    <string name="summary_rename_files_on">Hängt (n) an, wenn Datei existiert</string>
+    <string name="summary_rename_files_off">Überschreibt bestehende Dateien</string>
+    <string name="summary_partial_flashing_on">Aktiviert</string>
+    <string name="summary_partial_flashing_off">Deaktiviert</string>
+    <string name="summary_background_flashing_on">Aktiviert</string>
+    <string name="summary_background_flashing_off">Deaktiviert</string>
     <string name="title_partial_flashing">Partielles Flashen</string>
     <string name="title_background_flashing">Hintergrund-Flashen</string>
     <string name="title_auto_flashing">Automatisches Flashen</string>

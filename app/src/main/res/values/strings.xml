@@ -152,10 +152,14 @@
     <string name="summary_custom">Link to the custom editor</string>
 
     <!-- Settings -->
-    <string name="summary_auto_flashing">after downloading the .hex file</string>
-    <string name="summary_rename_files">appended (n) if file exists</string>
-    <string name="summary_partial_flashing">enable or disable</string>
-    <string name="summary_background_flashing">enable or disable</string>
+    <string name="summary_auto_flashing_on">Flashes automatically after download</string>
+    <string name="summary_auto_flashing_off">Only saves the file</string>
+    <string name="summary_rename_files_on">Appends (n) if file exists</string>
+    <string name="summary_rename_files_off">Overwrites existing files</string>
+    <string name="summary_partial_flashing_on">Enabled</string>
+    <string name="summary_partial_flashing_off">Disabled</string>
+    <string name="summary_background_flashing_on">Enabled</string>
+    <string name="summary_background_flashing_off">Disabled</string>
     <string name="title_partial_flashing">Partial flashing</string>
     <string name="title_auto_flashing">Automatic flashing</string>
     <string name="title_background_flashing">Background flashing</string>
