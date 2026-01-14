@@ -143,15 +143,11 @@
     <string name="summary_editors_menu">Налаштування видимих редакторів</string>
     <string name="title_editor_visibility">Видимість редакторів</string>
     <string name="summary_editor_visibility">Показати або приховати конкретні редактори</string>
-    <string name="title_show_makecode">Показати MakeCode</string>
     <string name="summary_show_makecode">Показати або приховати редактор MakeCode</string>
-    <string name="title_show_roberta">Показати Open Roberta Lab</string>
     <string name="summary_show_roberta">Показати або приховати редактор Open Roberta Lab</string>
-    <string name="title_show_blocks">Показати Calliope mini Blocks</string>
     <string name="summary_show_blocks">Показати або приховати редактор Calliope mini Blocks</string>
-    <string name="title_show_python">Показати MicroPython</string>
     <string name="summary_show_python">Показати або приховати редактор MicroPython</string>
-    <string name="title_show_custom">Показати Кастомний редактор</string>
+    <string name="title_show_custom">Кастомний редактор</string>
     <string name="summary_show_custom">Показати або приховати кастомний редактор</string>
     <string name="title_custom_editor">Кастомний редактор</string>
     <string name="title_editor_settings">Налаштування редакторів</string>
@@ -240,9 +236,7 @@
     <string name="gatt_write_not_permitted">Запис не дозволено</string>
     <string name="info_cardboard_control">Керуйте вашим Calliope mini через інтерфейс Cardboard Control.</string>
     <string name="info_cardboard_face">Створюйте та анімуйте обличчя за допомогою редактора Cardboard Face.</string>
-    <string name="title_show_cardboard_control">Показати Cardboard Control</string>
     <string name="summary_show_cardboard_control">Показати або приховати редактор Cardboard Control</string>
-    <string name="title_show_cardboard_face">Показати Cardboard Face</string>
     <string name="summary_show_cardboard_face">Показати або приховати редактор Cardboard Face</string>
     <string name="editor_hidden">приховано</string>
     <string name="undo">Скасувати</string>
