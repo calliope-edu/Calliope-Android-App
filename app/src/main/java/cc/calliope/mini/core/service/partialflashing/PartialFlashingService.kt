@@ -1002,6 +1002,7 @@ class PartialFlashingService : Service() {
 
                     bleHandler.postDelayed({
                         if (isConnected && bluetoothGatt != null) {
+                            BluetoothUtils.clearServicesCache(gatt)
                             if (!gatt.discoverServices()) {
                                 Log.e(TAG, "Failed to start service discovery")
                             }
@@ -1196,7 +1197,7 @@ class PartialFlashingService : Service() {
             }
 
             // Clear GATT cache before closing - important after device reboot
-            refreshDeviceCache(gatt)
+            BluetoothUtils.clearServicesCache(gatt)
             gatt.disconnect()
             // Wait for disconnect to complete - V2 (nRF51) needs more time
             Thread.sleep(2000)
@@ -1212,24 +1213,12 @@ class PartialFlashingService : Service() {
      */
     private fun closeGatt() {
         bluetoothGatt?.let { gatt ->
-            refreshDeviceCache(gatt)
+            BluetoothUtils.clearServicesCache(gatt)
             // Don't call disconnect() - device already disconnected or will disconnect
             gatt.close()
         }
         bluetoothGatt = null
         partialFlashCharacteristic = null
-    }
-
-    private fun refreshDeviceCache(gatt: BluetoothGatt): Boolean {
-        return try {
-            val refreshMethod = gatt.javaClass.getMethod("refresh")
-            val result = refreshMethod.invoke(gatt) as Boolean
-            Log.d(TAG, "GATT cache refresh: $result")
-            result
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to refresh GATT cache: ${e.message}")
-            false
-        }
     }
 
     private fun finishWithResult(success: Boolean) {

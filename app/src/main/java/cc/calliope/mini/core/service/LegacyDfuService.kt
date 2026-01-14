@@ -238,6 +238,8 @@ open class LegacyDfuService : Service() {
 
     @SuppressWarnings("MissingPermission")
     private fun startServiceDiscovery(gatt: BluetoothGatt) {
+        BluetoothUtils.clearServicesCache(gatt)
+
         var result = false
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
             serviceScope.launch {

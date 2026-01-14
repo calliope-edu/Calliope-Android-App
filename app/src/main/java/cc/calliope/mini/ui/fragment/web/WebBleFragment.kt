@@ -34,6 +34,7 @@ import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.Notification.INFO
 import cc.calliope.mini.core.state.State
 import cc.calliope.mini.ui.activity.CameraPermissionActivity
+import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import cc.calliope.mini.ui.model.EditorType
 import cc.calliope.mini.utils.Constants
 import java.nio.charset.StandardCharsets
@@ -311,6 +312,7 @@ class WebBleFragment : Fragment() {
         }
         override fun onMtuChanged(g: BluetoothGatt, mtu: Int, status: Int) {
             negotiatedMtu = if (status == BluetoothGatt.GATT_SUCCESS) mtu else 23
+            BluetoothUtils.clearServicesCache(g)
             g.discoverServices()
         }
         override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
