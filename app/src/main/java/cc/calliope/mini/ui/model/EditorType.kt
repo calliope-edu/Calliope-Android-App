@@ -51,16 +51,6 @@ enum class EditorType(
         defaultOrder = 3
     ),
 
-    CUSTOM(
-        id = "custom",
-        titleResId = R.string.title_custom,
-        iconResId = R.drawable.ic_custom_inset,
-        infoResId = R.string.info_custom,
-        urlV2 = "https://makecode.calliope.cc/beta",
-        urlV3 = "https://makecode.calliope.cc/beta",
-        defaultOrder = 4
-    ),
-
     CARDBOARD_CONTROL(
         id = "cardboard_control",
         titleResId = R.string.title_cardboard_control,
@@ -79,6 +69,16 @@ enum class EditorType(
         urlV2 = "https://cardboard.lofirobot.com/face-app/",
         urlV3 = "https://cardboard.lofirobot.com/face-app/",
         defaultOrder = 6
+    ),
+
+    CUSTOM(
+        id = "custom",
+        titleResId = R.string.title_custom,
+        iconResId = R.drawable.ic_custom_inset,
+        infoResId = R.string.info_custom,
+        urlV2 = "https://makecode.calliope.cc/beta",
+        urlV3 = "https://makecode.calliope.cc/beta",
+        defaultOrder = 4
     );
 
     /**

@@ -67,4 +67,28 @@ public class Settings extends Preference {
     public static String getEditorVisibilityKey(String editorId) {
         return PREF_KEY_EDITOR_VISIBILITY_PREFIX + editorId;
     }
+
+    // Editor order preferences
+    private static final String PREF_KEY_EDITOR_ORDER_PREFIX = "pref_key_editor_order_";
+
+    /**
+     * Get saved order for a specific editor
+     * @param context Application context
+     * @param editorId Editor ID
+     * @param defaultOrder Default order if not saved
+     * @return Saved order position
+     */
+    public static int getEditorOrder(Context context, String editorId, int defaultOrder) {
+        return getInt(context, PREF_KEY_EDITOR_ORDER_PREFIX + editorId, defaultOrder);
+    }
+
+    /**
+     * Save editor order
+     * @param context Application context
+     * @param editorId Editor ID
+     * @param order Order position
+     */
+    public static void setEditorOrder(Context context, String editorId, int order) {
+        putInt(context, PREF_KEY_EDITOR_ORDER_PREFIX + editorId, order);
+    }
 }
