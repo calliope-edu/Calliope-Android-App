@@ -107,8 +107,8 @@ class WebBleFragment : Fragment() {
         
         // Логуємо тип редактора
         when (editorName) {
-            EditorType.CARDBOARD_CONTROL.id -> Log.d("WebBleFragment", "Editor type: CARDBOARD_CONTROL (BLE + basic features)")
-            EditorType.CARDBOARD_FACE.id -> Log.d("WebBleFragment", "Editor type: CARDBOARD_FACE (BLE + camera support)")
+            EditorType.CARDBOARD_CONTROL.directoryName -> Log.d("WebBleFragment", "Editor type: CARDBOARD_CONTROL (BLE + basic features)")
+            EditorType.CARDBOARD_FACE.directoryName -> Log.d("WebBleFragment", "Editor type: CARDBOARD_FACE (BLE + camera support)")
             else -> Log.d("WebBleFragment", "Editor type: $editorName (BLE + basic features)")
         }
 
@@ -149,7 +149,7 @@ class WebBleFragment : Fragment() {
                 Log.d("WebBleFragment", "onPermissionRequest: ${request.resources.joinToString()}")
                 if (request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
                     // Only allow camera access for CARDBOARD_FACE editor
-                    if (editorName != EditorType.CARDBOARD_FACE.id) {
+                    if (editorName != EditorType.CARDBOARD_FACE.directoryName) {
                         Log.d("WebBleFragment", "Camera access denied - not CARDBOARD_FACE editor")
                         request.deny()
                         return
@@ -280,13 +280,13 @@ class WebBleFragment : Fragment() {
         fun requestCameraPermission(): Boolean {
             Log.d("WebBleFragment", "JavaScript requested camera permission")
             // Only allow camera for CARDBOARD_FACE editor
-            return editorName == EditorType.CARDBOARD_FACE.id && has(Manifest.permission.CAMERA)
+            return editorName == EditorType.CARDBOARD_FACE.directoryName && has(Manifest.permission.CAMERA)
         }
 
         @JavascriptInterface
         fun isCameraAvailable(): Boolean {
             // Only allow camera for CARDBOARD_FACE editor
-            val available = editorName == EditorType.CARDBOARD_FACE.id && has(Manifest.permission.CAMERA)
+            val available = editorName == EditorType.CARDBOARD_FACE.directoryName && has(Manifest.permission.CAMERA)
             Log.d("WebBleFragment", "Camera availability check: $available (editor: $editorName)")
             return available
         }

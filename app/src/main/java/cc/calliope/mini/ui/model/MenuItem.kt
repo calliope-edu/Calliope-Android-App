@@ -3,7 +3,8 @@ package cc.calliope.mini.ui.model
 import androidx.annotation.StringRes
 
 data class MenuItem(
-    val id: String,               // Unique ID for identification
+    val id: String,               // Unique ID for identification (lowercase for preferences)
+    val directoryName: String,    // Directory name for file storage (UPPERCASE for compatibility)
     @StringRes val titleResId: Int,     // String resource ID for title
     val iconRes: Int,             // Drawable resource ID for icon
     @StringRes val infoResId: Int,      // String resource ID for description/info

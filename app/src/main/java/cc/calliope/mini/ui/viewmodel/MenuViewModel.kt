@@ -22,6 +22,7 @@ class MenuViewModel(private val context: Context) : ViewModel() {
         _menuItems.value = EditorType.entries.map { editor ->
             MenuItem(
                 id = editor.id,
+                directoryName = editor.directoryName,
                 titleResId = editor.titleResId,
                 iconRes = editor.iconResId,
                 infoResId = editor.infoResId,

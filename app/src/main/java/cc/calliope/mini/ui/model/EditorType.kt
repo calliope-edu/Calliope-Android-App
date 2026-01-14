@@ -3,7 +3,7 @@ package cc.calliope.mini.ui.model
 import cc.calliope.mini.R
 
 enum class EditorType(
-    val id: String,
+    val id: String,  // lowercase for preferences
     val titleResId: Int,
     val iconResId: Int,
     val infoResId: Int,
@@ -12,7 +12,7 @@ enum class EditorType(
     val defaultOrder: Int
 ) {
     MAKECODE(
-        id = "MAKECODE",
+        id = "makecode",
         titleResId = R.string.title_make_code,
         iconResId = R.drawable.ic_make_code_inset,
         infoResId = R.string.info_make_code,
@@ -22,7 +22,7 @@ enum class EditorType(
     ),
 
     ROBERTA(
-        id = "ROBERTA",
+        id = "roberta",
         titleResId = R.string.title_roberta,
         iconResId = R.drawable.ic_roberta_inset,
         infoResId = R.string.info_roberta,
@@ -32,7 +32,7 @@ enum class EditorType(
     ),
 
     BLOCKS(
-        id = "BLOCKS",
+        id = "blocks",
         titleResId = R.string.title_blocks,
         iconResId = R.drawable.ic_blocks_inset,
         infoResId = R.string.info_blocks,
@@ -42,7 +42,7 @@ enum class EditorType(
     ),
 
     PYTHON(
-        id = "PYTHON",
+        id = "python",
         titleResId = R.string.title_python,
         iconResId = R.drawable.ic_python_inset,
         infoResId = R.string.info_python,
@@ -52,7 +52,7 @@ enum class EditorType(
     ),
 
     CUSTOM(
-        id = "CUSTOM",
+        id = "custom",
         titleResId = R.string.title_custom,
         iconResId = R.drawable.ic_custom_inset,
         infoResId = R.string.info_custom,
@@ -62,7 +62,7 @@ enum class EditorType(
     ),
 
     CARDBOARD_CONTROL(
-        id = "CARDBOARD_CONTROL",
+        id = "cardboard_control",
         titleResId = R.string.title_cardboard_control,
         iconResId = R.drawable.ic_editors_cardboard_control,
         infoResId = R.string.info_cardboard_control,
@@ -72,7 +72,7 @@ enum class EditorType(
     ),
 
     CARDBOARD_FACE(
-        id = "CARDBOARD_FACE",
+        id = "cardboard_face",
         titleResId = R.string.title_cardboard_face,
         iconResId = R.drawable.ic_editors_cardboard_face,
         infoResId = R.string.info_cardboard_face,
@@ -80,4 +80,11 @@ enum class EditorType(
         urlV3 = "https://cardboard.lofirobot.com/face-app/",
         defaultOrder = 6
     );
+
+    /**
+     * Directory name for file storage.
+     * Uses enum name (UPPERCASE) for backwards compatibility with existing files.
+     */
+    val directoryName: String
+        get() = name
 }

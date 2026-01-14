@@ -158,13 +158,14 @@ class EditorsFragment : Fragment() {
             if (boardVersion == 2) item.urlV2 else item.urlV3
         }
 
+        // Use directoryName for file storage (UPPERCASE for backwards compatibility)
         when (item.id) {
             EditorType.CARDBOARD_CONTROL.id, EditorType.CARDBOARD_FACE.id -> {
-                val action = EditorsFragmentDirections.actionEditorsToWebBle(url, item.id)
+                val action = EditorsFragmentDirections.actionEditorsToWebBle(url, item.directoryName)
                 findNavController().navigate(action)
             }
             else -> {
-                val action = EditorsFragmentDirections.actionEditorsToWeb(url, item.id)
+                val action = EditorsFragmentDirections.actionEditorsToWeb(url, item.directoryName)
                 findNavController().navigate(action)
             }
         }
