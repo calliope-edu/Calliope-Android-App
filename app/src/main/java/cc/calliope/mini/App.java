@@ -1,12 +1,15 @@
 package cc.calliope.mini;
 
 import android.app.Application;
+import android.content.Intent;
 import android.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
+import cc.calliope.mini.core.bluetooth.CheckService;
 
 public class App extends Application {
     private static final String CUSTOM_DIR = "CUSTOM";
@@ -27,6 +30,9 @@ public class App extends Application {
         super.onCreate();
         AppContext.initialize(this);
         copyFilesToInternalStorage();
+
+        // Start CheckService for device availability monitoring
+        startService(new Intent(this, CheckService.class));
     }
 
     @Override

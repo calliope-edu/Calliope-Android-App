@@ -2,20 +2,25 @@ package cc.calliope.mini.core.bluetooth
 
 import android.app.Service
 import android.content.Intent
-import android.os.Build
+import android.os.Handler
 import android.os.IBinder
-import android.os.ResultReceiver
+import android.os.Looper
 import android.util.Log
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.preference.PreferenceManager
-import cc.calliope.mini.core.service.LegacyDfuService
+import cc.calliope.mini.core.state.ApplicationStateHandler
+import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Permission
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleNumOfMatches
@@ -24,126 +29,192 @@ import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanMode
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScannerCallbackType
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScannerMatchMode
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleScannerSettings
-
 import no.nordicsemi.android.kotlin.ble.scanner.BleScanner
-import no.nordicsemi.android.kotlin.ble.scanner.aggregator.BleScanResultAggregator
 
 @Suppress("MissingPermission")
 class CheckService : Service() {
     private val job = Job()
     private val serviceScope = CoroutineScope(Dispatchers.Main + job)
+    private val mainHandler = Handler(Looper.getMainLooper())
+
+    private var scanner: BleScanner? = null
+    private var scanJob: Job? = null
+    private var statusCheckJob: Job? = null
+
+    private var lastSeenTime: Long = 0
+    private var isDeviceAvailable: Boolean = false
+    private var macAddress: String = ""
+
+    // Conditions for scanning
+    private var isAppInForeground: Boolean = false
+    private var isStateIdle: Boolean = true
+
+    private val canScan: Boolean
+        get() = isAppInForeground && isStateIdle && macAddress.isNotEmpty()
+
+    private val stateObserver = Observer<State> { state ->
+        val wasIdle = isStateIdle
+        isStateIdle = state.type == State.STATE_IDLE
+
+        if (isStateIdle != wasIdle) {
+            Log.d(TAG, "State changed: ${if (isStateIdle) "IDLE" else "BUSY/FLASHING"}")
+            updateScanningState()
+        }
+    }
+
+    private val lifecycleObserver = object : DefaultLifecycleObserver {
+        override fun onStart(owner: LifecycleOwner) {
+            Log.d(TAG, "App moved to foreground")
+            isAppInForeground = true
+            updateScanningState()
+        }
+
+        override fun onStop(owner: LifecycleOwner) {
+            Log.d(TAG, "App moved to background")
+            isAppInForeground = false
+            updateScanningState()
+        }
+    }
 
     companion object {
         const val TAG = "CheckService"
-        const val RESULT_OK = 1
-        const val RESULT_CANCELED = 0
         private var isRunning = false
-        const val SCAN_DURATION = 8000L
+
+        // Device considered unavailable if not seen for this duration
+        const val DEVICE_TIMEOUT_MS = 10_000L
+        // How often to check device availability status
+        const val STATUS_CHECK_INTERVAL_MS = 3_000L
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (isRunning) {
-            Log.w(TAG, "Service is already running. Ignoring new start request.")
-            return START_NOT_STICKY
+            return START_STICKY
         }
 
         isRunning = true
+        Log.d(TAG, "Service started")
 
-        val scanDuration = intent?.getLongExtra("scan_duration", SCAN_DURATION) ?: SCAN_DURATION
-        val resultReceiver = getResultReceiver(intent)
+        // Get MAC address from preferences
+        val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        macAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
 
-        startScanning(scanDuration, resultReceiver)
+        // Observe application state and lifecycle on main thread
+        mainHandler.post {
+            ApplicationStateHandler.getStateLiveData().observeForever(stateObserver)
+            ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleObserver)
+        }
 
-        return START_NOT_STICKY
+        // Start status check coroutine
+        startStatusCheck()
+
+        return START_STICKY
     }
 
-    private fun startScanning(duration: Long, resultReceiver: ResultReceiver?) {
-        val aggregator = BleScanResultAggregator()
-        val scanner = BleScanner(applicationContext)
+    private fun updateScanningState() {
+        // Re-read MAC address in case it changed
+        val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        macAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
 
-        serviceScope.launch {
-            while (true) {
-                val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-                val macAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
+        if (canScan) {
+            startScan()
+        } else {
+            stopScan()
+        }
+    }
 
-                if (!Permission.isAccessGranted(applicationContext, *Permission.BLUETOOTH_PERMISSIONS)) {
-                    Log.e(TAG, "BLUETOOTH permission not granted")
-                    resultReceiver?.send(RESULT_CANCELED, null)
-                    stopSelf()
-                    break
+    private fun startScan() {
+        if (scanJob != null) return // Already scanning
+
+        if (!Permission.isAccessGranted(applicationContext, *Permission.BLUETOOTH_PERMISSIONS)) {
+            Log.e(TAG, "BLUETOOTH permission not granted")
+            return
+        }
+
+        if (scanner == null) {
+            scanner = BleScanner(applicationContext)
+        }
+
+        val filters = listOf(
+            BleScanFilter(deviceAddress = macAddress)
+        )
+
+        val settings = BleScannerSettings(
+            scanMode = BleScanMode.SCAN_MODE_LOW_POWER,
+            reportDelay = 0L,
+            legacy = false,
+            callbackType = BleScannerCallbackType.CALLBACK_TYPE_ALL_MATCHES,
+            numOfMatches = BleNumOfMatches.MATCH_NUM_MAX_ADVERTISEMENT,
+            matchMode = BleScannerMatchMode.MATCH_MODE_AGGRESSIVE,
+            includeStoredBondedDevices = false,
+            phy = null
+        )
+
+        Log.d(TAG, "Starting scan for device: $macAddress")
+
+        scanJob = scanner?.scan(filters, settings)
+            ?.onEach {
+                lastSeenTime = System.currentTimeMillis()
+                if (!isDeviceAvailable) {
+                    Log.d(TAG, "Device $macAddress is now available")
+                    updateAvailability(true)
                 }
-
-                if (macAddress.isEmpty()) {
-                    Log.w(TAG, "No MAC address found. Stopping service.")
-                    resultReceiver?.send(RESULT_CANCELED, null)
-                    stopSelf()
-                    break
-                }
-
-                val filters = listOf(
-                    BleScanFilter(
-                        null,
-                        null,
-                        macAddress,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null
-                    )
-                )
-                val settings = BleScannerSettings(
-                    BleScanMode.SCAN_MODE_BALANCED,
-                    0L,
-                    false,
-                    BleScannerCallbackType.CALLBACK_TYPE_ALL_MATCHES,
-                    BleNumOfMatches.MATCH_NUM_MAX_ADVERTISEMENT,
-                    BleScannerMatchMode.MATCH_MODE_AGGRESSIVE,
-                    false,
-                    null
-                )
-
-                var deviceFound = false
-
-                val scanJob = scanner.scan(filters, settings)
-                    .map { aggregator.aggregateDevices(it) }
-                    .onEach { devices ->
-                        if (devices.isNotEmpty() && !deviceFound) {
-                            deviceFound = true
-                        }
-                    }
-                    .launchIn(this)
-
-                delay(duration)
-
-                scanJob.cancel()
-
-                if (deviceFound) {
-                    Log.d(TAG, "Device with MAC: $macAddress is available.")
-                    resultReceiver?.send(RESULT_OK, null)
-                } else {
-                    Log.w(TAG, "Device with MAC: $macAddress not found after $duration ms.")
-                    resultReceiver?.send(RESULT_CANCELED, null)
-                }
-                // Continue scanning in the next iteration
             }
+            ?.catch { e ->
+                Log.e(TAG, "Scan error: ${e.message}")
+            }
+            ?.launchIn(serviceScope)
+    }
+
+    private fun stopScan() {
+        if (scanJob == null) return // Not scanning
+
+        scanJob?.cancel()
+        scanJob = null
+        lastSeenTime = 0
+        updateAvailability(false)
+        Log.d(TAG, "Scan stopped")
+    }
+
+    private fun startStatusCheck() {
+        statusCheckJob = serviceScope.launch {
+            while (true) {
+                delay(STATUS_CHECK_INTERVAL_MS)
+                if (canScan) {
+                    checkDeviceTimeout()
+                }
+            }
+        }
+    }
+
+    private fun checkDeviceTimeout() {
+        if (isDeviceAvailable && lastSeenTime > 0) {
+            val timeSinceLastSeen = System.currentTimeMillis() - lastSeenTime
+            if (timeSinceLastSeen > DEVICE_TIMEOUT_MS) {
+                Log.d(TAG, "Device not seen for ${timeSinceLastSeen}ms, marking as unavailable")
+                updateAvailability(false)
+            }
+        }
+    }
+
+    private fun updateAvailability(available: Boolean) {
+        if (isDeviceAvailable != available) {
+            isDeviceAvailable = available
+            ApplicationStateHandler.updateDeviceAvailability(available)
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        mainHandler.post {
+            ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver)
+            ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleObserver)
+        }
+        scanJob?.cancel()
+        statusCheckJob?.cancel()
         job.cancel()
         isRunning = false
+        Log.d(TAG, "Service destroyed")
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
-
-    @Suppress("DEPRECATION")
-    private fun getResultReceiver(intent: Intent?): ResultReceiver? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent?.getParcelableExtra("result_receiver", ResultReceiver::class.java)
-        } else {
-            intent?.getParcelableExtra("result_receiver")
-        }
-    }
 }

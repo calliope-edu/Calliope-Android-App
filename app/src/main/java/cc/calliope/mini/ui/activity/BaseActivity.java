@@ -14,8 +14,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.icu.util.Calendar;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.ResultReceiver;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
@@ -46,7 +44,6 @@ import java.util.List;
 import cc.calliope.mini.AppContext;
 import cc.calliope.mini.core.state.Event;
 import cc.calliope.mini.ui.SnackbarHelper;
-import cc.calliope.mini.core.bluetooth.CheckService;
 import cc.calliope.mini.core.bluetooth.Device;
 import cc.calliope.mini.core.state.ScanResults;
 import cc.calliope.mini.ui.popup.PopupAdapter;
@@ -81,13 +78,7 @@ public abstract class BaseActivity extends AppCompatActivity
     private int popupMenuHeight;
     private ObjectAnimator rotationAnimator;
 
-    private Handler handler;
-    private Runnable runnable;
-
     private State currentState = new State(STATE_IDLE);
-
-    // A flag to track whether the device check is running
-    private boolean isDeviceCheckRunning = false;
 
     // Store a reference to our SnowfallView so we can access it in onShakeDetected()
     protected SnowfallView snowfallView;
@@ -118,6 +109,7 @@ public abstract class BaseActivity extends AppCompatActivity
         ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
         ApplicationStateHandler.getNotificationLiveData().observe(this, notificationObserver);
         ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
+        ApplicationStateHandler.getDeviceAvailabilityLiveData().observe(this, deviceAvailabilityObserver);
 
         // Observe devices (ScanResults)
         ScanResults.getStateLiveData().observe(this, new Observer<List<Device>>() {
@@ -217,8 +209,8 @@ public abstract class BaseActivity extends AppCompatActivity
                     patternFab.setColor(R.color.red);
                 }
                 case State.STATE_IDLE -> {
-                    patternFab.setColor(R.color.aqua_200);
-                    checkDeviceAvailability();
+                    Boolean isAvailable = ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue();
+                    patternFab.setColor(Boolean.TRUE.equals(isAvailable) ? R.color.green : R.color.aqua_200);
                 }
             }
         }
@@ -247,12 +239,20 @@ public abstract class BaseActivity extends AppCompatActivity
         }
     };
 
+    // DEVICE AVAILABILITY OBSERVER
+    private final Observer<Boolean> deviceAvailabilityObserver = isAvailable -> {
+        if (currentState.getType() == State.STATE_IDLE) {
+            patternFab.setColor(isAvailable ? R.color.green : R.color.aqua_200);
+        }
+    };
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
         ApplicationStateHandler.getNotificationLiveData().removeObserver(notificationObserver);
         ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver);
         ApplicationStateHandler.getProgressLiveData().removeObserver(progressObserver);
+        ApplicationStateHandler.getDeviceAvailabilityLiveData().removeObserver(deviceAvailabilityObserver);
     }
 
     // -------------------------------------------------
@@ -265,39 +265,17 @@ public abstract class BaseActivity extends AppCompatActivity
         patternFab.setProgress(0);
 
         // Register the accelerometer listener (if available).
-        // Optionally, check isHolidaySeason() here if you only want
-        // shake detection during the holiday season.
         if (accelerometer != null) {
             sensorManager.registerListener(
                     this, accelerometer, SensorManager.SENSOR_DELAY_GAME
             );
         }
-
-        // Schedule a task to check device availability every 10 seconds
-        handler = new Handler();
-        runnable = new Runnable() {
-            @Override
-            public void run() {
-                if (!isDeviceCheckRunning) {
-                    isDeviceCheckRunning = true;
-                    checkDeviceAvailability();
-                    isDeviceCheckRunning = false;
-                }
-                handler.postDelayed(this, 10000); // Schedule the next check
-            }
-        };
-        // Start the initial check
-        handler.post(runnable);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-
-        // Unregister sensor
         sensorManager.unregisterListener(this);
-
-        handler.removeCallbacks(runnable);
     }
     // -------------------------------------------------
 
@@ -523,43 +501,6 @@ public abstract class BaseActivity extends AppCompatActivity
         } else {
             showBluetoothDisabledWarning();
         }
-    }
-
-    private boolean hasOpenedPatternDialog() {
-        List<Fragment> fragments = getSupportFragmentManager().getFragments();
-        for (Fragment fragment : fragments) {
-            if (fragment instanceof PatternDialogFragment) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private void checkDeviceAvailability() {
-        if (currentState.getType() == State.STATE_BUSY
-                || currentState.getType() == State.STATE_FLASHING
-                || currentState.getType() == State.STATE_CONTROL
-                || hasOpenedPatternDialog()) {
-            return;
-        }
-
-        ResultReceiver resultReceiver = new ResultReceiver(new Handler()) {
-            @Override
-            protected void onReceiveResult(int resultCode, Bundle resultData) {
-                super.onReceiveResult(resultCode, resultData);
-                if (resultCode == CheckService.RESULT_OK) {
-                    patternFab.setColor(R.color.green);
-                    ApplicationStateHandler.updateDeviceAvailability(true);
-                } else if (resultCode == CheckService.RESULT_CANCELED) {
-                    patternFab.setColor(R.color.aqua_200);
-                    ApplicationStateHandler.updateDeviceAvailability(false);
-                }
-            }
-        };
-
-        Intent intent = new Intent(this, CheckService.class);
-        intent.putExtra("result_receiver", resultReceiver);
-        startService(intent);
     }
 
     // -------------------------------------------------
