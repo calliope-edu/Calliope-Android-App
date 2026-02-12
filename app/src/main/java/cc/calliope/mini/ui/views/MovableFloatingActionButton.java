@@ -1,6 +1,7 @@
 package cc.calliope.mini.ui.views;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -13,6 +14,9 @@ import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+
+import androidx.preference.PreferenceManager;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.shape.ShapeAppearanceModel;
@@ -34,6 +38,9 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
     private final PathMeasure pathMeasure = new PathMeasure();
 
     private static final int RADIUS_DP = 20;
+    private static final String PREF_FAB_X_FRACTION = "fab_x_fraction";
+    private static final String PREF_FAB_Y_FRACTION = "fab_y_fraction";
+    private boolean positionRestored = false;
 
     public MovableFloatingActionButton(Context context) {
         super(context);
@@ -71,12 +78,14 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-//        setProgress(0);
-    }
-
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
+        positionRestored = false;
+        getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                restorePosition();
+            }
+        });
     }
 
     @Override
@@ -129,6 +138,7 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
             if (Math.abs(upDX) < CLICK_DRAG_TOLERANCE && Math.abs(upDY) < CLICK_DRAG_TOLERANCE) { // A click
                 return performClick();
             } else { // A drag
+                savePosition();
                 return true; // Consumed
             }
 
@@ -206,6 +216,45 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
                     .setDuration(0)
                     .start();
         }
+    }
+
+    private void savePosition() {
+        View parent = (View) getParent();
+        if (parent == null || parent.getWidth() == 0 || parent.getHeight() == 0) return;
+
+        float xFraction = getX() / parent.getWidth();
+        float yFraction = getY() / parent.getHeight();
+
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit()
+                .putFloat(PREF_FAB_X_FRACTION, xFraction)
+                .putFloat(PREF_FAB_Y_FRACTION, yFraction)
+                .apply();
+    }
+
+    private void restorePosition() {
+        if (positionRestored) return;
+        positionRestored = true;
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        if (!prefs.contains(PREF_FAB_X_FRACTION)) return;
+
+        View parent = (View) getParent();
+        if (parent == null || parent.getWidth() == 0 || parent.getHeight() == 0) return;
+
+        ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) getLayoutParams();
+        float xFraction = prefs.getFloat(PREF_FAB_X_FRACTION, 0f);
+        float yFraction = prefs.getFloat(PREF_FAB_Y_FRACTION, 0f);
+
+        float x = xFraction * parent.getWidth();
+        float y = yFraction * parent.getHeight();
+
+        // Clamp to parent bounds
+        x = Math.max(lp.leftMargin, Math.min(x, parent.getWidth() - getWidth() - lp.rightMargin));
+        y = Math.max(lp.topMargin, Math.min(y, parent.getHeight() - getHeight() - lp.bottomMargin));
+
+        setX(x);
+        setY(y);
     }
 
     private void onFullscreenStateChanged(int visibility) {
