@@ -54,10 +54,10 @@ class CheckService : Service() {
 
     private val stateObserver = Observer<State> { state ->
         val wasIdle = isStateIdle
-        isStateIdle = state.type == State.STATE_IDLE
+        isStateIdle = state.type == State.STATE_IDLE || state.type == State.STATE_ERROR
 
         if (isStateIdle != wasIdle) {
-            Log.d(TAG, "State changed: ${if (isStateIdle) "IDLE" else "BUSY/FLASHING"}")
+            Log.d(TAG, "State changed: ${if (isStateIdle) "IDLE/ERROR" else "BUSY/FLASHING"}")
             updateScanningState()
         }
     }

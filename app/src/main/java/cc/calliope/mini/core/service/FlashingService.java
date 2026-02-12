@@ -45,10 +45,12 @@ public class FlashingService extends LifecycleService {
     private static final String TAG = "FlashingService";
     private static final int NUMBER_OF_RETRIES = 3;
     private static final int REBOOT_TIME = 2000; // time required by the device to reboot, ms
+    public static final String EXTRA_FORCE_FULL_DFU = "extra_force_full_dfu";
     private String currentAddress;
     private String currentPattern;
     private int boardVersion;
     private String currentPath;
+    private boolean forceFullDfu = false;
 
     private State currentState = new State(State.STATE_IDLE);
 
@@ -123,6 +125,7 @@ public class FlashingService extends LifecycleService {
             return START_NOT_STICKY;
         }
 
+        forceFullDfu = intent.getBooleanExtra(EXTRA_FORCE_FULL_DFU, false);
         initFlashing();
         return START_NOT_STICKY;
     }
@@ -256,7 +259,7 @@ public class FlashingService extends LifecycleService {
     }
 
     private void initFlashing() {
-        if (Settings.isPartialFlashingEnable(this)) {
+        if (!forceFullDfu && Settings.isPartialFlashingEnable(this)) {
             handlePartialFlashing();
         } else {
             handleFullFlashing();
@@ -361,7 +364,7 @@ public class FlashingService extends LifecycleService {
 
         new DfuServiceInitiator(currentAddress)
                 .setDeviceName(currentPattern)
-                .setPrepareDataObjectDelay(300L)
+                .setMtu(23)
                 .setNumberOfRetries(NUMBER_OF_RETRIES)
                 .setRebootTime(REBOOT_TIME)
                 .setKeepBond(false)
@@ -369,7 +372,7 @@ public class FlashingService extends LifecycleService {
                 .setForceScanningForNewAddressInLegacyDfu(true)
                 // V2 (nRF51) needs PRN enabled - it can't handle data sent too fast
                 .setPacketsReceiptNotificationsEnabled(true)
-                .setPacketsReceiptNotificationsValue(10)
+                .setPacketsReceiptNotificationsValue(6)
                 .setZip(zipPath)
                 .start(this, DfuService.class);
     }

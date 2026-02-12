@@ -206,7 +206,8 @@ public abstract class BaseActivity extends AppCompatActivity
                     patternFab.setColor(R.color.orange);
                 }
                 case State.STATE_ERROR -> {
-                    patternFab.setColor(R.color.red);
+                    Boolean available = ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue();
+                    patternFab.setColor(Boolean.TRUE.equals(available) ? R.color.green : R.color.red);
                 }
                 case State.STATE_IDLE -> {
                     Boolean isAvailable = ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue();
@@ -241,7 +242,7 @@ public abstract class BaseActivity extends AppCompatActivity
 
     // DEVICE AVAILABILITY OBSERVER
     private final Observer<Boolean> deviceAvailabilityObserver = isAvailable -> {
-        if (currentState.getType() == State.STATE_IDLE) {
+        if (currentState.getType() == State.STATE_IDLE || currentState.getType() == State.STATE_ERROR) {
             patternFab.setColor(isAvailable ? R.color.green : R.color.aqua_200);
         }
     };

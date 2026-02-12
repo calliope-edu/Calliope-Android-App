@@ -208,13 +208,24 @@ public class FlashingActivity extends AppCompatActivity {
 
     private void onRetryClicked(View view) {
         Log.d(TAG, "onRetryClicked: this=" + this.hashCode());
-        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()) {
+        if (!Boolean.TRUE.equals(ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue())) {
             ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
             return;
         }
 
         view.setVisibility(View.INVISIBLE);
+        flashingStarted = false;
+        flashingCompleted = false;
+        progressBar.setProgress(0);
+        title.setText("");
+        status.setText(R.string.flashing_process_starting);
+
+        // Reset state before starting FlashingService, otherwise it will
+        // observe STATE_ERROR and immediately call stopSelf()
+        ApplicationStateHandler.updateState(STATE_FLASHING);
+
         Intent serviceIntent = new Intent(this, FlashingService.class);
+        serviceIntent.putExtra(FlashingService.EXTRA_FORCE_FULL_DFU, true);
         startService(serviceIntent);
     }
 
