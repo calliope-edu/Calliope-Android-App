@@ -1,6 +1,7 @@
 package cc.calliope.mini.ui.model
 
 import cc.calliope.mini.R
+import java.util.Locale
 
 enum class EditorType(
     val id: String,  // lowercase for preferences
@@ -16,8 +17,8 @@ enum class EditorType(
         titleResId = R.string.title_make_code,
         iconResId = R.drawable.ic_make_code_inset,
         infoResId = R.string.info_make_code,
-        urlV2 = "https://makecode.calliope.cc",
-        urlV3 = "https://makecode.calliope.cc",
+        urlV2 = "https://makecode.calliope.cc/",
+        urlV3 = "https://makecode.calliope.cc/",
         defaultOrder = 0
     ),
 
@@ -87,4 +88,13 @@ enum class EditorType(
      */
     val directoryName: String
         get() = name
+
+    fun getLocalizedUrl(boardVersion: Int): String {
+        val baseUrl = if (boardVersion == 2) urlV2 else urlV3
+        if (this != MAKECODE) return baseUrl
+
+        val langTag = Locale.getDefault().toLanguageTag()
+        val separator = if ('?' in baseUrl) '&' else '?'
+        return "${baseUrl}${separator}lang=$langTag"
+    }
 }

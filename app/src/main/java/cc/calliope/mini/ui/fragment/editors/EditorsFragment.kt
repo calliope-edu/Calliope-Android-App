@@ -152,10 +152,12 @@ class EditorsFragment : Fragment() {
         val boardVersion = preferences.getInt("current_device_version", -1)
 
         // Use custom URL from settings if the item is "CUSTOM"
+        val editorType = EditorType.entries.find { it.id == item.id }
         val url = if (item.id == EditorType.CUSTOM.id) {
             cc.calliope.mini.utils.settings.Settings.getCustomLink(context)
         } else {
-            if (boardVersion == 2) item.urlV2 else item.urlV3
+            editorType?.getLocalizedUrl(boardVersion)
+                ?: (if (boardVersion == 2) item.urlV2 else item.urlV3)
         }
 
         // Use directoryName for file storage (UPPERCASE for backwards compatibility)
