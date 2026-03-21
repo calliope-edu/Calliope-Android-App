@@ -1,49 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="16dp"
-    android:background="?attr/selectableItemBackground">
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="4dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="@color/item_background"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/stroke_color">
 
-    <!-- Icon -->
-    <ImageView
-        android:id="@+id/icon_image_view"
-        android:layout_width="96dp"
-        android:layout_height="96dp"
-        android:contentDescription="@string/content_description_menu_icon"
-        android:src="@drawable/ic_editors_blocks"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent" />
-
-    <!-- Title -->
-    <TextView
-        android:id="@+id/title_text_view"
-        android:layout_width="0dp"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/placeholder_menu_item"
-        android:textAppearance="?attr/textAppearanceListItem"
-        android:textStyle="bold"
-        android:textColor="?android:textColorPrimary"
-        android:maxLines="2"
-        android:ellipsize="end"
-        app:layout_constraintStart_toEndOf="@id/icon_image_view"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/info_button"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="8dp" />
+        android:padding="16dp">
 
-    <!-- Info Button -->
-    <ImageButton
-        android:id="@+id/info_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/content_description_menu_info"
-        android:src="@drawable/ic_info_circle_24dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <!-- Icon -->
+        <ImageView
+            android:id="@+id/icon_image_view"
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:contentDescription="@string/content_description_menu_icon"
+            android:src="@drawable/ic_editors_blocks"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <!-- Title -->
+        <TextView
+            android:id="@+id/title_text_view"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/placeholder_menu_item"
+            android:textAppearance="?attr/textAppearanceListItem"
+            android:textStyle="bold"
+            android:textColor="@color/item_text"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="8dp"
+            app:layout_constraintStart_toEndOf="@id/icon_image_view"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/info_button" />
+
+        <!-- Info Button -->
+        <ImageButton
+            android:id="@+id/info_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/content_description_menu_info"
+            android:src="@drawable/ic_info_circle_24dp"
+            app:tint="@color/item_icon"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

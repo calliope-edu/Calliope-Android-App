@@ -124,10 +124,12 @@ class WebBleFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         webView = WebView(requireContext())
-        (view as ViewGroup).addView(
-            webView,
-            ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        )
+        val marginBottom = (70 * resources.displayMetrics.density).toInt()
+        val params = FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        ).apply { bottomMargin = marginBottom }
+        (view as ViewGroup).addView(webView, params)
         with(webView.settings) {
             javaScriptEnabled = true
             domStorageEnabled = true

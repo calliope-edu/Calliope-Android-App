@@ -154,6 +154,7 @@ public class MainActivity extends BaseActivity {
     private void enableFullScreenMode() {
         fullScreen = true;
         binding.bottomNavigation.setVisibility(View.GONE);
+        setWebViewBottomMargin(0);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             final WindowInsetsController insetsController = getWindow().getInsetsController();
@@ -180,6 +181,7 @@ public class MainActivity extends BaseActivity {
     private void disableFullScreenMode() {
         fullScreen = false;
         binding.bottomNavigation.setVisibility(View.VISIBLE);
+        setWebViewBottomMargin((int) (70 * getResources().getDisplayMetrics().density));
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             final WindowInsetsController insetsController = getWindow().getInsetsController();
@@ -191,6 +193,16 @@ public class MainActivity extends BaseActivity {
 
             View decorView = getWindow().getDecorView();
             decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+        }
+    }
+
+    private void setWebViewBottomMargin(int margin) {
+        View webView = findViewById(R.id.webView);
+        if (webView != null) {
+            android.view.ViewGroup.MarginLayoutParams params =
+                    (android.view.ViewGroup.MarginLayoutParams) webView.getLayoutParams();
+            params.bottomMargin = margin;
+            webView.setLayoutParams(params);
         }
     }
 

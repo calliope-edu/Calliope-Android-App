@@ -20,10 +20,11 @@ import androidx.recyclerview.widget.RecyclerView
 import cc.calliope.mini.ui.adapter.ItemMoveListener
 import cc.calliope.mini.ui.SnackbarHelper
 import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.drawable.VectorDrawable
 import android.graphics.Color
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.core.graphics.drawable.toDrawable
 
 class EditorsFragment : Fragment() {
 
@@ -73,19 +74,23 @@ class EditorsFragment : Fragment() {
             ) {
                 if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
                     val itemView = viewHolder.itemView
-                    val background = Color.RED.toDrawable()
+                    val cornerRadius = 16f * itemView.resources.displayMetrics.density
+                    val paint = Paint().apply {
+                        color = Color.RED
+                        isAntiAlias = true
+                    }
                     val context = requireContext()
                     val icon = AppCompatResources.getDrawable(context, R.drawable.delete_icon) as? VectorDrawable
-                    
+
                     if (dX < 0) { // Swiping to the left
-                        background.setBounds(
-                            itemView.right + dX.toInt(),
-                            itemView.top,
-                            itemView.right,
-                            itemView.bottom
+                        val rect = RectF(
+                            itemView.right + dX,
+                            itemView.top.toFloat(),
+                            itemView.right.toFloat(),
+                            itemView.bottom.toFloat()
                         )
-                        background.draw(c)
-                        
+                        c.drawRoundRect(rect, cornerRadius, cornerRadius, paint)
+
                         // Draw delete icon
                         icon?.let {
                             val iconMargin = (itemView.height - it.intrinsicHeight) / 2
