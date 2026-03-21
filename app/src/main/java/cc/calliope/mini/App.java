@@ -16,19 +16,24 @@ public class App extends Application {
     private static final String MAKECODE_DIR = "MAKECODE";
     private static final String CARDBOARD_CONTROL_DIR = "CARDBOARD_CONTROL";
     private static final String CARDBOARD_FACE_DIR = "CARDBOARD_FACE";
+    private static final String PYTHON_DIR = "PYTHON";
     
     private static final String[] RAW_FILES = {
         "one_time_pairing",
         "demo_lofi_control", 
         "demo_lofi_face",
         "demo_snake",
-        "demo_matrix"
+        "demo_matrix",
+        "demo_dodge",
+        "demo_effects",
+        "demo_pong"
     };
 
     @Override
     public void onCreate() {
         super.onCreate();
         AppContext.initialize(this);
+        migrateSnakeFromMakecodeToPython();
         copyFilesToInternalStorage();
 
         // Start CheckService for device availability monitoring
@@ -38,6 +43,15 @@ public class App extends Application {
     @Override
     public void onTerminate() {
         super.onTerminate();
+    }
+
+    private void migrateSnakeFromMakecodeToPython() {
+        File oldFile = new File(getFilesDir(), MAKECODE_DIR + File.separator + "demo_snake.hex");
+        if (oldFile.exists()) {
+            if (oldFile.delete()) {
+                Log.d("App", "Migrated demo_snake.hex: removed old copy from MAKECODE");
+            }
+        }
     }
 
     private void copyFilesToInternalStorage() {
@@ -54,8 +68,10 @@ public class App extends Application {
     private String getTargetDirectory(String fileName) {
         if (fileName.equals("one_time_pairing")) {
             return CUSTOM_DIR;
-        } else if (fileName.equals("demo_snake") || fileName.equals("demo_matrix")) {
+        } else if (fileName.equals("demo_matrix")) {
             return MAKECODE_DIR;
+        } else if (fileName.equals("demo_snake") || fileName.equals("demo_dodge") || fileName.equals("demo_effects") || fileName.equals("demo_pong")) {
+            return PYTHON_DIR;
         } else if (fileName.equals("demo_lofi_control")) {
             return CARDBOARD_CONTROL_DIR;
         } else if (fileName.equals("demo_lofi_face")) {
