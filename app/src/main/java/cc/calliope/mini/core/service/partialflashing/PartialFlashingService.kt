@@ -1342,7 +1342,6 @@ class PartialFlashingService : Service() {
                 }
             }
 
-            BluetoothUtils.clearServicesCache(gatt)
             gatt.disconnect()
 
             // Wait for onConnectionStateChange(STATE_DISCONNECTED) callback
@@ -1366,7 +1365,6 @@ class PartialFlashingService : Service() {
      */
     private fun closeGatt() {
         bluetoothGatt?.let { gatt ->
-            BluetoothUtils.clearServicesCache(gatt)
             // Don't call disconnect() - device already disconnected or will disconnect
             gatt.close()
         }
