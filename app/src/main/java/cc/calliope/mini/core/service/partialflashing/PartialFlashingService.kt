@@ -130,6 +130,7 @@ class PartialFlashingService : Service() {
     private var codeStartAddress = 0L
     private var codeEndAddress = 0L
     private var packetState: Byte = PACKET_STATE_WAITING
+    @Volatile private var regionReceived = BooleanArray(3)  // Track which REGION_INFO responses arrived
 
     // Synchronization
     private val connectionLock = Object()
@@ -736,7 +737,7 @@ class PartialFlashingService : Service() {
             }
 
             // Compare DAL hash
-            if (fileHash != dalHash) {
+            if (dalHash == null || fileHash == null || fileHash != dalHash) {
                 Log.e(TAG, "Hash mismatch: file=$fileHash, device=$dalHash")
                 return RESULT_ATTEMPT_DFU
             }
@@ -930,6 +931,8 @@ class PartialFlashingService : Service() {
     private fun readMemoryMap(): Boolean {
         Log.d(TAG, "Reading memory map")
 
+        regionReceived = BooleanArray(3)
+
         try {
             for (i in 0..2) {
                 val payload = byteArrayOf(REGION_INFO_COMMAND, i.toByte())
@@ -944,6 +947,11 @@ class PartialFlashingService : Service() {
                     } catch (e: InterruptedException) {
                         return false
                     }
+                }
+
+                if (!regionReceived.getOrElse(i) { false }) {
+                    Log.e(TAG, "No response received for region $i")
+                    return false
                 }
             }
             return true
@@ -1177,6 +1185,10 @@ class PartialFlashingService : Service() {
                                 "end=0x${String.format("%08X", endAddr)}, " +
                                 "hash=$hash, " +
                                 "raw=[${value.joinToString(" ") { String.format("%02X", it) }}]")
+
+                        if (region in 0..2) {
+                            regionReceived[region] = true
+                        }
 
                         if (region == REGION_MAKECODE) {
                             codeStartAddress = startAddr
