@@ -1058,11 +1058,11 @@ class PartialFlashingService : Service() {
                     if (waitingForReboot) {
                         Log.d(TAG, "Device disconnected during reboot wait")
                         disconnectedByDevice = true
-                        synchronized(disconnectLock) {
-                            disconnectLock.notifyAll()
-                        }
                     }
 
+                    synchronized(disconnectLock) {
+                        disconnectLock.notifyAll()
+                    }
                     synchronized(connectionLock) {
                         connectionLock.notifyAll()
                     }
@@ -1242,11 +1242,18 @@ class PartialFlashingService : Service() {
                 }
             }
 
-            // Clear GATT cache before closing - important after device reboot
             BluetoothUtils.clearServicesCache(gatt)
             gatt.disconnect()
-            // Wait for disconnect to complete - V2 (nRF51) needs more time
-            Thread.sleep(2000)
+
+            // Wait for onConnectionStateChange(STATE_DISCONNECTED) callback
+            if (isConnected) {
+                synchronized(disconnectLock) {
+                    try {
+                        disconnectLock.wait(5000)
+                    } catch (_: InterruptedException) {}
+                }
+            }
+
             gatt.close()
         }
         bluetoothGatt = null
