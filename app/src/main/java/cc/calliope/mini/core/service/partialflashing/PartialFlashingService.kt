@@ -93,7 +93,7 @@ class PartialFlashingService : Service() {
 
         // Timeouts (optimized)
         private const val CONNECTION_TIMEOUT_MS = 10_000L
-        private const val SERVICE_DISCOVERY_DELAY_MS = 600L  // Reduced from 1600-2000ms
+        private const val SERVICE_DISCOVERY_DELAY_MS = 1600L  // Nordic recommendation for Service Changed indication
         private const val REBOOT_WAIT_MS = 3000L  // Time for device to reboot after reset
         private const val OPERATION_TIMEOUT_MS = 5_000L
         private const val FLASH_TIMEOUT_MS = 60_000L
