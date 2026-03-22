@@ -639,11 +639,11 @@ class PartialFlashingService : Service() {
     }
 
     private fun sendStatusRequest(): Boolean {
-        return writeCharacteristic(byteArrayOf(STATUS_REQUEST))
+        return writeCharacteristicNoResponse(byteArrayOf(STATUS_REQUEST))
     }
 
     private fun sendResetCommand(): Boolean {
-        return writeCharacteristic(byteArrayOf(RESET_COMMAND, MODE_PAIRING))
+        return writeCharacteristicNoResponse(byteArrayOf(RESET_COMMAND, MODE_PAIRING))
     }
 
     private fun writeCharacteristic(data: ByteArray, writeType: Int = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT): Boolean {
@@ -933,7 +933,7 @@ class PartialFlashingService : Service() {
         try {
             for (i in 0..2) {
                 val payload = byteArrayOf(REGION_INFO_COMMAND, i.toByte())
-                if (!writeCharacteristic(payload)) {
+                if (!writeCharacteristicNoResponse(payload)) {
                     Log.e(TAG, "Failed to request region $i")
                     return false
                 }
