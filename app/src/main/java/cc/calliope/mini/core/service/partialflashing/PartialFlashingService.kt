@@ -4,8 +4,10 @@ import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.app.Service
 import android.bluetooth.*
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -151,9 +153,11 @@ class PartialFlashingService : Service() {
     @Volatile private var waitingForReboot = false
     @Volatile private var disconnectedByDevice = false  // Track if device initiated disconnect (reboot)
     @Volatile private var negotiatedMtu = 23  // Default BLE MTU
+    @Volatile private var bondingComplete = false
 
     // Handler for delayed operations (avoid blocking Bluetooth thread)
     private val bleHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val bondingLock = Object()
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -351,6 +355,12 @@ class PartialFlashingService : Service() {
             return false
         }
 
+        // Ensure device is bonded (should already be paired during discovery)
+        if (!ensureBonded()) {
+            Log.e(TAG, "Bonding failed")
+            return false
+        }
+
         // Enable Service Changed indications for proper GATT cache handling (Android P+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             if (!ensureServiceChangedEnabled()) {
@@ -390,6 +400,65 @@ class PartialFlashingService : Service() {
 
         Log.d(TAG, "MTU negotiation completed: $negotiatedMtu bytes")
         return mtuNegotiated
+    }
+
+    /**
+     * Ensures device is bonded. Should already be paired during discovery,
+     * but initiates bonding as a safety net if not.
+     */
+    private fun ensureBonded(): Boolean {
+        val gatt = bluetoothGatt ?: return false
+        val device = gatt.device ?: return false
+
+        if (device.bondState == BluetoothDevice.BOND_BONDED) {
+            Log.d(TAG, "Device already bonded")
+            return true
+        }
+
+        Log.w(TAG, "Device not bonded, initiating bonding...")
+        bondingComplete = false
+
+        val bondReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (intent.action != BluetoothDevice.ACTION_BOND_STATE_CHANGED) return
+                val bondDevice = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE) ?: return
+                if (bondDevice.address != device.address) return
+
+                when (intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR)) {
+                    BluetoothDevice.BOND_BONDED -> {
+                        Log.d(TAG, "Bonding completed")
+                        bondingComplete = true
+                        synchronized(bondingLock) { bondingLock.notifyAll() }
+                    }
+                    BluetoothDevice.BOND_NONE -> {
+                        Log.e(TAG, "Bonding failed")
+                        synchronized(bondingLock) { bondingLock.notifyAll() }
+                    }
+                }
+            }
+        }
+
+        val filter = IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
+        registerReceiver(bondReceiver, filter)
+
+        try {
+            if (!device.createBond()) {
+                Log.e(TAG, "createBond() failed")
+                return false
+            }
+
+            synchronized(bondingLock) {
+                try {
+                    bondingLock.wait(30_000) // Bonding can take time (user interaction)
+                } catch (_: InterruptedException) {
+                    return false
+                }
+            }
+
+            return bondingComplete
+        } finally {
+            unregisterReceiver(bondReceiver)
+        }
     }
 
     /**
