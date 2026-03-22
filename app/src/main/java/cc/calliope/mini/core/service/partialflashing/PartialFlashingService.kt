@@ -966,17 +966,18 @@ class PartialFlashingService : Service() {
                             return RESULT_FAILED
                         }
                         if (SystemClock.elapsedRealtime() - timeout > OPERATION_TIMEOUT_MS) {
-                            Log.e(TAG, "Packet acknowledgment timeout")
-                            return RESULT_FAILED
+                            Log.w(TAG, "Packet acknowledgment timeout at block starting line $line0, treating as retransmit")
+                            packetState = PACKET_STATE_RETRANSMIT
+                            break
                         }
                     }
                     ack = packetState
                     packetState = PACKET_STATE_WAITING
                 }
 
-                // Handle retransmit
+                // Handle retransmit (explicit from device or timeout)
                 if (ack == PACKET_STATE_RETRANSMIT) {
-                    Log.w(TAG, "Retransmit requested for packets starting at line $line0")
+                    Log.w(TAG, "Retransmit block starting at line $line0")
                     lineCount = line0
                     part = part0
                     endOfFile = false
