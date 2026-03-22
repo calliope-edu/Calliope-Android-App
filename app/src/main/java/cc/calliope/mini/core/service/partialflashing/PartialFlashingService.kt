@@ -850,7 +850,15 @@ class PartialFlashingService : Service() {
                 return RESULT_ATTEMPT_DFU
             }
 
-            Log.d(TAG, "Hash match confirmed, starting flash")
+            Log.d(TAG, "Hash match confirmed")
+
+            // Verify code start address matches hex file
+            val fileCodeAddr = hexPosToAddress(hex, dataPos)
+            if (fileCodeAddr != codeStartAddress) {
+                Log.e(TAG, "Code start address mismatch: file=0x${String.format("%08X", fileCodeAddr)}, device=0x${String.format("%08X", codeStartAddress)}")
+                return RESULT_ATTEMPT_DFU
+            }
+            Log.d(TAG, "Code start address verified: 0x${String.format("%08X", codeStartAddress)}, starting flash")
 
             // Flash the data
             val flashResult = flashData(hex, dataPos, startTime)
