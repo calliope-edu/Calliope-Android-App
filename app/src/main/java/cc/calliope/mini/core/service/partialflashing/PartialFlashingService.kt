@@ -140,6 +140,7 @@ class PartialFlashingService : Service() {
     private val regionLock = Object()
     private val packetLock = Object()  // Separate lock for packet acknowledgments
     private val disconnectLock = Object()  // For waiting device-initiated disconnect
+    private val gattLock = java.util.concurrent.locks.ReentrantLock()  // Serialize GATT operations
 
     // Callbacks tracking
     @Volatile private var isConnected = false
@@ -372,34 +373,39 @@ class PartialFlashingService : Service() {
     }
 
     private fun requestMtuNegotiation(): Boolean {
-        val gatt = bluetoothGatt ?: return false
+        gattLock.lock()
+        try {
+            val gatt = bluetoothGatt ?: return false
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            Log.d(TAG, "MTU negotiation not supported on this API level")
-            return true  // Not an error, just not supported
-        }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+                Log.d(TAG, "MTU negotiation not supported on this API level")
+                return true  // Not an error, just not supported
+            }
 
-        mtuNegotiated = false
+            mtuNegotiated = false
 
-        if (!gatt.requestMtu(PREFERRED_MTU)) {
-            Log.e(TAG, "Failed to request MTU")
-            return false
-        }
+            if (!gatt.requestMtu(PREFERRED_MTU)) {
+                Log.e(TAG, "Failed to request MTU")
+                return false
+            }
 
-        // Wait for MTU callback
-        synchronized(connectionLock) {
-            val startTime = SystemClock.elapsedRealtime()
-            while (!mtuNegotiated && SystemClock.elapsedRealtime() - startTime < MTU_TIMEOUT_MS) {
-                try {
-                    connectionLock.wait(500)
-                } catch (e: InterruptedException) {
-                    return false
+            // Wait for MTU callback
+            synchronized(connectionLock) {
+                val startTime = SystemClock.elapsedRealtime()
+                while (!mtuNegotiated && SystemClock.elapsedRealtime() - startTime < MTU_TIMEOUT_MS) {
+                    try {
+                        connectionLock.wait(500)
+                    } catch (e: InterruptedException) {
+                        return false
+                    }
                 }
             }
-        }
 
-        Log.d(TAG, "MTU negotiation completed: $negotiatedMtu bytes")
-        return mtuNegotiated
+            Log.d(TAG, "MTU negotiation completed: $negotiatedMtu bytes")
+            return mtuNegotiated
+        } finally {
+            gattLock.unlock()
+        }
     }
 
     /**
@@ -491,127 +497,139 @@ class PartialFlashingService : Service() {
     }
 
     private fun isServiceChangedIndicationEnabled(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic): Boolean {
-        val descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG) ?: return false
+        gattLock.lock()
+        try {
+            val descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG) ?: return false
 
-        descriptorReadValue = null
+            descriptorReadValue = null
 
-        // Read current descriptor value
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            gatt.readDescriptor(descriptor)
-        } else {
-            @Suppress("DEPRECATION")
-            gatt.readDescriptor(descriptor)
-        }
+            // Read current descriptor value
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                gatt.readDescriptor(descriptor)
+            } else {
+                @Suppress("DEPRECATION")
+                gatt.readDescriptor(descriptor)
+            }
 
-        // Wait for read callback
-        synchronized(operationLock) {
-            val startTime = SystemClock.elapsedRealtime()
-            while (descriptorReadValue == null && SystemClock.elapsedRealtime() - startTime < OPERATION_TIMEOUT_MS) {
-                try {
-                    operationLock.wait(500)
-                } catch (e: InterruptedException) {
-                    return false
+            // Wait for read callback
+            synchronized(operationLock) {
+                val startTime = SystemClock.elapsedRealtime()
+                while (descriptorReadValue == null && SystemClock.elapsedRealtime() - startTime < OPERATION_TIMEOUT_MS) {
+                    try {
+                        operationLock.wait(500)
+                    } catch (e: InterruptedException) {
+                        return false
+                    }
                 }
             }
+
+            val value = descriptorReadValue ?: return false
+            if (value.size != 2) return false
+
+            // Check if indication is enabled (0x02, 0x00)
+            return value[0] == BluetoothGattDescriptor.ENABLE_INDICATION_VALUE[0] &&
+                   value[1] == BluetoothGattDescriptor.ENABLE_INDICATION_VALUE[1]
+        } finally {
+            gattLock.unlock()
         }
-
-        val value = descriptorReadValue ?: return false
-        if (value.size != 2) return false
-
-        // Check if indication is enabled (0x02, 0x00)
-        return value[0] == BluetoothGattDescriptor.ENABLE_INDICATION_VALUE[0] &&
-               value[1] == BluetoothGattDescriptor.ENABLE_INDICATION_VALUE[1]
     }
 
     private fun enableServiceChangedIndication(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic): Boolean {
-        val descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG) ?: return false
+        gattLock.lock()
+        try {
+            val descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG) ?: return false
 
-        // Enable local notification
-        if (!gatt.setCharacteristicNotification(characteristic, true)) {
-            Log.e(TAG, "Failed to enable Service Changed notification locally")
-            return false
-        }
+            // Enable local notification
+            if (!gatt.setCharacteristicNotification(characteristic, true)) {
+                Log.e(TAG, "Failed to enable Service Changed notification locally")
+                return false
+            }
 
-        descriptorWritten = false
+            descriptorWritten = false
 
-        // Write indication enable to descriptor
-        val writeResult = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_INDICATION_VALUE)
-        } else {
-            @Suppress("DEPRECATION")
-            descriptor.value = BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
-            @Suppress("DEPRECATION")
-            gatt.writeDescriptor(descriptor)
-        }
+            // Write indication enable to descriptor
+            val writeResult = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_INDICATION_VALUE)
+            } else {
+                @Suppress("DEPRECATION")
+                descriptor.value = BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
+                @Suppress("DEPRECATION")
+                gatt.writeDescriptor(descriptor)
+            }
 
-        if (writeResult != BluetoothStatusCodes.SUCCESS && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Log.e(TAG, "Failed to write Service Changed descriptor")
-            return false
-        }
+            if (writeResult != BluetoothStatusCodes.SUCCESS && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                Log.e(TAG, "Failed to write Service Changed descriptor")
+                return false
+            }
 
-        // Wait for write callback
-        synchronized(operationLock) {
-            val startTime = SystemClock.elapsedRealtime()
-            while (!descriptorWritten && SystemClock.elapsedRealtime() - startTime < OPERATION_TIMEOUT_MS) {
-                try {
-                    operationLock.wait(500)
-                } catch (e: InterruptedException) {
-                    return false
+            // Wait for write callback
+            synchronized(operationLock) {
+                val startTime = SystemClock.elapsedRealtime()
+                while (!descriptorWritten && SystemClock.elapsedRealtime() - startTime < OPERATION_TIMEOUT_MS) {
+                    try {
+                        operationLock.wait(500)
+                    } catch (e: InterruptedException) {
+                        return false
+                    }
                 }
             }
-        }
 
-        Log.d(TAG, "Service Changed indication enabled: $descriptorWritten")
-        return descriptorWritten
+            Log.d(TAG, "Service Changed indication enabled: $descriptorWritten")
+            return descriptorWritten
+        } finally {
+            gattLock.unlock()
+        }
     }
 
     private fun setupPartialFlashingCharacteristic(): Boolean {
-        val gatt = bluetoothGatt ?: return false
+        gattLock.lock()
+        try {
+            val gatt = bluetoothGatt ?: return false
 
-        val pfService = gatt.getService(PARTIAL_FLASHING_SERVICE)
-        if (pfService == null) {
-            Log.e(TAG, "Partial flashing service not found")
-            return false
-        }
+            val pfService = gatt.getService(PARTIAL_FLASHING_SERVICE)
+            if (pfService == null) {
+                Log.e(TAG, "Partial flashing service not found")
+                return false
+            }
 
-        partialFlashCharacteristic = pfService.getCharacteristic(PARTIAL_FLASH_CHARACTERISTIC)
-        if (partialFlashCharacteristic == null) {
-            Log.e(TAG, "Partial flashing characteristic not found")
-            return false
-        }
+            partialFlashCharacteristic = pfService.getCharacteristic(PARTIAL_FLASH_CHARACTERISTIC)
+            if (partialFlashCharacteristic == null) {
+                Log.e(TAG, "Partial flashing characteristic not found")
+                return false
+            }
 
-        // Enable notifications
-        if (!gatt.setCharacteristicNotification(partialFlashCharacteristic, true)) {
-            Log.e(TAG, "Failed to enable notifications")
-            return false
-        }
+            // Enable notifications
+            if (!gatt.setCharacteristicNotification(partialFlashCharacteristic, true)) {
+                Log.e(TAG, "Failed to enable notifications")
+                return false
+            }
 
-        val descriptor = partialFlashCharacteristic!!.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG)
-        if (descriptor == null) {
-            Log.e(TAG, "CCC descriptor not found")
-            return false
-        }
+            val descriptor = partialFlashCharacteristic!!.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG)
+            if (descriptor == null) {
+                Log.e(TAG, "CCC descriptor not found")
+                return false
+            }
 
-        descriptorWritten = false
+            descriptorWritten = false
 
-        val writeResult = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
-        } else {
-            @Suppress("DEPRECATION")
-            descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-            @Suppress("DEPRECATION")
-            gatt.writeDescriptor(descriptor)
-        }
+            val writeResult = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                gatt.writeDescriptor(descriptor, BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+            } else {
+                @Suppress("DEPRECATION")
+                descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                @Suppress("DEPRECATION")
+                gatt.writeDescriptor(descriptor)
+            }
 
-        if (writeResult != BluetoothStatusCodes.SUCCESS && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Log.e(TAG, "Failed to write descriptor")
-            return false
-        }
+            if (writeResult != BluetoothStatusCodes.SUCCESS && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                Log.e(TAG, "Failed to write descriptor")
+                return false
+            }
 
-        // Wait for descriptor write
-        synchronized(operationLock) {
-            val startTime = SystemClock.elapsedRealtime()
-            while (!descriptorWritten && SystemClock.elapsedRealtime() - startTime < OPERATION_TIMEOUT_MS) {
+            // Wait for descriptor write
+            synchronized(operationLock) {
+                val startTime = SystemClock.elapsedRealtime()
+                while (!descriptorWritten && SystemClock.elapsedRealtime() - startTime < OPERATION_TIMEOUT_MS) {
                 try {
                     operationLock.wait(500)
                 } catch (e: InterruptedException) {
@@ -620,7 +638,10 @@ class PartialFlashingService : Service() {
             }
         }
 
-        return descriptorWritten
+            return descriptorWritten
+        } finally {
+            gattLock.unlock()
+        }
     }
 
     private fun prepareDeviceForFlashing(): Boolean {
@@ -730,37 +751,42 @@ class PartialFlashingService : Service() {
     }
 
     private fun writeCharacteristic(data: ByteArray, writeType: Int = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT): Boolean {
-        val gatt = bluetoothGatt ?: return false
-        val characteristic = partialFlashCharacteristic ?: return false
+        gattLock.lock()
+        try {
+            val gatt = bluetoothGatt ?: return false
+            val characteristic = partialFlashCharacteristic ?: return false
 
-        characteristicWritten = false
+            characteristicWritten = false
 
-        val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            gatt.writeCharacteristic(characteristic, data, writeType)
-        } else {
-            @Suppress("DEPRECATION")
-            characteristic.writeType = writeType
-            @Suppress("DEPRECATION")
-            characteristic.value = data
-            @Suppress("DEPRECATION")
-            if (gatt.writeCharacteristic(characteristic)) BluetoothStatusCodes.SUCCESS else BluetoothStatusCodes.ERROR_UNKNOWN
-        }
+            val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                gatt.writeCharacteristic(characteristic, data, writeType)
+            } else {
+                @Suppress("DEPRECATION")
+                characteristic.writeType = writeType
+                @Suppress("DEPRECATION")
+                characteristic.value = data
+                @Suppress("DEPRECATION")
+                if (gatt.writeCharacteristic(characteristic)) BluetoothStatusCodes.SUCCESS else BluetoothStatusCodes.ERROR_UNKNOWN
+            }
 
-        if (result != BluetoothStatusCodes.SUCCESS) {
-            Log.e(TAG, "Failed to write characteristic: $result")
-            return false
-        }
-
-        // Wait for write confirmation
-        synchronized(operationLock) {
-            try {
-                operationLock.wait(OPERATION_TIMEOUT_MS)
-            } catch (e: InterruptedException) {
+            if (result != BluetoothStatusCodes.SUCCESS) {
+                Log.e(TAG, "Failed to write characteristic: $result")
                 return false
             }
-        }
 
-        return characteristicWritten
+            // Wait for write confirmation
+            synchronized(operationLock) {
+                try {
+                    operationLock.wait(OPERATION_TIMEOUT_MS)
+                } catch (e: InterruptedException) {
+                    return false
+                }
+            }
+
+            return characteristicWritten
+        } finally {
+            gattLock.unlock()
+        }
     }
 
     private fun attemptPartialFlash(): Int {
@@ -974,40 +1000,45 @@ class PartialFlashingService : Service() {
     }
 
     private fun writeCharacteristicNoResponse(data: ByteArray): Boolean {
-        val gatt = bluetoothGatt ?: return false
-        val characteristic = partialFlashCharacteristic ?: return false
+        gattLock.lock()
+        try {
+            val gatt = bluetoothGatt ?: return false
+            val characteristic = partialFlashCharacteristic ?: return false
 
-        characteristicWritten = false
+            characteristicWritten = false
 
-        val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            gatt.writeCharacteristic(
-                characteristic, data,
-                BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
-            ) == BluetoothStatusCodes.SUCCESS
-        } else {
-            @Suppress("DEPRECATION")
-            characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
-            @Suppress("DEPRECATION")
-            characteristic.value = data
-            @Suppress("DEPRECATION")
-            gatt.writeCharacteristic(characteristic)
-        }
+            val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                gatt.writeCharacteristic(
+                    characteristic, data,
+                    BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                ) == BluetoothStatusCodes.SUCCESS
+            } else {
+                @Suppress("DEPRECATION")
+                characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                @Suppress("DEPRECATION")
+                characteristic.value = data
+                @Suppress("DEPRECATION")
+                gatt.writeCharacteristic(characteristic)
+            }
 
-        if (!result) {
-            Log.e(TAG, "Failed to write characteristic (no response)")
-            return false
-        }
-
-        // Wait for write callback even for NO_RESPONSE - Android requires this
-        synchronized(operationLock) {
-            try {
-                operationLock.wait(1000)
-            } catch (e: InterruptedException) {
+            if (!result) {
+                Log.e(TAG, "Failed to write characteristic (no response)")
                 return false
             }
-        }
 
-        return characteristicWritten
+            // Wait for write callback even for NO_RESPONSE - Android requires this
+            synchronized(operationLock) {
+                try {
+                    operationLock.wait(1000)
+                } catch (e: InterruptedException) {
+                    return false
+                }
+            }
+
+            return characteristicWritten
+        } finally {
+            gattLock.unlock()
+        }
     }
 
     private fun readMemoryMap(): Boolean {
