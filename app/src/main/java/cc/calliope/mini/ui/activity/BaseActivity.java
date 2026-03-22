@@ -265,6 +265,9 @@ public abstract class BaseActivity extends AppCompatActivity
         readDisplayMetrics();
         patternFab.setProgress(0);
 
+        // Ensure CheckService is running (may have been killed by system while in background)
+        startService(new Intent(this, cc.calliope.mini.core.bluetooth.CheckService.class));
+
         // Register the accelerometer listener (if available).
         if (accelerometer != null) {
             sensorManager.registerListener(

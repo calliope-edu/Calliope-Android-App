@@ -88,6 +88,8 @@ class CheckService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (isRunning) {
+            // Service already running — refresh scanning state in case lifecycle event was missed
+            updateScanningState()
             return START_STICKY
         }
 
@@ -102,6 +104,15 @@ class CheckService : Service() {
         mainHandler.post {
             ApplicationStateHandler.getStateLiveData().observeForever(stateObserver)
             ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleObserver)
+
+            // Check current lifecycle state — if app is already in foreground
+            // (e.g. service restarted by system after being killed), start scanning immediately
+            val currentState = ProcessLifecycleOwner.get().lifecycle.currentState
+            if (currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+                Log.d(TAG, "App already in foreground on service start, triggering scan")
+                isAppInForeground = true
+                updateScanningState()
+            }
         }
 
         // Start status check coroutine
@@ -115,6 +126,9 @@ class CheckService : Service() {
         val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
         macAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
 
+        Log.d(TAG, "updateScanningState: canScan=$canScan " +
+                "(foreground=$isAppInForeground, idle=$isStateIdle, mac='$macAddress', scanJob=${scanJob != null})")
+
         if (canScan) {
             startScan()
         } else {
@@ -123,7 +137,10 @@ class CheckService : Service() {
     }
 
     private fun startScan() {
-        if (scanJob != null) return // Already scanning
+        if (scanJob != null) {
+            Log.d(TAG, "startScan: already scanning (scanJob active)")
+            return
+        }
 
         if (!Permission.isAccessGranted(applicationContext, *Permission.BLUETOOTH_PERMISSIONS)) {
             Log.e(TAG, "BLUETOOTH permission not granted")
