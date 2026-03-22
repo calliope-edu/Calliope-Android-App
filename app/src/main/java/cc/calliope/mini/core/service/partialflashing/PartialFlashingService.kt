@@ -236,9 +236,22 @@ class PartialFlashingService : Service() {
     }
 
     private fun executePartialFlashing(): Int {
-        // Step 1: Connect to device
-        if (!connectToDevice()) {
-            Log.e(TAG, "Failed to connect")
+        // Step 1: Connect to device with retry
+        var connected = false
+        for (attempt in 1..MAX_RECONNECT_ATTEMPTS) {
+            if (connectToDevice()) {
+                connected = true
+                break
+            }
+            Log.w(TAG, "Connection attempt $attempt of $MAX_RECONNECT_ATTEMPTS failed")
+            if (attempt < MAX_RECONNECT_ATTEMPTS) {
+                val delay = attempt * 1000L
+                Log.d(TAG, "Retrying in ${delay}ms...")
+                Thread.sleep(delay)
+            }
+        }
+        if (!connected) {
+            Log.e(TAG, "Failed to connect after $MAX_RECONNECT_ATTEMPTS attempts")
             return RESULT_ATTEMPT_DFU
         }
 
