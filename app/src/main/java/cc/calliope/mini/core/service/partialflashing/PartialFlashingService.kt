@@ -2,19 +2,25 @@ package cc.calliope.mini.core.service.partialflashing
 
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.bluetooth.*
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.os.ResultReceiver
 import android.os.SystemClock
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import cc.calliope.mini.R
+import cc.calliope.mini.ui.activity.NotificationActivity
 import cc.calliope.mini.core.service.GattStatus
 import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.Notification
@@ -105,6 +111,10 @@ class PartialFlashingService : Service() {
         private const val PREFERRED_MTU = 247  // Maximum for BLE 4.2+
         private const val MTU_TIMEOUT_MS = 5_000L
 
+        // Foreground notification
+        private const val NOTIFICATION_CHANNEL_ID = "partial_flashing_channel"
+        private const val NOTIFICATION_ID = 200
+
         // GATT error codes that warrant retry
         private const val GATT_ERROR = 133  // Generic timeout/disconnect
         private const val GATT_BUSY = 22    // Device busy
@@ -166,6 +176,41 @@ class PartialFlashingService : Service() {
         super.onCreate()
         Log.d(TAG, "Service created")
         ApplicationStateHandler.updateState(State.STATE_BUSY)
+        startForegroundWithNotification()
+    }
+
+    private fun startForegroundWithNotification() {
+        // Create notification channel (Android O+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                NOTIFICATION_CHANNEL_ID,
+                getString(R.string.partial_flashing_starting),
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = getString(R.string.partial_flashing_starting)
+            }
+            val manager = getSystemService(NotificationManager::class.java)
+            manager?.createNotificationChannel(channel)
+        }
+
+        val notificationIntent = Intent(this, NotificationActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, notificationIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+            .setContentTitle(getString(R.string.partial_flashing_starting))
+            .setSmallIcon(R.drawable.ic_notification_flash)
+            .setContentIntent(pendingIntent)
+            .setOngoing(true)
+            .build()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {

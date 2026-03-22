@@ -131,7 +131,8 @@
             android:enabled="true" />
         <service
             android:name=".core.service.partialflashing.PartialFlashingService"
-            android:enabled="true" />
+            android:enabled="true"
+            android:foregroundServiceType="connectedDevice" />
         <service
             android:name=".core.bluetooth.CheckService"
             android:enabled="true" />
