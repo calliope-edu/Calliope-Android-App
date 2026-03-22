@@ -261,6 +261,7 @@ class PartialFlashingService : Service() {
         }
 
         // Step 2: Check device mode and prepare for flashing
+        ApplicationStateHandler.updateNotification(Notification.INFO, getString(R.string.flashing_process_starting))
         if (!prepareDeviceForFlashing()) {
             Log.e(TAG, "Failed to prepare device")
             return RESULT_ATTEMPT_DFU
@@ -831,6 +832,7 @@ class PartialFlashingService : Service() {
             Log.d(TAG, "Found data at line ${dataPos.line}, offset ${dataPos.part}")
 
             // Read memory map from device
+            ApplicationStateHandler.updateNotification(Notification.INFO, getString(R.string.flashing_firmware_validating))
             codeStartAddress = 0
             codeEndAddress = 0
 
