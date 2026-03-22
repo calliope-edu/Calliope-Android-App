@@ -892,12 +892,14 @@ class PartialFlashingService : Service() {
             }
 
             // Compare DAL hash
-            if (dalHash == null || fileHash == null || fileHash != dalHash) {
+            if (fileHash == null) {
+                Log.w(TAG, "Hash not available in hex file (partial hex), skipping hash verification")
+            } else if (dalHash == null || fileHash != dalHash) {
                 Log.e(TAG, "Hash mismatch: file=$fileHash, device=$dalHash")
                 return RESULT_ATTEMPT_DFU
+            } else {
+                Log.d(TAG, "Hash match confirmed: $fileHash")
             }
-
-            Log.d(TAG, "Hash match confirmed")
 
             // Verify code start address matches hex file
             val fileCodeAddr = hexPosToAddress(hex, dataPos)
@@ -1549,28 +1551,33 @@ class PartialFlashingService : Service() {
                 0 -> null
                 1 -> hash
                 2 -> {
-                    val hashPos2 = hexAddressToPos(hex, hashPtr) ?: return null
-                    hashPos2.sizeBytes = 100
-                    val hashData = hexGetData(hex, hashPos2)
-                    if (hashData.isEmpty()) return null
+                    val hashPos2 = hexAddressToPos(hex, hashPtr)
+                    if (hashPos2 == null) {
+                        Log.w(TAG, "findPythonData: hash pointer 0x${String.format("%08X", hashPtr)} not found in hex (partial hex without DAL)")
+                        null
+                    } else {
+                        hashPos2.sizeBytes = 100
+                        val hashData = hexGetData(hex, hashPos2)
+                        if (hashData.isEmpty()) return null
 
-                    var strLen = 0
-                    while (strLen < hashData.length / 2) {
-                        val chr = hexToUint8(hashData, strLen * 2)
-                        if (chr == 0) break
-                        strLen++
+                        var strLen = 0
+                        while (strLen < hashData.length / 2) {
+                            val chr = hexToUint8(hashData, strLen * 2)
+                            if (chr == 0) break
+                            strLen++
+                        }
+
+                        val strBytes = ByteArray(strLen)
+                        for (i in 0 until strLen) {
+                            strBytes[i] = hexToUint8(hashData, i * 2).toByte()
+                        }
+
+                        val crc32 = CRC32()
+                        crc32.update(strBytes)
+                        val crc = crc32.value
+                        val hashBytes = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(crc).array()
+                        bytesToHex(hashBytes)
                     }
-
-                    val strBytes = ByteArray(strLen)
-                    for (i in 0 until strLen) {
-                        strBytes[i] = hexToUint8(hashData, i * 2).toByte()
-                    }
-
-                    val crc32 = CRC32()
-                    crc32.update(strBytes)
-                    val crc = crc32.value
-                    val hashBytes = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(crc).array()
-                    bytesToHex(hashBytes)
                 }
                 else -> return null
             }

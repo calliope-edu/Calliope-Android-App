@@ -169,11 +169,12 @@ class HexUtils(filePath: String) {
     }
 
     private fun getRecordType(record: String): Int {
+        if (record.length < 9) return -1
         return try {
             record.substring(7, 9).toInt(16)
         } catch (e: Exception) {
             Log.e(TAG, "getRecordType error: $e")
-            0
+            -1
         }
     }
 
