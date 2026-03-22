@@ -696,6 +696,20 @@ class PartialFlashingService : Service() {
             }
 
             isPython = false
+            Log.d(TAG, "Hex file loaded: ${hex.numOfLines()} lines")
+            Log.d(TAG, "Searching for MakeCode magic: $PXT_MAGIC")
+            val mkLine = hex.searchForData(PXT_MAGIC)
+            Log.d(TAG, "MakeCode magic search result: line=$mkLine")
+
+            Log.d(TAG, "Searching for MicroPython magic: $UPY_MAGIC_REGEX")
+            val upyLine = hex.searchForDataRegEx(UPY_MAGIC_REGEX)
+            Log.d(TAG, "MicroPython magic search result: line=$upyLine")
+
+            // Also try individual magic parts
+            val upy1Line = hex.searchForData(UPY_MAGIC1)
+            val upy2Line = hex.searchForData(UPY_MAGIC2)
+            Log.d(TAG, "UPY_MAGIC1 ($UPY_MAGIC1) at line=$upy1Line, UPY_MAGIC2 ($UPY_MAGIC2) at line=$upy2Line")
+
             val dataPos = findMakeCodeData(hex) ?: run {
                 findPythonData(hex)?.also { isPython = true }
             }
@@ -764,8 +778,9 @@ class PartialFlashingService : Service() {
                 return RESULT_FAILED
             }
 
-            // Check EOF
-            if (endOfFile || hex.getRecordTypeFromIndex(dataPos.line + lineCount) != 0) {
+            // Check EOF - type 0x00 (standard data) and 0x0D (micro:bit custom data) are valid
+            val recordType = hex.getRecordTypeFromIndex(dataPos.line + lineCount)
+            if (endOfFile || (recordType != 0 && recordType != 0x0D)) {
                 if (count == 0) break
                 endOfFile = true
             }
@@ -1038,16 +1053,6 @@ class PartialFlashingService : Service() {
             Log.d(TAG, "onServicesDiscovered: status=$status")
 
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                // Log all discovered services for debugging
-                Log.d(TAG, "=== Discovered ${gatt.services.size} services ===")
-                gatt.services.forEach { service ->
-                    Log.d(TAG, "Service: ${service.uuid}")
-                    service.characteristics.forEach { char ->
-                        Log.d(TAG, "  - Characteristic: ${char.uuid}")
-                    }
-                }
-                Log.d(TAG, "=== End of services ===")
-
                 // Detect hardware type by presence of Secure DFU service
                 isNrf52 = gatt.getService(SECURE_DFU_SERVICE) != null
                 Log.d(TAG, "Hardware: ${if (isNrf52) "nRF52 (V3)" else "nRF51 (V1/V2)"}, page size: ${if (isNrf52) "4KB" else "1KB"}")
@@ -1153,17 +1158,33 @@ class PartialFlashingService : Service() {
                     }
                 }
                 REGION_INFO_COMMAND -> {
-                    // Region info response
+                    // Region info response: [0x00, region, startAddr(4B), endAddr(4B), hash(8B)]
                     if (value.size >= 18) {
                         val region = value[1].toInt()
+                        val regionName = when (region) {
+                            REGION_SD -> "SoftDevice"
+                            REGION_DAL -> "DAL"
+                            REGION_MAKECODE -> "MakeCode"
+                            else -> "Unknown($region)"
+                        }
+
+                        val startAddr = bytesToLong(value, 2)
+                        val endAddr = bytesToLong(value, 6)
+                        val hash = bytesToHex(value.copyOfRange(10, 18))
+
+                        Log.d(TAG, "Region $regionName: " +
+                                "start=0x${String.format("%08X", startAddr)}, " +
+                                "end=0x${String.format("%08X", endAddr)}, " +
+                                "hash=$hash, " +
+                                "raw=[${value.joinToString(" ") { String.format("%02X", it) }}]")
 
                         if (region == REGION_MAKECODE) {
-                            codeStartAddress = bytesToLong(value, 2)
-                            codeEndAddress = bytesToLong(value, 6)
+                            codeStartAddress = startAddr
+                            codeEndAddress = endAddr
                         }
 
                         if (region == REGION_DAL) {
-                            dalHash = bytesToHex(value.copyOfRange(10, 18))
+                            dalHash = hash
                         }
                     }
 
@@ -1269,40 +1290,66 @@ class PartialFlashingService : Service() {
 
     private fun findPythonData(hex: HexUtils): HexPos? {
         val line = hex.searchForDataRegEx(UPY_MAGIC_REGEX)
+        Log.d(TAG, "findPythonData: regex match at line=$line")
         if (line < 0) return null
 
         val pos = HexPos(line = line)
         val header = hex.getDataFromIndex(line)
         pos.part = header.indexOf(UPY_MAGIC1)
         pos.sizeBytes = 16
+        Log.d(TAG, "findPythonData: header data='$header', part=${pos.part}")
 
         val headerData = hexGetData(hex, pos)
-        if (headerData.length < 32) return null
+        Log.d(TAG, "findPythonData: headerData='$headerData' (len=${headerData.length})")
+        if (headerData.length < 32) {
+            Log.e(TAG, "findPythonData: headerData too short (${headerData.length} < 32)")
+            return null
+        }
 
         val version = hexToUint16(headerData, 8)
         val tableLen = hexToUint16(headerData, 12)
         val numReg = hexToUint16(headerData, 16)
         val pageLog2 = hexToUint16(headerData, 20)
+        Log.d(TAG, "findPythonData: version=$version, tableLen=$tableLen, numReg=$numReg, pageLog2=$pageLog2")
 
-        if (version != 1) return null
-        if (tableLen != numReg * 16) return null
+        if (version != 1) {
+            Log.e(TAG, "findPythonData: unsupported version $version")
+            return null
+        }
+        if (tableLen != numReg * 16) {
+            Log.e(TAG, "findPythonData: tableLen mismatch ($tableLen != ${numReg * 16})")
+            return null
+        }
 
         // Page size depends on hardware: nRF52 (V3) = 4KB, nRF51 (V1/V2) = 1KB
         val pageSize = if (isNrf52) PAGE_SIZE_NRF52 else PAGE_SIZE_NRF51
-        if (1 shl pageLog2 != pageSize) return null
+        Log.d(TAG, "findPythonData: pageSize=$pageSize, 1<<pageLog2=${1 shl pageLog2}")
+        if (1 shl pageLog2 != pageSize) {
+            Log.e(TAG, "findPythonData: page size mismatch (${1 shl pageLog2} != $pageSize)")
+            return null
+        }
 
         var codeStart = -1L
         var codeLength = -1L
 
         val hdrAddress = hexPosToAddress(hex, pos)
+        Log.d(TAG, "findPythonData: hdrAddress=0x${String.format("%08X", hdrAddress)}")
 
         for (regionIndex in 0 until numReg) {
             val regionAddress = hdrAddress - tableLen + (regionIndex * 16)
-            val regionPos = hexAddressToPos(hex, regionAddress) ?: return null
+            Log.d(TAG, "findPythonData: region[$regionIndex] address=0x${String.format("%08X", regionAddress)}")
+            val regionPos = hexAddressToPos(hex, regionAddress)
+            if (regionPos == null) {
+                Log.e(TAG, "findPythonData: failed to find region[$regionIndex] at address 0x${String.format("%08X", regionAddress)}")
+                return null
+            }
             regionPos.sizeBytes = 16
 
             val region = hexGetData(hex, regionPos)
-            if (region.length < 32) return null
+            if (region.length < 32) {
+                Log.e(TAG, "findPythonData: region[$regionIndex] data too short (${region.length})")
+                return null
+            }
 
             val regionID = hexToUint8(region, 0)
             val hashType = hexToUint8(region, 2)
@@ -1310,6 +1357,7 @@ class PartialFlashingService : Service() {
             val length = hexToUint32(region, 8)
             val hashPtr = hexToUint32(region, 16)
             val hash = region.substring(16, 32)
+            Log.d(TAG, "findPythonData: region[$regionIndex] id=$regionID, hashType=$hashType, startPage=$startPage, length=$length, data='$region'")
 
             val regionHash: String? = when (hashType) {
                 0 -> null
@@ -1442,8 +1490,8 @@ class PartialFlashingService : Service() {
     }
 
     /**
-     * Count the number of data lines (record type 0) starting from the given line.
-     * Matches the behavior of flashData loop which stops at any non-type-0 record.
+     * Count the number of data lines (record type 0x00 or 0x0D) starting from the given line.
+     * Type 0x0D is a custom micro:bit record type used in MicroPython hex files.
      */
     private fun countDataLines(hex: HexUtils, startLine: Int): Int {
         var count = 0
@@ -1452,12 +1500,10 @@ class PartialFlashingService : Service() {
 
         while (line < totalLines) {
             val recordType = hex.getRecordTypeFromIndex(line)
-            // flashData only accepts type 0, stops on anything else
-            if (recordType == 0) {
+            if (recordType == 0 || recordType == 0x0D) {
                 count++
                 line++
             } else {
-                // Any other record type (including extended address, EOF) - stop
                 break
             }
         }

@@ -43,8 +43,6 @@ android {
 }
 
 dependencies {
-    // implementation project(":partialflashing") // Disabled - using new Kotlin implementation
-
     implementation 'no.nordicsemi.android.kotlin.ble:scanner:1.3.1'
     implementation 'no.nordicsemi.android:dfu:2.11.0'
 

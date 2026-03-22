@@ -109,19 +109,15 @@ class HexUtils(filePath: String) {
                     val hi = data.substring(0, 1).toInt(16)
                     val lo = data.substring(1).toInt(16)
                     lastBaseAddr = hi.toLong() * 0x1000L + lo.toLong() * 0x10L
-
-                    if (lastBaseAddr > address) return -1
                 }
                 4 -> { // Extended Linear Address
                     val data = getRecordData(line)
                     if (data.length != 4) return -1
 
                     lastBaseAddr = data.toInt(16).toLong() * 0x10000L
-
-                    if (lastBaseAddr > address) return -1
                 }
                 0, 0x0D -> { // Data record
-                    if (address - lastBaseAddr < 0x10000) {
+                    if (address - lastBaseAddr in 0 until 0x10000) {
                         val a = lastBaseAddr + getRecordAddress(line)
                         val n = getRecordDataLength(line) / 2 // bytes
 
