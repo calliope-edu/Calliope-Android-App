@@ -154,6 +154,7 @@ public class MainActivity extends BaseActivity {
     private void enableFullScreenMode() {
         fullScreen = true;
         binding.bottomNavigation.setVisibility(View.GONE);
+        binding.navFade.setVisibility(View.GONE);
         setWebViewBottomMargin(0);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -181,6 +182,7 @@ public class MainActivity extends BaseActivity {
     private void disableFullScreenMode() {
         fullScreen = false;
         binding.bottomNavigation.setVisibility(View.VISIBLE);
+        binding.navFade.setVisibility(View.VISIBLE);
         setWebViewBottomMargin((int) (70 * getResources().getDisplayMetrics().density));
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
