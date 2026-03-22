@@ -939,6 +939,7 @@ class PartialFlashingService : Service() {
                 return RESULT_FAILED
             }
 
+            var ack: Byte = PACKET_STATE_OK
             count++
             if (count == 4) {
                 count = 0
@@ -961,21 +962,20 @@ class PartialFlashingService : Service() {
                             return RESULT_FAILED
                         }
                     }
+                    ack = packetState
+                    packetState = PACKET_STATE_WAITING
                 }
 
                 // Handle retransmit
-                if (packetState == PACKET_STATE_RETRANSMIT) {
+                if (ack == PACKET_STATE_RETRANSMIT) {
                     Log.w(TAG, "Retransmit requested for packets starting at line $line0")
                     lineCount = line0
                     part = part0
                     endOfFile = false
                 }
-
-                // Reset state for next batch
-                packetState = PACKET_STATE_WAITING
             }
 
-            if (packetState != PACKET_STATE_RETRANSMIT && !endOfFile) {
+            if (ack != PACKET_STATE_RETRANSMIT && !endOfFile) {
                 part += partData.length
                 if (part >= hexData.length) {
                     part = 0
