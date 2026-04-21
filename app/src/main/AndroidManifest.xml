@@ -116,9 +116,6 @@
         <activity
             android:name=".ui.activity.CameraPermissionActivity"
             android:exported="false" />
-        <activity
-            android:name=".ui.activity.SettingsActivity"
-            android:exported="false" />
         <service
             android:name=".core.service.DfuService"
             android:enabled="true"
@@ -133,11 +130,9 @@
             android:name=".core.service.LegacyDfuService"
             android:enabled="true" />
         <service
-            android:name=".core.service.PartialFlashingService"
-            android:enabled="true" />
-        <service
-            android:name=".core.service.PartialFlashingInitService"
-            android:enabled="true" />
+            android:name=".core.service.partialflashing.PartialFlashingService"
+            android:enabled="true"
+            android:foregroundServiceType="connectedDevice" />
         <service
             android:name=".core.bluetooth.CheckService"
             android:enabled="true" />

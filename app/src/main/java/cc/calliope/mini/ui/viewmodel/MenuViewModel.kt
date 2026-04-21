@@ -22,18 +22,23 @@ class MenuViewModel(private val context: Context) : ViewModel() {
         _menuItems.value = EditorType.entries.map { editor ->
             MenuItem(
                 id = editor.id,
+                directoryName = editor.directoryName,
                 titleResId = editor.titleResId,
                 iconRes = editor.iconResId,
                 infoResId = editor.infoResId,
                 urlV2 = editor.urlV2,
                 urlV3 = editor.urlV3,
                 visible = Settings.isEditorVisible(context, editor.id),
-                order = editor.defaultOrder
+                order = Settings.getEditorOrder(context, editor.id, editor.defaultOrder)
             )
         }
     }
 
     fun updateOrder(newItems: List<MenuItem>) {
+        // Save order to preferences
+        newItems.forEachIndexed { index, item ->
+            Settings.setEditorOrder(context, item.id, index)
+        }
         _menuItems.value = newItems
     }
 

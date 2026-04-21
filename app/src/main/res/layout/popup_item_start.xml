@@ -30,7 +30,7 @@
         android:layout_height="32dp"
         android:maxHeight="32dp"
         android:gravity="center"
-        android:background="@drawable/btn_grey_transparent"
+        android:background="@drawable/popup_item_background"
         android:paddingHorizontal="@dimen/fab_title_horizontal_padding"
         android:paddingVertical="@dimen/fab_title_vertical_padding"
         android:layout_marginStart="@dimen/margin_half"

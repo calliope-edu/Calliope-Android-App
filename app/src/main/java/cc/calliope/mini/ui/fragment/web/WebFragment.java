@@ -77,8 +77,7 @@ public class WebFragment extends Fragment implements DownloadListener {
 
         @JavascriptInterface
         public void getBase64FromBlobData(String url, String name) {
-            Log.d(TAG, "base64Data: " + url);
-            Log.d(TAG, "name: " + name);
+            Log.d(TAG, "Received file: " + name);
 
             File file = FileUtils.getFile(context, editorName, name);
             if (file == null) {
@@ -92,7 +91,30 @@ public class WebFragment extends Fragment implements DownloadListener {
             }
         }
 
-        public static String getBase64StringFromBlobUrl(String blobUrl, String mimeType) {
+        /**
+         * Handle download from MakeCode controller mode.
+         * Called when MakeCode sends postMessage with download data and project name.
+         * @param hexData The hex file content as string
+         * @param name The project name from MakeCode
+         */
+        @JavascriptInterface
+        public void handleControllerDownload(String hexData, String name) {
+            Log.d(TAG, "Controller download: " + name);
+
+            String fileName = cleanFileName(name);
+            File file = FileUtils.getFile(context, editorName, fileName);
+            if (file == null) {
+                SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_save_file_error)).show();
+            } else {
+                if (saveHexFile(hexData, file)) {
+                    startDfuActivity(file);
+                } else {
+                    SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_download_error)).show();
+                }
+            }
+        }
+
+        public static String getBase64StringFromBlobUrl(String blobUrl, String mimeType, String fileName) {
             if (blobUrl.startsWith("blob")) {
                 return "javascript: " +
                         "var xhr = new XMLHttpRequest();" +
@@ -102,7 +124,16 @@ public class WebFragment extends Fragment implements DownloadListener {
                         "xhr.onload = function(e) {" +
                         "    if (this.status == 200) {" +
                         "        var blobFile = this.response;" +
-                        "        var name = blobFile.name;" +
+                        "        var name = window.androidLastDownloadName;" +
+                        "        if (name) {" +
+                        "            name = name.replace(/\\.hex$/i, '').replace(/^mini-/i, '');" +
+                        "        } else {" +
+                        "            name = blobFile.name;" +
+                        "        }" +
+                        "        if (!name) {" +
+                        "            name = '" + fileName + "';" +
+                        "        }" +
+                        "        window.androidLastDownloadName = null;" +
                         "        var reader = new FileReader();" +
                         "        reader.readAsDataURL(blobFile);" +
                         "        reader.onloadend = function() {" +
@@ -114,6 +145,43 @@ public class WebFragment extends Fragment implements DownloadListener {
                         "xhr.send();";
             }
             return "javascript: console.log('It is not a Blob URL');";
+        }
+
+        /**
+         * JavaScript to inject for intercepting download links.
+         * This hooks into anchor element clicks and URL.createObjectURL to capture the download filename.
+         */
+        public static String getDownloadInterceptScript() {
+            return "javascript: " +
+                    "if (!window.androidDownloadInterceptAdded) {" +
+                    "    window.androidDownloadInterceptAdded = true;" +
+                    "    window.androidLastDownloadName = null;" +
+                    "    var originalClick = HTMLAnchorElement.prototype.click;" +
+                    "    HTMLAnchorElement.prototype.click = function() {" +
+                    "        if (this.download && this.href && this.href.startsWith('blob:')) {" +
+                    "            window.androidLastDownloadName = this.download;" +
+                    "        }" +
+                    "        return originalClick.apply(this, arguments);" +
+                    "    };" +
+                    "    var originalCreateElement = document.createElement.bind(document);" +
+                    "    document.createElement = function(tag) {" +
+                    "        var el = originalCreateElement(tag);" +
+                    "        if (tag.toLowerCase() === 'a') {" +
+                    "            var desc = Object.getOwnPropertyDescriptor(HTMLAnchorElement.prototype, 'download');" +
+                    "            Object.defineProperty(el, 'download', {" +
+                    "                set: function(val) { window.androidLastDownloadName = val; desc.set.call(this, val); }," +
+                    "                get: function() { return desc.get.call(this); }" +
+                    "            });" +
+                    "        }" +
+                    "        return el;" +
+                    "    };" +
+                    "    window.addEventListener('message', function(ev) {" +
+                    "        var msg = ev.data;" +
+                    "        if (msg && msg.download && msg.name) {" +
+                    "            Android.handleControllerDownload(msg.download, msg.name);" +
+                    "        }" +
+                    "    }, false);" +
+                    "}";
         }
     }
 
@@ -151,8 +219,6 @@ public class WebFragment extends Fragment implements DownloadListener {
             editorUrl = arguments.getString(TARGET_URL);
             editorName = arguments.getString(TARGET_NAME);
         }
-        
-        // Логуємо, що WebFragment використовується для звичайних редакторів
         Log.d(TAG, "WebFragment created for editor: " + editorName + ", URL: " + editorUrl);
     }
 
@@ -200,6 +266,16 @@ public class WebFragment extends Fragment implements DownloadListener {
                     Log.d(TAG, "Sub-resource HTTP error: " + errorResponse.getStatusCode() + " for URL: " + request.getUrl());
                 }
             }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                // Inject download intercept for editors that use blob URLs
+                if (url.contains("makecode") || url.contains("python.calliope")) {
+                    Log.d(TAG, "Injecting download intercept for: " + url);
+                    view.evaluateJavascript(JavaScriptInterface.getDownloadInterceptScript(), null);
+                }
+            }
         });
         webView.setDownloadListener(this);
 
@@ -213,26 +289,22 @@ public class WebFragment extends Fragment implements DownloadListener {
     }
 
     @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-    }
-
-    //TODO завантажувати xml і ділитися ними
-
-    @Override
     public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
-        Log.i(TAG, "editorName: " + editorName);
-        Log.i(TAG, "URL: " + url);
-        Log.i(TAG, "userAgent: " + userAgent);
-        Log.i(TAG, "contentDisposition: " + contentDisposition);
-        Log.i(TAG, "mimetype: " + mimetype);
-        Log.i(TAG, "contentLength: " + contentLength);
+        Log.d(TAG, "Download started: " + mimetype + ", size: " + contentLength);
 
         try {
             String decodedUrl = URLDecoder.decode(url, UTF_8);
             if (decodedUrl.startsWith("blob:")) {
-                String javaScript = JavaScriptInterface.getBase64StringFromBlobUrl(url, mimetype);
-                Log.v(TAG, "javaScript: " + javaScript);
+                String fileName = getFileNameFromContentDisposition(contentDisposition);
+                if (fileName == null || fileName.isEmpty()) {
+                    // Fallback: generate name based on editor and timestamp
+                    fileName = editorName + "_" + System.currentTimeMillis();
+                } else {
+                    // Clean up filename (remove .hex extension and mini- prefix)
+                    fileName = cleanFileName(fileName);
+                }
+                Log.d(TAG, "Resolved fileName: " + fileName);
+                String javaScript = JavaScriptInterface.getBase64StringFromBlobUrl(url, mimetype, fileName);
                 webView.loadUrl(javaScript);
             } else {
                 selectDownloadMethod(decodedUrl);
@@ -240,6 +312,47 @@ public class WebFragment extends Fragment implements DownloadListener {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
+    }
+
+    private String getFileNameFromContentDisposition(String contentDisposition) {
+        if (contentDisposition == null || contentDisposition.isEmpty()) {
+            return null;
+        }
+        // Parse filename="..." or filename=...
+        String[] parts = contentDisposition.split(";");
+        for (String part : parts) {
+            String trimmed = part.trim();
+            if (trimmed.toLowerCase().startsWith("filename=")) {
+                String filename = trimmed.substring(9).trim();
+                // Remove quotes if present
+                if (filename.startsWith("\"") && filename.endsWith("\"")) {
+                    filename = filename.substring(1, filename.length() - 1);
+                }
+                // Handle URL-encoded filenames
+                try {
+                    filename = URLDecoder.decode(filename, UTF_8);
+                } catch (UnsupportedEncodingException e) {
+                    Log.w(TAG, "Failed to decode filename: " + filename);
+                }
+                return filename;
+            }
+        }
+        return null;
+    }
+
+    private String cleanFileName(String fileName) {
+        if (fileName == null) {
+            return null;
+        }
+        // Remove .hex extension
+        if (fileName.toLowerCase().endsWith(".hex")) {
+            fileName = fileName.substring(0, fileName.length() - 4);
+        }
+        // Remove mini- prefix (added by MakeCode)
+        if (fileName.toLowerCase().startsWith("mini-")) {
+            fileName = fileName.substring(5);
+        }
+        return fileName;
     }
 
     private void selectDownloadMethod(String url) {
@@ -253,6 +366,7 @@ public class WebFragment extends Fragment implements DownloadListener {
         boolean result = false;
 
         if (file == null) {
+            Log.e(TAG, "File is null");
             SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_save_file_error)).show();
         } else {
             if (url.startsWith("data:text/hex")) {
@@ -267,6 +381,21 @@ public class WebFragment extends Fragment implements DownloadListener {
             } else {
                 SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_download_error)).show();
             }
+        }
+    }
+
+    private boolean saveHexFile(String hexData, File file) {
+        if (hexData == null || hexData.isEmpty()) {
+            Log.e(TAG, "saveHexFile: hexData is null or empty");
+            return false;
+        }
+        try (FileOutputStream os = new FileOutputStream(file)) {
+            os.write(hexData.getBytes(StandardCharsets.UTF_8));
+            Log.i(TAG, "saveHexFile: " + file.toString());
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
@@ -336,17 +465,17 @@ public class WebFragment extends Fragment implements DownloadListener {
             return;
         }
 
-        if(!Utils.isBluetoothEnabled()){
+        if (!Utils.isBluetoothEnabled()) {
             ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
             return;
         }
 
-        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()){
+        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()) {
             ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
             return;
         }
 
-        if(!Settings.isBackgroundFlashingEnable(getActivity())){
+        if (!Settings.isBackgroundFlashingEnable(getActivity())) {
             final Intent intent = new Intent(getActivity(), FlashingActivity.class);
             intent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
             startActivity(intent);

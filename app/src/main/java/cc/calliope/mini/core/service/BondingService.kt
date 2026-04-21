@@ -354,6 +354,8 @@ open class BondingService : Service() {
     @SuppressWarnings("MissingPermission")
     private fun startServiceDiscovery(gatt: BluetoothGatt) {
         Log.d(TAG, "Starting service discovery on device: ${gatt.device.address}")
+        BluetoothUtils.clearServicesCache(gatt)
+
         var result = false
 
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {

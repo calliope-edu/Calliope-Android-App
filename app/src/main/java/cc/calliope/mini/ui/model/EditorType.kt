@@ -1,9 +1,10 @@
 package cc.calliope.mini.ui.model
 
 import cc.calliope.mini.R
+import java.util.Locale
 
 enum class EditorType(
-    val id: String,
+    val id: String,  // lowercase for preferences
     val titleResId: Int,
     val iconResId: Int,
     val infoResId: Int,
@@ -16,8 +17,8 @@ enum class EditorType(
         titleResId = R.string.title_make_code,
         iconResId = R.drawable.ic_make_code_inset,
         infoResId = R.string.info_make_code,
-        urlV2 = "https://makecode.calliope.cc/?androidapp=1",
-        urlV3 = "https://makecode.calliope.cc/?androidapp=1",
+        urlV2 = "https://makecode.calliope.cc/",
+        urlV3 = "https://makecode.calliope.cc/",
         defaultOrder = 0
     ),
 
@@ -51,16 +52,6 @@ enum class EditorType(
         defaultOrder = 3
     ),
 
-    CUSTOM(
-        id = "custom",
-        titleResId = R.string.title_custom,
-        iconResId = R.drawable.ic_custom_inset,
-        infoResId = R.string.info_custom,
-        urlV2 = "https://makecode.calliope.cc/beta?androidapp=1",
-        urlV3 = "https://makecode.calliope.cc/beta?androidapp=1",
-        defaultOrder = 4
-    ),
-
     CARDBOARD_CONTROL(
         id = "cardboard_control",
         titleResId = R.string.title_cardboard_control,
@@ -79,5 +70,31 @@ enum class EditorType(
         urlV2 = "https://cardboard.lofirobot.com/face-app/",
         urlV3 = "https://cardboard.lofirobot.com/face-app/",
         defaultOrder = 6
+    ),
+
+    CUSTOM(
+        id = "custom",
+        titleResId = R.string.title_custom,
+        iconResId = R.drawable.ic_custom_inset,
+        infoResId = R.string.info_custom,
+        urlV2 = "https://makecode.calliope.cc/beta",
+        urlV3 = "https://makecode.calliope.cc/beta",
+        defaultOrder = 4
     );
+
+    /**
+     * Directory name for file storage.
+     * Uses enum name (UPPERCASE) for backwards compatibility with existing files.
+     */
+    val directoryName: String
+        get() = name
+
+    fun getLocalizedUrl(boardVersion: Int): String {
+        val baseUrl = if (boardVersion == 2) urlV2 else urlV3
+        if (this != MAKECODE) return baseUrl
+
+        val langTag = Locale.getDefault().toLanguageTag()
+        val separator = if ('?' in baseUrl) '&' else '?'
+        return "${baseUrl}${separator}lang=$langTag"
+    }
 }

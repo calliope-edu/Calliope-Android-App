@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
+import androidx.recyclerview.widget.RecyclerView;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.FragmentEditorSettingsBinding;
 import cc.calliope.mini.utils.settings.Settings;
@@ -52,9 +53,19 @@ public class EditorSettingsFragment extends Fragment {
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             setPreferencesFromResource(R.xml.editor_preferences, rootKey);
-            
+
             // Set up preference change listeners for editor visibility
             setupEditorVisibilityListeners();
+        }
+
+        @Override
+        public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+            super.onViewCreated(view, savedInstanceState);
+            RecyclerView recyclerView = getListView();
+            int paddingBottom = (int) (70 * getResources().getDisplayMetrics().density);
+            recyclerView.setPadding(recyclerView.getPaddingLeft(), recyclerView.getPaddingTop(),
+                    recyclerView.getPaddingRight(), paddingBottom);
+            recyclerView.setClipToPadding(false);
         }
         
         private void setupEditorVisibilityListeners() {

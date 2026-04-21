@@ -1,10 +1,21 @@
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/constraint_layout_help"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.fragment.help.HelpFragment">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/topAppBar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:navigationIcon="@drawable/ic_back_24dp" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/vertical_guideline"
@@ -21,7 +32,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/vertical_guideline"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@+id/topAppBar" >
 
         <ImageView
             android:id="@+id/app_logo"
@@ -31,7 +42,7 @@
             android:paddingBottom="70dp"
             android:contentDescription="@string/app_name"
             android:scaleType="fitCenter"
-            android:src="@drawable/welcome" />
+            android:src="@drawable/logo_calliope_mini" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -43,7 +54,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="@+id/vertical_guideline"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@+id/topAppBar" >
 
         <ScrollView
             android:id="@+id/scrollView"
@@ -63,49 +74,16 @@
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/app_hello"
+                    android:id="@+id/summary_contact"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="24dp"
-                    android:text="@string/hello_text"
-                    android:textAlignment="textStart"
-                    android:textIsSelectable="true"
-                    android:textSize="24sp" />
-
-                <TextView
-                    android:id="@+id/app_info"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/info_app_text"
-                    android:textAlignment="textStart"
-                    android:textIsSelectable="true"
-                    android:textSize="@dimen/text_size_default" />
-
-                <FrameLayout
-                    android:id="@+id/open_web_button"
-                    android:layout_width="match_parent"
-                    android:layout_height="60dp"
-                    android:layout_marginVertical="8dp">
-
-                    <include
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        layout="@layout/fragment_home_item"/>
-                </FrameLayout>
-
-                <TextView
-                    android:id="@+id/app_info2"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/info_app_text2"
+                    android:text="@string/text_contact"
                     android:textAlignment="textStart"
                     android:textIsSelectable="true"
                     android:textSize="@dimen/text_size_default" />
 
             </LinearLayout>
-
         </ScrollView>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
-
 </androidx.constraintlayout.widget.ConstraintLayout>

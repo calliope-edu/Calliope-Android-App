@@ -37,6 +37,7 @@ import cc.calliope.mini.utils.settings.Preference;
 import cc.calliope.mini.utils.settings.Settings;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
+import cc.calliope.mini.core.service.partialflashing.PartialFlashingService;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
 
 
@@ -44,10 +45,12 @@ public class FlashingService extends LifecycleService {
     private static final String TAG = "FlashingService";
     private static final int NUMBER_OF_RETRIES = 3;
     private static final int REBOOT_TIME = 2000; // time required by the device to reboot, ms
+    public static final String EXTRA_FORCE_FULL_DFU = "extra_force_full_dfu";
     private String currentAddress;
     private String currentPattern;
     private int boardVersion;
     private String currentPath;
+    private boolean forceFullDfu = false;
 
     private State currentState = new State(State.STATE_IDLE);
 
@@ -122,6 +125,7 @@ public class FlashingService extends LifecycleService {
             return START_NOT_STICKY;
         }
 
+        forceFullDfu = intent.getBooleanExtra(EXTRA_FORCE_FULL_DFU, false);
         initFlashing();
         return START_NOT_STICKY;
     }
@@ -223,30 +227,11 @@ public class FlashingService extends LifecycleService {
             if (resultCode == RESULT_OK) {
                 boolean isSuccess = resultData.getBoolean("result");
                 if (isSuccess) {
-                    startDfu();
+                    // Wait for device to reboot into DFU mode before starting Nordic DFU
+                    new Handler().postDelayed(() -> startDfuLegacy(), 3000);
                 } else {
                     Log.e(TAG, "DFU failed");
                     handleError(getString(R.string.error_dfu_failed));
-                }
-            }
-        }
-    }
-
-    private class PartialFlashingInitReceiver extends ResultReceiver {
-        public PartialFlashingInitReceiver(Handler handler) {
-            super(handler);
-        }
-
-        @Override
-        protected void onReceiveResult(int resultCode, Bundle resultData) {
-            if (resultCode == RESULT_OK) {
-                boolean isSuccess = resultData.getBoolean("result");
-                if (isSuccess) {
-                    Log.d(TAG, "Partial flashing initiated");
-                    startPartialFlashing();
-                } else {
-                    Log.e(TAG, "Failed to initiate partial flashing");
-                    handleFullFlashing();
                 }
             }
         }
@@ -266,25 +251,15 @@ public class FlashingService extends LifecycleService {
                     Log.d(TAG, "Partial flashing completed");
                     stopSelf();
                 } else {
-                    Log.e(TAG, "Partial flashing failed");
-                    startDfu();
+                    Log.w(TAG, "Partial flashing failed, falling back to DFU");
+                    handleFullFlashing();
                 }
             }
         }
     }
 
-    private void startPartialFlashing() {
-        PartialFlashingReceiver resultReceiver = new PartialFlashingReceiver(new Handler());
-
-        Intent intent = new Intent(this, PartialFlashingService.class);
-        intent.putExtra("filepath", currentPath);
-        intent.putExtra("deviceAddress", currentAddress);
-        intent.putExtra("resultReceiver", resultReceiver);
-        startService(intent);
-    }
-
     private void initFlashing() {
-        if (Settings.isPartialFlashingEnable(this)) {
+        if (!forceFullDfu && Settings.isPartialFlashingEnable(this)) {
             handlePartialFlashing();
         } else {
             handleFullFlashing();
@@ -292,12 +267,13 @@ public class FlashingService extends LifecycleService {
     }
 
     private void handlePartialFlashing() {
-        PartialFlashingInitReceiver resultReceiver = new PartialFlashingInitReceiver(new Handler());
+        Log.d(TAG, "Starting partial flashing service");
+        PartialFlashingReceiver resultReceiver = new PartialFlashingReceiver(new Handler());
 
-        // Start the service
-        Intent service = new Intent(this, PartialFlashingInitService.class);
-        service.putExtra(Constants.CURRENT_DEVICE_ADDRESS, currentAddress);
-        service.putExtra("resultReceiver", resultReceiver);
+        Intent service = new Intent(this, PartialFlashingService.class);
+        service.putExtra(PartialFlashingService.EXTRA_DEVICE_ADDRESS, currentAddress);
+        service.putExtra(PartialFlashingService.EXTRA_FILE_PATH, currentPath);
+        service.putExtra(PartialFlashingService.EXTRA_RESULT_RECEIVER, resultReceiver);
         startService(service);
     }
 
@@ -368,6 +344,35 @@ public class FlashingService extends LifecycleService {
                 .setNumberOfRetries(NUMBER_OF_RETRIES)
                 .setRebootTime(REBOOT_TIME)
                 .setKeepBond(true)
+                .setZip(zipPath)
+                .start(this, DfuService.class);
+    }
+
+    /**
+     * Start DFU for V2 (Legacy) devices that are already in DFU bootloader mode
+     * after being triggered by LegacyDfuService.
+     * Note: Bond is removed in LegacyDfuService to prevent Nordic DFU 2.7.0+
+     * from waiting for Service Changed indication (which V2 bootloader doesn't send).
+     */
+    private void startDfuLegacy() {
+        String zipPath = prepareFirmwareZip();
+        if (zipPath == null) {
+            Log.e(TAG, "Failed to prepare firmware ZIP");
+            handleError(getString(R.string.error_failed_prepare_firmware_zip));
+            return;
+        }
+
+        new DfuServiceInitiator(currentAddress)
+                .setDeviceName(currentPattern)
+                .setMtu(23)
+                .setNumberOfRetries(NUMBER_OF_RETRIES)
+                .setRebootTime(REBOOT_TIME)
+                .setKeepBond(false)
+                .setForceDfu(true)
+                .setForceScanningForNewAddressInLegacyDfu(true)
+                // V2 (nRF51) needs PRN enabled - it can't handle data sent too fast
+                .setPacketsReceiptNotificationsEnabled(true)
+                .setPacketsReceiptNotificationsValue(6)
                 .setZip(zipPath)
                 .start(this, DfuService.class);
     }

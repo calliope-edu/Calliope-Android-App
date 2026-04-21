@@ -1,6 +1,7 @@
 package cc.calliope.mini;
 
 import android.app.Application;
+import android.content.Intent;
 import android.util.Log;
 
 import java.io.File;
@@ -8,22 +9,35 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import cc.calliope.mini.core.bluetooth.CheckService;
+
 public class App extends Application {
     private static final String CUSTOM_DIR = "CUSTOM";
+    private static final String MAKECODE_DIR = "MAKECODE";
+    private static final String CARDBOARD_CONTROL_DIR = "CARDBOARD_CONTROL";
+    private static final String CARDBOARD_FACE_DIR = "CARDBOARD_FACE";
+    private static final String PYTHON_DIR = "PYTHON";
     
     private static final String[] RAW_FILES = {
         "one_time_pairing",
         "demo_lofi_control", 
         "demo_lofi_face",
         "demo_snake",
-        "demo_matrix"
+        "demo_matrix",
+        "demo_dodge",
+        "demo_effects",
+        "demo_pong"
     };
 
     @Override
     public void onCreate() {
         super.onCreate();
         AppContext.initialize(this);
+        migrateSnakeFromMakecodeToPython();
         copyFilesToInternalStorage();
+
+        // Start CheckService for device availability monitoring
+        startService(new Intent(this, CheckService.class));
     }
 
     @Override
@@ -31,15 +45,39 @@ public class App extends Application {
         super.onTerminate();
     }
 
-    private void copyFilesToInternalStorage() {
-        File libraryDir = new File(getFilesDir(), CUSTOM_DIR);
-        if (!libraryDir.exists()) {
-            libraryDir.mkdirs();
+    private void migrateSnakeFromMakecodeToPython() {
+        File oldFile = new File(getFilesDir(), MAKECODE_DIR + File.separator + "demo_snake.hex");
+        if (oldFile.exists()) {
+            if (oldFile.delete()) {
+                Log.d("App", "Migrated demo_snake.hex: removed old copy from MAKECODE");
+            }
         }
+    }
 
+    private void copyFilesToInternalStorage() {
         for (String fileName : RAW_FILES) {
+            String targetDir = getTargetDirectory(fileName);
+            File libraryDir = new File(getFilesDir(), targetDir);
+            if (!libraryDir.exists()) {
+                libraryDir.mkdirs();
+            }
             copyRawFileToInternalStorage(libraryDir, fileName);
         }
+    }
+    
+    private String getTargetDirectory(String fileName) {
+        if (fileName.equals("one_time_pairing")) {
+            return CUSTOM_DIR;
+        } else if (fileName.equals("demo_matrix")) {
+            return MAKECODE_DIR;
+        } else if (fileName.equals("demo_snake") || fileName.equals("demo_dodge") || fileName.equals("demo_effects") || fileName.equals("demo_pong")) {
+            return PYTHON_DIR;
+        } else if (fileName.equals("demo_lofi_control")) {
+            return CARDBOARD_CONTROL_DIR;
+        } else if (fileName.equals("demo_lofi_face")) {
+            return CARDBOARD_FACE_DIR;
+        }
+        return CUSTOM_DIR; // default fallback
     }
     
     private void copyRawFileToInternalStorage(File libraryDir, String fileName) {

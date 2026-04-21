@@ -1,57 +1,74 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="@dimen/margin_half"
-    android:layout_marginBottom="@dimen/margin_half"
-    android:background="@drawable/btn_grey_transparent_light"
-    android:padding="@dimen/padding">
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="4dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="@color/item_background"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/stroke_color">
 
-    <TextView
-        android:id="@+id/hex_file_name_text_view"
-        android:layout_width="0dp"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/placeholder_demo_file"
-        android:textSize="@dimen/text_size_default"
-        android:textStyle="bold"
-        android:layout_marginStart="8dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/hex_file_icon"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:padding="16dp">
 
-    <TextView
-        android:id="@+id/hex_file_date_text_view"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="@string/placeholder_file_date"
-        android:textSize="@dimen/text_size_button"
-        android:layout_marginStart="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/hex_file_icon"
-        app:layout_constraintTop_toBottomOf="@+id/hex_file_name_text_view" />
+        <ImageView
+            android:id="@+id/hex_file_icon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:srcCompat="@drawable/ic_editors_blocks" />
 
-    <ImageView
-        android:id="@+id/hex_file_icon"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/ic_editors_blocks" />
+        <TextView
+            android:id="@+id/hex_file_name_text_view"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/placeholder_demo_file"
+            android:textSize="@dimen/text_size_default"
+            android:textStyle="bold"
+            android:textColor="@color/item_text"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
+            app:layout_constraintEnd_toStartOf="@+id/hex_file_version_text_view"
+            app:layout_constraintStart_toEndOf="@+id/hex_file_icon"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/hex_file_version_text_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/btn_aqua"
-        android:paddingHorizontal="4dp"
-        android:text="@string/placeholder_file_version"
-        android:textSize="10sp"
-        android:textStyle="bold"
-        android:textColor="@color/white"
-        app:layout_constraintEnd_toEndOf="@+id/hex_file_name_text_view"
-        app:layout_constraintTop_toTopOf="@+id/hex_file_name_text_view" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <TextView
+            android:id="@+id/hex_file_date_text_view"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="@string/placeholder_file_date"
+            android:textSize="@dimen/text_size_button"
+            android:textColor="@color/item_text"
+            android:alpha="0.7"
+            android:layout_marginStart="12dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/hex_file_icon"
+            app:layout_constraintTop_toBottomOf="@+id/hex_file_name_text_view" />
+
+        <TextView
+            android:id="@+id/hex_file_version_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/btn_aqua"
+            android:paddingHorizontal="4dp"
+            android:text="@string/placeholder_file_version"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.google.android.material.card.MaterialCardView>

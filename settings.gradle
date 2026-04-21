@@ -14,5 +14,3 @@ dependencyResolutionManagement {
 }
 rootProject.name = "Calliope mini"
 include ':app'
-include ':pflibrary'
-include ':partialflashing'

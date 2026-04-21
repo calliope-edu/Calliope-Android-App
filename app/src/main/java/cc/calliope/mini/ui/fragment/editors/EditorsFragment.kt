@@ -12,6 +12,7 @@ import cc.calliope.mini.R
 import cc.calliope.mini.databinding.FragmentEditorsBinding
 import cc.calliope.mini.ui.adapter.MenuAdapter
 import cc.calliope.mini.ui.model.MenuItem
+import cc.calliope.mini.ui.model.EditorType
 import cc.calliope.mini.ui.viewmodel.MenuViewModel
 import cc.calliope.mini.ui.dialog.DialogUtils
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -19,10 +20,11 @@ import androidx.recyclerview.widget.RecyclerView
 import cc.calliope.mini.ui.adapter.ItemMoveListener
 import cc.calliope.mini.ui.SnackbarHelper
 import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.drawable.VectorDrawable
 import android.graphics.Color
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.core.graphics.drawable.toDrawable
 
 class EditorsFragment : Fragment() {
 
@@ -72,19 +74,23 @@ class EditorsFragment : Fragment() {
             ) {
                 if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
                     val itemView = viewHolder.itemView
-                    val background = Color.RED.toDrawable()
+                    val cornerRadius = 16f * itemView.resources.displayMetrics.density
+                    val paint = Paint().apply {
+                        color = Color.RED
+                        isAntiAlias = true
+                    }
                     val context = requireContext()
                     val icon = AppCompatResources.getDrawable(context, R.drawable.delete_icon) as? VectorDrawable
-                    
+
                     if (dX < 0) { // Swiping to the left
-                        background.setBounds(
-                            itemView.right + dX.toInt(),
-                            itemView.top,
-                            itemView.right,
-                            itemView.bottom
+                        val rect = RectF(
+                            itemView.right + dX,
+                            itemView.top.toFloat(),
+                            itemView.right.toFloat(),
+                            itemView.bottom.toFloat()
                         )
-                        background.draw(c)
-                        
+                        c.drawRoundRect(rect, cornerRadius, cornerRadius, paint)
+
                         // Draw delete icon
                         icon?.let {
                             val iconMargin = (itemView.height - it.intrinsicHeight) / 2
@@ -150,20 +156,23 @@ class EditorsFragment : Fragment() {
         val preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
         val boardVersion = preferences.getInt("current_device_version", -1)
 
-        // Use custom URL from settings if the item is "custom"
-        val url = if (item.id == "custom") {
+        // Use custom URL from settings if the item is "CUSTOM"
+        val editorType = EditorType.entries.find { it.id == item.id }
+        val url = if (item.id == EditorType.CUSTOM.id) {
             cc.calliope.mini.utils.settings.Settings.getCustomLink(context)
         } else {
-            if (boardVersion == 2) item.urlV2 else item.urlV3
+            editorType?.getLocalizedUrl(boardVersion)
+                ?: (if (boardVersion == 2) item.urlV2 else item.urlV3)
         }
 
+        // Use directoryName for file storage (UPPERCASE for backwards compatibility)
         when (item.id) {
-            "cardboard_control", "cardboard_face" -> {
-                val action = EditorsFragmentDirections.actionEditorsToWebBle(url, item.id)
+            EditorType.CARDBOARD_CONTROL.id, EditorType.CARDBOARD_FACE.id -> {
+                val action = EditorsFragmentDirections.actionEditorsToWebBle(url, item.directoryName)
                 findNavController().navigate(action)
             }
             else -> {
-                val action = EditorsFragmentDirections.actionEditorsToWeb(url, item.id)
+                val action = EditorsFragmentDirections.actionEditorsToWeb(url, item.directoryName)
                 findNavController().navigate(action)
             }
         }

@@ -34,6 +34,8 @@ import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.Notification.INFO
 import cc.calliope.mini.core.state.State
 import cc.calliope.mini.ui.activity.CameraPermissionActivity
+import cc.calliope.mini.utils.bluetooth.BluetoothUtils
+import cc.calliope.mini.ui.model.EditorType
 import cc.calliope.mini.utils.Constants
 import java.nio.charset.StandardCharsets
 import java.util.UUID
@@ -106,8 +108,8 @@ class WebBleFragment : Fragment() {
         
         // Логуємо тип редактора
         when (editorName) {
-            "cardboard_control" -> Log.d("WebBleFragment", "Editor type: CARDBOARD_CONTROL (BLE + basic features)")
-            "cardboard_face" -> Log.d("WebBleFragment", "Editor type: CARDBOARD_FACE (BLE + camera support)")
+            EditorType.CARDBOARD_CONTROL.directoryName -> Log.d("WebBleFragment", "Editor type: CARDBOARD_CONTROL (BLE + basic features)")
+            EditorType.CARDBOARD_FACE.directoryName -> Log.d("WebBleFragment", "Editor type: CARDBOARD_FACE (BLE + camera support)")
             else -> Log.d("WebBleFragment", "Editor type: $editorName (BLE + basic features)")
         }
 
@@ -122,10 +124,12 @@ class WebBleFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         webView = WebView(requireContext())
-        (view as ViewGroup).addView(
-            webView,
-            ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        )
+        val marginBottom = (70 * resources.displayMetrics.density).toInt()
+        val params = FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        ).apply { bottomMargin = marginBottom }
+        (view as ViewGroup).addView(webView, params)
         with(webView.settings) {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -148,7 +152,7 @@ class WebBleFragment : Fragment() {
                 Log.d("WebBleFragment", "onPermissionRequest: ${request.resources.joinToString()}")
                 if (request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
                     // Only allow camera access for CARDBOARD_FACE editor
-                    if (editorName != "cardboard_face") {
+                    if (editorName != EditorType.CARDBOARD_FACE.directoryName) {
                         Log.d("WebBleFragment", "Camera access denied - not CARDBOARD_FACE editor")
                         request.deny()
                         return
@@ -279,13 +283,13 @@ class WebBleFragment : Fragment() {
         fun requestCameraPermission(): Boolean {
             Log.d("WebBleFragment", "JavaScript requested camera permission")
             // Only allow camera for CARDBOARD_FACE editor
-            return editorName == "cardboard_face" && has(Manifest.permission.CAMERA)
+            return editorName == EditorType.CARDBOARD_FACE.directoryName && has(Manifest.permission.CAMERA)
         }
 
         @JavascriptInterface
         fun isCameraAvailable(): Boolean {
             // Only allow camera for CARDBOARD_FACE editor
-            val available = editorName == "cardboard_face" && has(Manifest.permission.CAMERA)
+            val available = editorName == EditorType.CARDBOARD_FACE.directoryName && has(Manifest.permission.CAMERA)
             Log.d("WebBleFragment", "Camera availability check: $available (editor: $editorName)")
             return available
         }
@@ -310,6 +314,7 @@ class WebBleFragment : Fragment() {
         }
         override fun onMtuChanged(g: BluetoothGatt, mtu: Int, status: Int) {
             negotiatedMtu = if (status == BluetoothGatt.GATT_SUCCESS) mtu else 23
+            BluetoothUtils.clearServicesCache(g)
             g.discoverServices()
         }
         override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
