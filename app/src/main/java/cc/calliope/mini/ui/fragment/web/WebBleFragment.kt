@@ -133,7 +133,13 @@ class WebBleFragment : Fragment() {
         with(webView.settings) {
             javaScriptEnabled = true
             domStorageEnabled = true
-            allowFileAccess = true
+            // pageUrl is always an https editor URL (see the default value
+            // assigned to `pageUrl` and the argument plumbing), so this
+            // WebView never legitimately needs file:// access. The
+            // AndroidBle bridge is exposed to whatever document loads here,
+            // so leaving these flags on would let a file:// page reach the
+            // BLE bridge.
+            allowFileAccess = false
             allowContentAccess = true
             cacheMode = WebSettings.LOAD_DEFAULT
             defaultTextEncodingName = "utf-8"
@@ -142,8 +148,8 @@ class WebBleFragment : Fragment() {
 
             mediaPlaybackRequiresUserGesture = false
             javaScriptCanOpenWindowsAutomatically = true
-            allowFileAccessFromFileURLs = true
-            allowUniversalAccessFromFileURLs = true
+            allowFileAccessFromFileURLs = false
+            allowUniversalAccessFromFileURLs = false
         }
         bridge = AndroidBleBridge(requireContext())
         webView.addJavascriptInterface(bridge, "AndroidBle")
