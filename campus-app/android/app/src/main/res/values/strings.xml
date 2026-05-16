@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Calliope Campus</string>
+    <string name="title_activity_main">Calliope Campus</string>
+    <string name="package_name">cc.calliope.mini.campus</string>
+    <string name="custom_url_scheme">cc.calliope.mini.campus</string>
+</resources>
