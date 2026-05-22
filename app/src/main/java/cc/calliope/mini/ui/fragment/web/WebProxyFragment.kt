@@ -42,14 +42,7 @@ class WebProxyFragment : Fragment() {
         private const val TAG = "WebProxyFragment"
         private const val ARG_URL = "editorUrl"
         private const val ARG_NAME = "editorName"
-
-        /** Static Chrome-on-Linux UA. Picked because the campus inspects UA
-         *  only to pick a CSS breakpoint, not to feature-detect. Bump
-         *  the Chrome version every year or two; nothing else relies on
-         *  the exact string. */
-        private const val DESKTOP_CHROME_UA =
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) " +
-                "Chrome/130.0.0.0 Safari/537.36"
+        private const val STATE_WEBVIEW = "webViewState"
 
         fun newInstance(url: String, editorName: String): WebProxyFragment {
             val f = WebProxyFragment()
@@ -103,18 +96,16 @@ class WebProxyFragment : Fragment() {
             domStorageEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
             defaultTextEncodingName = "utf-8"
-            // Render the desktop layout — the campus is designed for a
-            // wide viewport and squishes the toolbox / panel into an
-            // unusable column on mobile widths.
+            // Campus overrides its `<meta viewport>` to a fixed 1280px
+            // width when it detects the native bridge (see campus
+            // src/routes/+layout.svelte). Enabling wide-viewport here lets
+            // that override take effect; loadWithOverviewMode + zoom
+            // controls give the user a way to read at mobile sizes.
             useWideViewPort = true
             loadWithOverviewMode = true
             builtInZoomControls = true
             displayZoomControls = false
             setSupportZoom(true)
-            // Spoof Chrome desktop so the campus's responsive layout picks
-            // its desktop breakpoint. The Android System WebView UA would
-            // otherwise carry "Mobile Safari" and trigger the mobile path.
-            userAgentString = DESKTOP_CHROME_UA
             mediaPlaybackRequiresUserGesture = false
             javaScriptCanOpenWindowsAutomatically = true
         }
@@ -133,8 +124,27 @@ class WebProxyFragment : Fragment() {
             }
         }
 
-        Log.d(TAG, "loading $pageUrl")
-        webView.loadUrl(pageUrl)
+        // Restore the previous WebView session (URL + history + scroll +
+        // form state) if we have one. Fires when the fragment view is
+        // rebuilt after a bottom-nav switch (Settings → back to Editor) or
+        // any other survivable destruction.
+        val saved = savedInstanceState?.getBundle(STATE_WEBVIEW)
+        if (saved != null) {
+            Log.d(TAG, "restoring WebView session")
+            webView.restoreState(saved)
+        } else {
+            Log.d(TAG, "loading $pageUrl")
+            webView.loadUrl(pageUrl)
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        if (::webView.isInitialized) {
+            val bundle = Bundle()
+            webView.saveState(bundle)
+            outState.putBundle(STATE_WEBVIEW, bundle)
+        }
     }
 
     private fun requestBlePermissionsIfNeeded() {

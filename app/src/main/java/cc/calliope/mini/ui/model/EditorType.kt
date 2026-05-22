@@ -12,6 +12,18 @@ enum class EditorType(
     val urlV3: String,
     val defaultOrder: Int
 ) {
+    CAMPUS(
+        id = "campus",
+        titleResId = R.string.title_campus,
+        iconResId = R.drawable.ic_editors_campus,
+        infoResId = R.string.info_campus,
+        // Cloudflare Pages preview of the feature/native-proxy branch.
+        // Switch to https://campus.calliope.cc/ once the proxy ships.
+        urlV2 = "https://feature-native-proxy.calliope-campus.pages.dev/",
+        urlV3 = "https://feature-native-proxy.calliope-campus.pages.dev/",
+        defaultOrder = 0
+    ),
+
     MAKECODE(
         id = "makecode",
         titleResId = R.string.title_make_code,
@@ -19,7 +31,7 @@ enum class EditorType(
         infoResId = R.string.info_make_code,
         urlV2 = "https://makecode.calliope.cc/",
         urlV3 = "https://makecode.calliope.cc/",
-        defaultOrder = 0
+        defaultOrder = 1
     ),
 
     ROBERTA(
@@ -29,7 +41,7 @@ enum class EditorType(
         infoResId = R.string.info_roberta,
         urlV2 = "https://lab.open-roberta.org/?loadSystem=calliope2017",
         urlV3 = "https://lab.open-roberta.org/?loadSystem=calliopev3",
-        defaultOrder = 1
+        defaultOrder = 2
     ),
 
     BLOCKS(
@@ -39,7 +51,7 @@ enum class EditorType(
         infoResId = R.string.info_blocks,
         urlV2 = "https://blocks.calliope.cc/",
         urlV3 = "https://blocks.calliope.cc/",
-        defaultOrder = 2
+        defaultOrder = 3
     ),
 
     PYTHON(
@@ -49,7 +61,7 @@ enum class EditorType(
         infoResId = R.string.info_python,
         urlV2 = "https://python.calliope.cc/",
         urlV3 = "https://python.calliope.cc/",
-        defaultOrder = 3
+        defaultOrder = 4
     ),
 
     CARDBOARD_CONTROL(
@@ -59,19 +71,7 @@ enum class EditorType(
         infoResId = R.string.info_cardboard_control,
         urlV2 = "https://cardboard.lofirobot.com/control-calliope/",
         urlV3 = "https://cardboard.lofirobot.com/control-calliope/",
-        defaultOrder = 5
-    ),
-
-    CAMPUS(
-        id = "campus",
-        titleResId = R.string.title_make_code, // TODO: dedicated string when campus brand lands
-        iconResId = R.drawable.ic_make_code_inset, // TODO: campus icon
-        infoResId = R.string.info_make_code,
-        // Cloudflare Pages preview of the feature/native-proxy branch.
-        // Switch to https://campus.calliope.cc/ once the proxy ships.
-        urlV2 = "https://feature-native-proxy.calliope-campus.pages.dev/",
-        urlV3 = "https://feature-native-proxy.calliope-campus.pages.dev/",
-        defaultOrder = 7
+        defaultOrder = 6
     ),
 
     CARDBOARD_FACE(
@@ -81,7 +81,7 @@ enum class EditorType(
         infoResId = R.string.info_cardboard_face,
         urlV2 = "https://cardboard.lofirobot.com/face-app/",
         urlV3 = "https://cardboard.lofirobot.com/face-app/",
-        defaultOrder = 6
+        defaultOrder = 7
     ),
 
     CUSTOM(
@@ -91,7 +91,7 @@ enum class EditorType(
         infoResId = R.string.info_custom,
         urlV2 = "https://makecode.calliope.cc/beta",
         urlV3 = "https://makecode.calliope.cc/beta",
-        defaultOrder = 4
+        defaultOrder = 5
     );
 
     /**

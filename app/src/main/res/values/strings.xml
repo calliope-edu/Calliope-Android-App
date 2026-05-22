@@ -29,12 +29,14 @@
     <string name="title_custom">Custom editor</string>
     <string name="title_cardboard_control" translatable="false">Cardboard Control</string>
     <string name="title_cardboard_face" translatable="false">Cardboard Face</string>
+    <string name="title_campus" translatable="false">Calliope Campus</string>
     <string name="title_scripts">Your programs</string>
     <string name="info_make_code">The MakeCode editor enables full control over the Calliope mini and the integration of any external sensors through (custom) extensions. Programming can be done by arranging code blocks, using JavaScript, or Python.</string>
     <string name="info_roberta">In the "Open Roberta Lab," you learn to program with the graphical language NEPO!</string>
     <string name="info_python">MicroPython is a version of Python specifically adapted for microcontrollers. Python is an excellent first text-based programming language.</string>
     <string name="info_blocks">The Calliope mini Blocks editor enables programming of the Calliope mini using the Scratch programming language. This allows applications to be controlled on the computer with the Calliope mini and vice versa.</string>
     <string name="info_custom">Here you can enter to the custom editor.</string>
+    <string name="info_campus">Calliope Campus combines all Calliope editors in a single environment with shared projects and direct control over the Calliope mini.</string>
     <string name="info_cardboard_control">Control your Calliope mini with Cardboard Control interface.</string>
     <string name="info_cardboard_face">Create and animate faces with the Cardboard Face editor.</string>
     <string name="info_scripts">Your programs will be here.</string>
