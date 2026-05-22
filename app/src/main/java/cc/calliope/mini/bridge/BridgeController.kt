@@ -327,19 +327,27 @@ class BridgeController(
         val safeName = name.replace(Regex("[^A-Za-z0-9._-]+"), "-")
         val out = File(outDir, "$safeName.hex")
         try {
-            FileOutputStream(out).use { it.write(hex.toByteArray(Charsets.US_ASCII)) }
+            // Intel HEX is plain ASCII (0-9, A-F, ':', \r, \n). UTF-8 keeps
+            // those bytes 1:1 like US_ASCII would, but doesn't silently
+            // replace any non-ASCII char (e.g. a stray BOM) with '?'. The
+            // partial-flash service searches for the PXT_MAGIC marker as a
+            // text substring, so any silent byte substitution would skip
+            // the partial path and fall through to full DFU.
+            FileOutputStream(out).use { it.write(hex.toByteArray(Charsets.UTF_8)) }
         } catch (e: Exception) {
             replyError(id, "could not write hex: ${e.message}")
             return
         }
 
         // FlashingService reads its target MAC/version from SharedPreferences
-        // (already populated by the device-pairing flow). We don't need to
-        // disconnect our open GATT session first — FlashingService opens its
-        // own GATT for partial-flash/DFU. To avoid the two stepping on each
-        // other, drop ours here so its scan/connect is clean.
+        // (already populated by the device-pairing flow). The radio is
+        // single-consumer on Android — partial flash needs an exclusive
+        // GATT connection. We drop our proxy session and WAIT for the
+        // STATE_DISCONNECTED callback (or a 1.5 s timeout) before starting
+        // the flash service. Without this, partial flash silently failed
+        // because the BT stack was still tearing down our GATT when
+        // PartialFlashingService tried to open its own.
         notifySubs.clear()
-        session.disconnect()
         emitState("ble", status = "disconnected", deviceName = "")
 
         pendingFlashReplyId = id
@@ -347,16 +355,18 @@ class BridgeController(
         latestErrorMessage = null
         lastStateType = State.STATE_IDLE
         emitFlashProgress(phase = "prepare", progress = 0)
-        try {
-            val intent = Intent(context, FlashingService::class.java)
-            intent.putExtra(Constants.EXTRA_FILE_PATH, out.absolutePath)
-            context.startService(intent)
-        } catch (e: Exception) {
-            flashInFlight = false
-            pendingFlashReplyId = null
-            replyError(id, "could not start flashing service: ${e.message}")
-            return
-        }
+
+        session.disconnect(onClosed = {
+            try {
+                val intent = Intent(context, FlashingService::class.java)
+                intent.putExtra(Constants.EXTRA_FILE_PATH, out.absolutePath)
+                context.startService(intent)
+            } catch (e: Exception) {
+                flashInFlight = false
+                pendingFlashReplyId = null
+                replyError(id, "could not start flashing service: ${e.message}")
+            }
+        }, timeoutMs = 1500)
     }
 
     // ---- Reply / event helpers --------------------------------------------

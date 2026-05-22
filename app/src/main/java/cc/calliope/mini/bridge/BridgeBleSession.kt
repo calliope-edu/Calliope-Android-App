@@ -79,12 +79,46 @@ class BridgeBleSession(
 
     @SuppressLint("MissingPermission")
     fun disconnect() {
-        val g = gatt ?: return
+        disconnect(onClosed = null, timeoutMs = 0)
+    }
+
+    /**
+     * Disconnect and invoke [onClosed] after the GATT either reports
+     * STATE_DISCONNECTED via the callback OR after [timeoutMs] elapses —
+     * whichever comes first. Use this before handing the device off to
+     * another GATT consumer (e.g. FlashingService) so the radio is
+     * actually free.
+     *
+     * Calling with `onClosed == null` skips the wait and behaves like
+     * the legacy synchronous disconnect.
+     */
+    @SuppressLint("MissingPermission")
+    fun disconnect(onClosed: (() -> Unit)?, timeoutMs: Long = 1500) {
+        val g = gatt
+        if (g == null) {
+            onClosed?.invoke()
+            return
+        }
+        if (onClosed != null) {
+            // Latch the callback so neither the GATT disconnect callback
+            // nor the timeout fires it twice.
+            val fired = AtomicBoolean(false)
+            val safeFire: () -> Unit = {
+                if (fired.compareAndSet(false, true)) {
+                    handler.post { onClosed() }
+                }
+            }
+            disconnectWaiter = safeFire
+            handler.postDelayed({ safeFire() }, timeoutMs)
+        }
         try { g.disconnect() } catch (_: Exception) {}
-        try { g.close() } catch (_: Exception) {}
-        gatt = null
+        // NOTE: don't close() synchronously here — onConnectionStateChange
+        // still needs to fire so disconnectWaiter resolves. The callback
+        // closes the gatt itself.
         clearQueue("disconnect")
     }
+
+    private var disconnectWaiter: (() -> Unit)? = null
 
     val isConnected: Boolean get() = gatt != null
 
@@ -286,9 +320,13 @@ class BridgeBleSession(
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     val name = try { g.device?.name } catch (_: Exception) { null }
+                    try { g.close() } catch (_: Exception) {}
                     gatt = null
                     mtuPayload = 20
                     clearQueue("disconnected")
+                    val waiter = disconnectWaiter
+                    disconnectWaiter = null
+                    waiter?.invoke()
                     listener.onDisconnected("gatt status=$status")
                     Log.d(TAG, "disconnected from $name (status=$status)")
                 }
