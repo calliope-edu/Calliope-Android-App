@@ -241,13 +241,30 @@ class BridgeController(
      *  proxy (legacy editors). */
     private var flashInFlight: Boolean = false
     private var lastStateType: Int = State.STATE_IDLE
+    /** Tracks whether the current flash is going down the partial-flash
+     *  path or the full Nordic DFU path. Starts as "partial" (matches the
+     *  FlashingService default) and flips to "dfu" when a Nordic-DFU-only
+     *  progress code arrives — those don't fire during partial flash.
+     *  Forwarded to the widget as `partial: true/false` so the UI shows
+     *  the correct "Schnelles Flashen" vs "Vollständiges Flashen" label. */
+    private var currentFlashMode: String = "partial"
 
     private val progressObserver = Observer<Progress?> { p ->
         if (!flashInFlight || p == null) return@Observer
         when (val pct = p.value) {
-            Progress.PROGRESS_CONNECTING -> emitFlashProgress("prepare", 0)
-            Progress.PROGRESS_STARTING -> emitFlashProgress("prepare", 0)
-            Progress.PROGRESS_ENABLING_DFU_MODE -> emitFlashProgress("reboot", 0)
+            Progress.PROGRESS_CONNECTING,
+            Progress.PROGRESS_STARTING -> {
+                // These codes only fire from the Nordic DFU library. Their
+                // arrival means PartialFlashingService either declined the
+                // hex (RESULT_ATTEMPT_DFU) or wasn't started at all
+                // (forceFullDfu) — either way we're now in full DFU.
+                currentFlashMode = "dfu"
+                emitFlashProgress("prepare", 0)
+            }
+            Progress.PROGRESS_ENABLING_DFU_MODE -> {
+                currentFlashMode = "dfu"
+                emitFlashProgress("reboot", 0)
+            }
             Progress.PROGRESS_VALIDATING -> emitFlashProgress("finalising", 100)
             Progress.PROGRESS_DISCONNECTING -> { /* swallowed; finalised by state-idle */ }
             Progress.PROGRESS_COMPLETED -> finishFlash(success = true, error = null)
@@ -285,7 +302,23 @@ class BridgeController(
 
     private val notificationObserver = Observer<Event<Notification>?> { ev ->
         val n = ev?.peekContent() ?: return@Observer
-        if (n.type == Notification.ERROR) latestErrorMessage = n.message
+        when (n.type) {
+            Notification.ERROR -> {
+                latestErrorMessage = n.message
+                if (flashInFlight) {
+                    sendEvent("log", JSONObject().put("direction", "error").put("text", n.message ?: ""))
+                }
+            }
+            Notification.INFO, Notification.WARNING -> {
+                // Forward only while a flash is in flight so the user sees
+                // PartialFlashingService / DfuService progress text in the
+                // widget's comms panel — e.g. "Hash mismatch", "Partial
+                // flashing failed, falling back to DFU", etc.
+                if (flashInFlight && !n.message.isNullOrEmpty()) {
+                    sendEvent("log", JSONObject().put("direction", "info").put("text", n.message))
+                }
+            }
+        }
     }
 
     private val errorObserver = Observer<cc.calliope.mini.core.state.Error?> { e ->
@@ -350,16 +383,25 @@ class BridgeController(
         notifySubs.clear()
         emitState("ble", status = "disconnected", deviceName = "")
 
+        val forceFullDfu = args.optBoolean("forceFullDfu", false)
         pendingFlashReplyId = id
         flashInFlight = true
         latestErrorMessage = null
         lastStateType = State.STATE_IDLE
+        // Optimistic default: partial. FlashingService runs partial first
+        // unless EXTRA_FORCE_FULL_DFU is set. The progress observer flips
+        // to "dfu" the moment a DFU-only progress code arrives — that
+        // covers both forceFullDfu=true and partial→full fallback.
+        currentFlashMode = if (forceFullDfu) "dfu" else "partial"
         emitFlashProgress(phase = "prepare", progress = 0)
 
         session.disconnect(onClosed = {
             try {
                 val intent = Intent(context, FlashingService::class.java)
                 intent.putExtra(Constants.EXTRA_FILE_PATH, out.absolutePath)
+                if (forceFullDfu) {
+                    intent.putExtra(FlashingService.EXTRA_FORCE_FULL_DFU, true)
+                }
                 context.startService(intent)
             } catch (e: Exception) {
                 flashInFlight = false
@@ -419,7 +461,11 @@ class BridgeController(
     private fun emitFlashProgress(phase: String, progress: Int) {
         sendEvent(
             "flashProgress",
-            JSONObject().put("transport", "ble").put("phase", phase).put("progress", progress),
+            JSONObject()
+                .put("transport", "ble")
+                .put("phase", phase)
+                .put("progress", progress)
+                .put("partial", currentFlashMode == "partial"),
         )
     }
 
