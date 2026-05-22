@@ -15,6 +15,8 @@ import androidx.lifecycle.Observer
 import androidx.preference.PreferenceManager
 import cc.calliope.mini.core.service.FlashingService
 import cc.calliope.mini.core.state.ApplicationStateHandler
+import cc.calliope.mini.core.state.Event
+import cc.calliope.mini.core.state.Notification
 import cc.calliope.mini.core.state.Progress
 import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.Constants
@@ -257,12 +259,33 @@ class BridgeController(
     private val stateObserver = Observer<State?> { s ->
         if (s == null) return@Observer
         val type = s.type
-        // Watch for STATE_FLASHING → STATE_IDLE transition as the secondary
-        // "done" signal (some flash paths only flip state, not progress).
-        if (flashInFlight && lastStateType == State.STATE_FLASHING && type == State.STATE_IDLE) {
-            finishFlash(success = true, error = null)
+        if (flashInFlight) {
+            when (type) {
+                // STATE_ERROR can come from preflight (loadDeviceInfo /
+                // checkCompatibility — e.g. V2 hex on V3 board) before any
+                // progress fires, OR from a failed DFU step. Surface the
+                // most recent ERROR notification as the reason.
+                State.STATE_ERROR -> finishFlash(success = false, error = latestErrorMessage ?: "flash failed")
+                // STATE_FLASHING → STATE_IDLE is the secondary "done" edge
+                // for paths that don't post a PROGRESS_COMPLETED.
+                State.STATE_IDLE -> if (lastStateType == State.STATE_FLASHING) {
+                    finishFlash(success = true, error = null)
+                }
+                else -> { /* STATE_BUSY / STATE_CONTROL — uninteresting */ }
+            }
         }
         lastStateType = type
+    }
+
+    /** Last ERROR-level notification text seen. `FlashingService.handleError`
+     *  fires `updateNotification(ERROR, …) + updateState(STATE_ERROR)` but
+     *  never `updateError(…)`, so the user-readable reason only reaches us
+     *  through this channel. */
+    private var latestErrorMessage: String? = null
+
+    private val notificationObserver = Observer<Event<Notification>?> { ev ->
+        val n = ev?.peekContent() ?: return@Observer
+        if (n.type == Notification.ERROR) latestErrorMessage = n.message
     }
 
     private val errorObserver = Observer<cc.calliope.mini.core.state.Error?> { e ->
@@ -277,6 +300,7 @@ class BridgeController(
         ApplicationStateHandler.getProgressLiveData().observe(lifecycleOwner, progressObserver)
         ApplicationStateHandler.getStateLiveData().observe(lifecycleOwner, stateObserver)
         ApplicationStateHandler.getErrorLiveData().observe(lifecycleOwner, errorObserver)
+        ApplicationStateHandler.getNotificationLiveData().observe(lifecycleOwner, notificationObserver)
     }
 
     private fun finishFlash(success: Boolean, error: String?) {
@@ -320,6 +344,8 @@ class BridgeController(
 
         pendingFlashReplyId = id
         flashInFlight = true
+        latestErrorMessage = null
+        lastStateType = State.STATE_IDLE
         emitFlashProgress(phase = "prepare", progress = 0)
         try {
             val intent = Intent(context, FlashingService::class.java)

@@ -43,6 +43,14 @@ class WebProxyFragment : Fragment() {
         private const val ARG_URL = "editorUrl"
         private const val ARG_NAME = "editorName"
 
+        /** Static Chrome-on-Linux UA. Picked because the campus inspects UA
+         *  only to pick a CSS breakpoint, not to feature-detect. Bump
+         *  the Chrome version every year or two; nothing else relies on
+         *  the exact string. */
+        private const val DESKTOP_CHROME_UA =
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) " +
+                "Chrome/130.0.0.0 Safari/537.36"
+
         fun newInstance(url: String, editorName: String): WebProxyFragment {
             val f = WebProxyFragment()
             f.arguments = Bundle().apply {
@@ -80,11 +88,14 @@ class WebProxyFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         webView = WebView(requireContext())
-        val marginBottom = (70 * resources.displayMetrics.density).toInt()
+        // Campus uses its own bottom-anchored controls (toolbox, connection
+        // panel). Don't reserve space for the app's bottom nav here —
+        // navigating into a CAMPUS entry hides the bottom nav anyway, so a
+        // bottom margin just clips the editor.
         val params = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT,
-        ).apply { bottomMargin = marginBottom }
+        )
         (view as ViewGroup).addView(webView, params)
 
         with(webView.settings) {
@@ -92,8 +103,18 @@ class WebProxyFragment : Fragment() {
             domStorageEnabled = true
             cacheMode = WebSettings.LOAD_DEFAULT
             defaultTextEncodingName = "utf-8"
+            // Render the desktop layout — the campus is designed for a
+            // wide viewport and squishes the toolbox / panel into an
+            // unusable column on mobile widths.
             useWideViewPort = true
             loadWithOverviewMode = true
+            builtInZoomControls = true
+            displayZoomControls = false
+            setSupportZoom(true)
+            // Spoof Chrome desktop so the campus's responsive layout picks
+            // its desktop breakpoint. The Android System WebView UA would
+            // otherwise carry "Mobile Safari" and trigger the mobile path.
+            userAgentString = DESKTOP_CHROME_UA
             mediaPlaybackRequiresUserGesture = false
             javaScriptCanOpenWindowsAutomatically = true
         }
