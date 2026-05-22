@@ -139,6 +139,13 @@ class PartialFlashingService : Service() {
     private var isPython = false
     private var dalHash: String? = null
     private var fileHash: String? = null
+    /** DAL region bounds reported by the device. A zero range
+     *  (start==0 && end==0) signals the firmware was built without
+     *  `addlayouttable.py` — true for the blocks-runtime CODAL build —
+     *  and means partial flash cannot work on this device regardless of
+     *  what the hex carries. Must fall back to full DFU. */
+    private var dalStartAddress = 0L
+    private var dalEndAddress = 0L
     private var codeStartAddress = 0L
     private var codeEndAddress = 0L
     private var packetState: Byte = PACKET_STATE_WAITING
@@ -880,14 +887,39 @@ class PartialFlashingService : Service() {
             ApplicationStateHandler.updateNotification(Notification.INFO, getString(R.string.flashing_firmware_validating))
             codeStartAddress = 0
             codeEndAddress = 0
+            dalStartAddress = 0
+            dalEndAddress = 0
 
             if (!readMemoryMap()) {
                 Log.e(TAG, "Failed to read memory map")
                 return RESULT_ATTEMPT_DFU
             }
 
+            // DAL zero-range sentinel — matches the widget's check at
+            // ble-flash-web.ts:597-599. The blocks-runtime CODAL build
+            // doesn't ship `addlayouttable.py`, so its partial-flash
+            // service responds to REGION_INFO with all-zero start/end
+            // and an all-zero hash. The legacy hash compare alone could
+            // be fooled into "match confirmed" if the file's hash also
+            // happened to be all zeros (rare but possible). The widget
+            // catches this defensively before any hash compare; do the
+            // same here so a Blocks → MakeCode swap reliably refuses
+            // partial flash and falls back to full DFU.
+            if (dalStartAddress == 0L && dalEndAddress == 0L) {
+                Log.w(TAG, "DAL region reports zero range — device has no partial-flash layout table (likely blocks-runtime), falling back to full DFU")
+                ApplicationStateHandler.updateNotification(
+                    Notification.INFO,
+                    "Partial flash declined: device has no layout table"
+                )
+                return RESULT_ATTEMPT_DFU
+            }
+
             if (codeStartAddress == 0L || codeEndAddress <= codeStartAddress) {
-                Log.e(TAG, "Invalid memory map addresses")
+                Log.w(TAG, "MakeCode region zero/invalid — partial-flash layout malformed, falling back to full DFU")
+                ApplicationStateHandler.updateNotification(
+                    Notification.INFO,
+                    "Partial flash declined: invalid memory map"
+                )
                 return RESULT_ATTEMPT_DFU
             }
 
@@ -1398,6 +1430,8 @@ class PartialFlashingService : Service() {
                         }
 
                         if (region == REGION_DAL) {
+                            dalStartAddress = startAddr
+                            dalEndAddress = endAddr
                             dalHash = hash
                         }
                     }
