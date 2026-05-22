@@ -62,6 +62,18 @@ enum class EditorType(
         defaultOrder = 5
     ),
 
+    CAMPUS(
+        id = "campus",
+        titleResId = R.string.title_make_code, // TODO: dedicated string when campus brand lands
+        iconResId = R.drawable.ic_make_code_inset, // TODO: campus icon
+        infoResId = R.string.info_make_code,
+        // Cloudflare Pages preview of the feature/native-proxy branch.
+        // Switch to https://campus.calliope.cc/ once the proxy ships.
+        urlV2 = "https://feature-native-proxy.calliope-campus.pages.dev/",
+        urlV3 = "https://feature-native-proxy.calliope-campus.pages.dev/",
+        defaultOrder = 7
+    ),
+
     CARDBOARD_FACE(
         id = "cardboard_face",
         titleResId = R.string.title_cardboard_face,

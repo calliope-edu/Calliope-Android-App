@@ -1,0 +1,424 @@
+package cc.calliope.mini.bridge
+
+import android.annotation.SuppressLint
+import android.bluetooth.BluetoothAdapter
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.util.Base64
+import android.util.Log
+import android.webkit.WebView
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.Observer
+import androidx.preference.PreferenceManager
+import cc.calliope.mini.core.service.FlashingService
+import cc.calliope.mini.core.state.ApplicationStateHandler
+import cc.calliope.mini.core.state.Progress
+import cc.calliope.mini.core.state.State
+import cc.calliope.mini.utils.Constants
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
+import java.io.FileOutputStream
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+
+/**
+ * Dispatcher for the Calliope native-proxy bridge.
+ *
+ * One controller per host fragment. Owns:
+ *   - the BLE session ([BridgeBleSession])
+ *   - the JS-event sender (writes to `window.__calliopeNative.onMessage`)
+ *   - the flash pipeline (hex → temp file → [FlashingService] + progress
+ *     receiver → flashProgress events)
+ *
+ * All env JSON envelopes from the JS side enter here via [dispatch]. The
+ * controller MUST be stopped via [destroy] when the host fragment goes
+ * away — it holds a WebView reference and a registered receiver.
+ */
+class BridgeController(
+    private val context: Context,
+    private val webView: WebView,
+    private val lifecycleOwner: LifecycleOwner,
+) : BridgeBleSession.Listener {
+
+    private val main = Handler(Looper.getMainLooper())
+    private val session = BridgeBleSession(context.applicationContext, this)
+
+
+    /** GATT characteristics the JS side has subscribed to. We forward
+     *  `onCharacteristicChanged` to JS only when this set contains the
+     *  exact (service, char) pair — avoids leaking unrelated notifies. */
+    private val notifySubs = ConcurrentHashMap.newKeySet<String>()
+
+    // ---- Lifecycle ---------------------------------------------------------
+
+    fun destroy() {
+        // LifecycleOwner removes the observers automatically when its state
+        // hits DESTROYED — no manual cleanup needed for them.
+        session.disconnect()
+    }
+
+    // ---- JS dispatch -------------------------------------------------------
+
+    fun dispatch(id: String, op: String, args: JSONObject) {
+        try {
+            when (op) {
+                "connect" -> handleConnect(id, args)
+                "disconnect" -> handleDisconnect(id, args)
+                "flash" -> handleFlash(id, args)
+                "gattRead" -> handleGattRead(id, args)
+                "gattWrite" -> handleGattWrite(id, args)
+                "gattSubscribe" -> handleGattSubscribe(id, args)
+                "gattUnsubscribe" -> handleGattUnsubscribe(id, args)
+                "serialWrite" -> handleSerialWrite(id, args)
+                else -> replyError(id, "unknown op: $op")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "dispatch($op) threw: ${e.message}", e)
+            replyError(id, "$op failed: ${e.message ?: e::class.java.simpleName}")
+        }
+    }
+
+    // ---- Connect / disconnect ---------------------------------------------
+
+    private var pendingConnectReplyId: String? = null
+
+    @SuppressLint("MissingPermission")
+    private fun handleConnect(id: String, args: JSONObject) {
+        val transport = args.optString("transport", "ble")
+        if (transport != "ble") {
+            replyError(id, "transport=$transport not supported in proxy mode (BLE only)")
+            return
+        }
+        emitState("ble", status = "connecting", errorMessage = "")
+        val adapter = BluetoothAdapter.getDefaultAdapter()
+        if (adapter == null || !adapter.isEnabled) {
+            replyError(id, "Bluetooth is not enabled")
+            emitState("ble", status = "error", errorMessage = "Bluetooth disabled")
+            return
+        }
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        val mac = prefs.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
+        if (mac.isEmpty()) {
+            replyError(id, "No paired Calliope mini — pair one in the app first")
+            emitState("ble", status = "error", errorMessage = "Kein Calliope mini gekoppelt")
+            return
+        }
+        val device = try { adapter.getRemoteDevice(mac) } catch (e: Exception) {
+            replyError(id, "Invalid device address: $mac")
+            emitState("ble", status = "error", errorMessage = "Ungültige Geräteadresse")
+            return
+        }
+        // Reply only after services are discovered (onConnected callback)
+        pendingConnectReplyId = id
+        session.connect(device)
+    }
+
+    private fun handleDisconnect(id: String, args: JSONObject) {
+        notifySubs.clear()
+        session.disconnect()
+        emitState("ble", status = "disconnected", deviceName = "")
+        replyOk(id)
+    }
+
+    override fun onConnected(deviceName: String?) {
+        emitState(
+            "ble",
+            status = "connected",
+            deviceName = deviceName ?: "",
+            bleCanFlash = true,
+            bleCanCommunicate = true,
+            bleHasPermission = true,
+        )
+        val id = pendingConnectReplyId
+        pendingConnectReplyId = null
+        if (id != null) replyOk(id)
+    }
+
+    override fun onDisconnected(reason: String) {
+        notifySubs.clear()
+        emitState("ble", status = "disconnected", deviceName = "")
+        val id = pendingConnectReplyId
+        pendingConnectReplyId = null
+        if (id != null) replyError(id, "connect failed: $reason")
+    }
+
+    override fun onError(message: String) {
+        sendEvent("error", JSONObject().put("message", message))
+        val id = pendingConnectReplyId
+        pendingConnectReplyId = null
+        if (id != null) {
+            replyError(id, message)
+            emitState("ble", status = "error", errorMessage = message)
+        }
+    }
+
+    override fun onNotify(serviceUuid: UUID, characteristicUuid: UUID, data: ByteArray) {
+        val key = subKey(serviceUuid.toString(), characteristicUuid.toString())
+        if (key !in notifySubs) return
+        sendEvent(
+            "gattNotify",
+            JSONObject()
+                .put("serviceId", serviceUuid.toString())
+                .put("characteristicId", characteristicUuid.toString())
+                .put("data", base64Encode(data)),
+        )
+    }
+
+    // ---- GATT --------------------------------------------------------------
+
+    private fun handleGattRead(id: String, args: JSONObject) {
+        val svc = parseUuid(args.opt("serviceId"))
+        val ch = parseUuid(args.opt("characteristicId"))
+        if (svc == null || ch == null) { replyError(id, "invalid uuid"); return }
+        if (!session.isConnected) { replyError(id, "not connected"); return }
+        session.read(svc, ch) { data ->
+            val payload = JSONObject().put("data", if (data != null) base64Encode(data) else "")
+            replyOk(id, payload)
+        }
+    }
+
+    private fun handleGattWrite(id: String, args: JSONObject) {
+        val svc = parseUuid(args.opt("serviceId"))
+        val ch = parseUuid(args.opt("characteristicId"))
+        if (svc == null || ch == null) { replyError(id, "invalid uuid"); return }
+        if (!session.isConnected) { replyError(id, "not connected"); return }
+        val data = base64Decode(args.optString("data", ""))
+        val withResponse = args.optBoolean("withResponse", false)
+        session.write(svc, ch, data, withResponse) { ok ->
+            if (ok) replyOk(id) else replyError(id, "write failed")
+        }
+    }
+
+    private fun handleGattSubscribe(id: String, args: JSONObject) {
+        val svc = parseUuid(args.opt("serviceId"))
+        val ch = parseUuid(args.opt("characteristicId"))
+        if (svc == null || ch == null) { replyError(id, "invalid uuid"); return }
+        if (!session.isConnected) { replyError(id, "not connected"); return }
+        val key = subKey(svc.toString(), ch.toString())
+        notifySubs.add(key)
+        session.enableNotify(svc, ch) { ok ->
+            if (ok) replyOk(id) else { notifySubs.remove(key); replyError(id, "subscribe failed") }
+        }
+    }
+
+    private fun handleGattUnsubscribe(id: String, args: JSONObject) {
+        val svc = parseUuid(args.opt("serviceId"))
+        val ch = parseUuid(args.opt("characteristicId"))
+        if (svc == null || ch == null) { replyError(id, "invalid uuid"); return }
+        notifySubs.remove(subKey(svc.toString(), ch.toString()))
+        if (!session.isConnected) { replyOk(id); return }
+        session.disableNotify(svc, ch) { _ -> replyOk(id) }
+    }
+
+    // ---- Serial (UART) ----------------------------------------------------
+
+    /** Nordic UART RX (write-from-host) characteristic in CODAL. */
+    private val uartService: UUID = UUID.fromString("6e400001-b5a3-f393-e0a9-e50e24dcca9e")
+    private val uartRx: UUID = UUID.fromString("6e400003-b5a3-f393-e0a9-e50e24dcca9e")
+    private val uartTx: UUID = UUID.fromString("6e400002-b5a3-f393-e0a9-e50e24dcca9e")
+
+    private fun handleSerialWrite(id: String, args: JSONObject) {
+        if (!session.isConnected) { replyError(id, "not connected"); return }
+        val data = base64Decode(args.optString("data", ""))
+        session.write(uartService, uartRx, data, withResponse = false) { ok ->
+            if (ok) replyOk(id) else replyError(id, "serial write failed")
+        }
+    }
+
+    // ---- Flash -------------------------------------------------------------
+
+    private var pendingFlashReplyId: String? = null
+    /** True from the moment we kick `FlashingService` until either a
+     *  `STATE_IDLE` follow-up to `STATE_FLASHING` or a `STATE_ERROR`
+     *  arrives. Acts as the filter for the global `ApplicationStateHandler`
+     *  observers so we don't react to flashes that started outside the
+     *  proxy (legacy editors). */
+    private var flashInFlight: Boolean = false
+    private var lastStateType: Int = State.STATE_IDLE
+
+    private val progressObserver = Observer<Progress?> { p ->
+        if (!flashInFlight || p == null) return@Observer
+        when (val pct = p.value) {
+            Progress.PROGRESS_CONNECTING -> emitFlashProgress("prepare", 0)
+            Progress.PROGRESS_STARTING -> emitFlashProgress("prepare", 0)
+            Progress.PROGRESS_ENABLING_DFU_MODE -> emitFlashProgress("reboot", 0)
+            Progress.PROGRESS_VALIDATING -> emitFlashProgress("finalising", 100)
+            Progress.PROGRESS_DISCONNECTING -> { /* swallowed; finalised by state-idle */ }
+            Progress.PROGRESS_COMPLETED -> finishFlash(success = true, error = null)
+            Progress.PROGRESS_ABORTED -> finishFlash(success = false, error = "flash aborted")
+            else -> if (pct in 0..100) emitFlashProgress("flashing", pct)
+        }
+    }
+
+    private val stateObserver = Observer<State?> { s ->
+        if (s == null) return@Observer
+        val type = s.type
+        // Watch for STATE_FLASHING → STATE_IDLE transition as the secondary
+        // "done" signal (some flash paths only flip state, not progress).
+        if (flashInFlight && lastStateType == State.STATE_FLASHING && type == State.STATE_IDLE) {
+            finishFlash(success = true, error = null)
+        }
+        lastStateType = type
+    }
+
+    private val errorObserver = Observer<cc.calliope.mini.core.state.Error?> { e ->
+        if (!flashInFlight || e == null) return@Observer
+        finishFlash(success = false, error = e.message ?: "flash error ${e.code}")
+    }
+
+    init {
+        // Observe the existing flash pipeline's progress/state once. Filtering
+        // by `flashInFlight` ensures we ignore flashes initiated outside the
+        // proxy (e.g. legacy WebFragment editors that share the same service).
+        ApplicationStateHandler.getProgressLiveData().observe(lifecycleOwner, progressObserver)
+        ApplicationStateHandler.getStateLiveData().observe(lifecycleOwner, stateObserver)
+        ApplicationStateHandler.getErrorLiveData().observe(lifecycleOwner, errorObserver)
+    }
+
+    private fun finishFlash(success: Boolean, error: String?) {
+        if (!flashInFlight) return
+        flashInFlight = false
+        if (success) {
+            emitFlashProgress("finalising", 100)
+            sendEvent("flashDone", JSONObject())
+        }
+        val id = pendingFlashReplyId
+        pendingFlashReplyId = null
+        if (id != null) {
+            if (success) replyOk(id) else replyError(id, error ?: "flash failed")
+        }
+    }
+
+    private fun handleFlash(id: String, args: JSONObject) {
+        val hex = args.optString("hex", "")
+        val name = args.optString("name", "project")
+        if (hex.isEmpty()) { replyError(id, "flash: empty hex"); return }
+
+        // Persist the hex to a temp file FlashingService can read.
+        val outDir = File(context.cacheDir, "bridge-flash").apply { mkdirs() }
+        val safeName = name.replace(Regex("[^A-Za-z0-9._-]+"), "-")
+        val out = File(outDir, "$safeName.hex")
+        try {
+            FileOutputStream(out).use { it.write(hex.toByteArray(Charsets.US_ASCII)) }
+        } catch (e: Exception) {
+            replyError(id, "could not write hex: ${e.message}")
+            return
+        }
+
+        // FlashingService reads its target MAC/version from SharedPreferences
+        // (already populated by the device-pairing flow). We don't need to
+        // disconnect our open GATT session first — FlashingService opens its
+        // own GATT for partial-flash/DFU. To avoid the two stepping on each
+        // other, drop ours here so its scan/connect is clean.
+        notifySubs.clear()
+        session.disconnect()
+        emitState("ble", status = "disconnected", deviceName = "")
+
+        pendingFlashReplyId = id
+        flashInFlight = true
+        emitFlashProgress(phase = "prepare", progress = 0)
+        try {
+            val intent = Intent(context, FlashingService::class.java)
+            intent.putExtra(Constants.EXTRA_FILE_PATH, out.absolutePath)
+            context.startService(intent)
+        } catch (e: Exception) {
+            flashInFlight = false
+            pendingFlashReplyId = null
+            replyError(id, "could not start flashing service: ${e.message}")
+            return
+        }
+    }
+
+    // ---- Reply / event helpers --------------------------------------------
+
+    private fun replyOk(id: String, data: JSONObject? = null) {
+        val msg = JSONObject()
+            .put("id", id)
+            .put("type", "reply")
+        if (data != null) msg.put("data", data)
+        post(msg)
+    }
+
+    private fun replyError(id: String, message: String) {
+        val msg = JSONObject()
+            .put("id", id)
+            .put("type", "reply")
+            .put("error", message)
+        post(msg)
+    }
+
+    private fun sendEvent(kind: String, data: JSONObject) {
+        val msg = JSONObject()
+            .put("type", "event")
+            .put("kind", kind)
+            .put("data", data)
+        post(msg)
+    }
+
+    private fun emitState(
+        transport: String,
+        status: String? = null,
+        deviceName: String? = null,
+        errorMessage: String? = null,
+        friendlyName: String? = null,
+        bleCanFlash: Boolean? = null,
+        bleCanCommunicate: Boolean? = null,
+        bleHasPermission: Boolean? = null,
+    ) {
+        val d = JSONObject().put("transport", transport)
+        if (status != null) d.put("status", status)
+        if (deviceName != null) d.put("deviceName", deviceName)
+        if (errorMessage != null) d.put("errorMessage", errorMessage)
+        if (friendlyName != null) d.put("friendlyName", friendlyName)
+        if (bleCanFlash != null) d.put("bleCanFlash", bleCanFlash)
+        if (bleCanCommunicate != null) d.put("bleCanCommunicate", bleCanCommunicate)
+        if (bleHasPermission != null) d.put("bleHasPermission", bleHasPermission)
+        sendEvent("state", d)
+    }
+
+    private fun emitFlashProgress(phase: String, progress: Int) {
+        sendEvent(
+            "flashProgress",
+            JSONObject().put("transport", "ble").put("phase", phase).put("progress", progress),
+        )
+    }
+
+    private fun post(msg: JSONObject) {
+        val payload = msg.toString()
+        // The Native-Web envelope is wrapped in JSON.parse on the web side
+        // when it's a string; passing the JSON string itself is the safest
+        // way to round-trip across the JS-bridge boundary.
+        val escaped = JSONArray().put(payload).toString()
+            .let { it.substring(1, it.length - 1) } // strip array brackets → quoted string
+        val js = "if(window.__calliopeNative)window.__calliopeNative.onMessage(${escaped});"
+        main.post { webView.evaluateJavascript(js, null) }
+    }
+
+    // ---- Helpers -----------------------------------------------------------
+
+    private fun parseUuid(any: Any?): UUID? {
+        if (any == null) return null
+        return try {
+            when (any) {
+                is Number -> {
+                    // 16-bit short UUID → expand using the Bluetooth base.
+                    val hex = String.format("%08x", any.toInt() and 0xFFFF)
+                    UUID.fromString("$hex-0000-1000-8000-00805f9b34fb")
+                }
+                else -> UUID.fromString(any.toString().lowercase())
+            }
+        } catch (_: Exception) { null }
+    }
+
+    private fun subKey(svc: String, ch: String) = "${svc.lowercase()}|${ch.lowercase()}"
+
+    private fun base64Encode(b: ByteArray): String = Base64.encodeToString(b, Base64.NO_WRAP)
+    private fun base64Decode(s: String): ByteArray =
+        if (s.isEmpty()) ByteArray(0) else Base64.decode(s, Base64.NO_WRAP)
+
+    companion object { private const val TAG = "BridgeController" }
+}
