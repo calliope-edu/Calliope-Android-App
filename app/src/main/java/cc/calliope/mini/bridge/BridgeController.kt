@@ -372,6 +372,44 @@ class BridgeController(
             return
         }
 
+        val argForceFullDfu = args.optBoolean("forceFullDfu", false)
+
+        // Detect blocks-runtime on the device before starting the flash.
+        //
+        // Partial flash compares only the CODAL DAL hash (region 1) — but
+        // both blocks-runtime (pxt-scratch derivative) and pxt-calliope
+        // typically share the same underlying CODAL DAL, so the DAL hash
+        // check matches when it shouldn't. The PXT runtime difference
+        // lives in the gap between the DAL region (~0x3D77C) and the
+        // MakeCode region (~0x46000), which partial flash never touches.
+        // Result: blocks→makecode swap writes only the user-program area,
+        // leaves the blocks runtime in place, and the device ends up in a
+        // broken hybrid state.
+        //
+        // The reliable detection: read the MbitMore STATE characteristic
+        // (`0b500101-…`). pxt-blocks-runtime fills it with sensor data
+        // (non-zero); MakeCode/MicroPython/the CODAL stub leave it all
+        // zeros. If the device returns non-zero, force full DFU
+        // regardless of what the hex carries — the partial-flash
+        // optimisation can't safely span a runtime swap.
+        probeBlocksRuntime { isBlocksRuntime ->
+            val forceFullDfu = argForceFullDfu || isBlocksRuntime
+            if (isBlocksRuntime && !argForceFullDfu) {
+                sendEvent("log", JSONObject()
+                    .put("direction", "info")
+                    .put("text", "Blocks-Runtime erkannt — vollständiger DFU statt partial-flash"))
+            }
+            beginFlash(id, out, forceFullDfu)
+        }
+    }
+
+    /**
+     * Continues handleFlash after the optional blocks-runtime probe has
+     * returned. Split from handleFlash so the probe's async callback can
+     * inject `forceFullDfu = true` for the cross-runtime case before we
+     * disconnect and kick FlashingService.
+     */
+    private fun beginFlash(id: String, hexFile: File, forceFullDfu: Boolean) {
         // FlashingService reads its target MAC/version from SharedPreferences
         // (already populated by the device-pairing flow). The radio is
         // single-consumer on Android — partial flash needs an exclusive
@@ -383,7 +421,6 @@ class BridgeController(
         notifySubs.clear()
         emitState("ble", status = "disconnected", deviceName = "")
 
-        val forceFullDfu = args.optBoolean("forceFullDfu", false)
         pendingFlashReplyId = id
         flashInFlight = true
         latestErrorMessage = null
@@ -398,7 +435,7 @@ class BridgeController(
         session.disconnect(onClosed = {
             try {
                 val intent = Intent(context, FlashingService::class.java)
-                intent.putExtra(Constants.EXTRA_FILE_PATH, out.absolutePath)
+                intent.putExtra(Constants.EXTRA_FILE_PATH, hexFile.absolutePath)
                 if (forceFullDfu) {
                     intent.putExtra(FlashingService.EXTRA_FORCE_FULL_DFU, true)
                 }
@@ -409,6 +446,41 @@ class BridgeController(
                 replyError(id, "could not start flashing service: ${e.message}")
             }
         }, timeoutMs = 1500)
+    }
+
+    /** MbitMore service exposed by pxt-blocks-runtime. */
+    private val mbitMoreService: UUID = UUID.fromString("0b50f3e4-607f-4151-9091-7d008d6ffc5c")
+    private val mbitMoreState: UUID = UUID.fromString("0b500101-607f-4151-9091-7d008d6ffc5c")
+
+    /**
+     * Read MbitMore STATE and call `onResult(true)` if the device is
+     * running the real pxt-blocks-runtime (STATE filled with sensor data),
+     * `onResult(false)` otherwise (zeros, characteristic missing, read
+     * failed, not connected, or timed out). The newer CODAL stub registers
+     * the service unconditionally so service-presence alone is not enough;
+     * STATE content is the discriminator (mirrors the widget's
+     * program-type.ts `probeBle` heuristic).
+     */
+    private fun probeBlocksRuntime(onResult: (Boolean) -> Unit) {
+        if (!session.isConnected) {
+            onResult(false)
+            return
+        }
+        var settled = false
+        val timeout = Runnable {
+            if (!settled) {
+                settled = true
+                onResult(false)
+            }
+        }
+        main.postDelayed(timeout, 1500)
+        session.read(mbitMoreService, mbitMoreState) { data ->
+            if (settled) return@read
+            settled = true
+            main.removeCallbacks(timeout)
+            val anyNonZero = data != null && data.any { it != 0.toByte() }
+            onResult(anyNonZero)
+        }
     }
 
     // ---- Reply / event helpers --------------------------------------------
