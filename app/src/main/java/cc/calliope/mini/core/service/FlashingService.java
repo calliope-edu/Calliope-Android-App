@@ -191,9 +191,24 @@ public class FlashingService extends LifecycleService {
     private boolean checkCompatibility() {
         FileVersion fileVersion = FileUtils.getFileVersion(currentPath);
 
-        if ((fileVersion == VERSION_3 && boardVersion == MINI_V2) ||
-                (fileVersion == VERSION_2 && boardVersion == MINI_V3)) {
-            Log.e(TAG, "Flashing version mismatch");
+        // The only truly incompatible combination is a V3-only hex on a V2
+        // board: the V3 pattern (":1000000000040020810A0000…") is unique
+        // to nRF52 (V3) and won't run on nRF51 (V2).
+        //
+        // The V2 pattern is just ":020000040000FA" — a standard "Extended
+        // Linear Address 0x0000" Intel-HEX record that appears at line 1
+        // of EVERY hex file, including universal-format hexes (MicroPython,
+        // anything built with addlayouttable.py) that DO carry V3-targeting
+        // data records further down. The detector only reads lines 1-2, so
+        // it misclassifies those universal hexes as V2-only. That's why
+        // MicroPython on V3 was getting rejected with "Versionskonflikt".
+        //
+        // Trust the file: allow V2-classified files on V3 boards. If the
+        // hex truly is V2-only, partial flash / Nordic DFU will fail at the
+        // data-write step and the user gets a real flash error — not a
+        // false-positive preflight refusal.
+        if (fileVersion == VERSION_3 && boardVersion == MINI_V2) {
+            Log.e(TAG, "Flashing version mismatch: V3 file on V2 board");
             handleError(getString(R.string.flashing_version_mismatch));
             return false;
         }
