@@ -891,15 +891,46 @@ class PartialFlashingService : Service() {
                 return RESULT_ATTEMPT_DFU
             }
 
-            // Compare DAL hash
+            // Compare DAL hash. Partial flash is only safe when we can
+            // PROVE the file's runtime matches the device's runtime — a
+            // mismatch means the new program section is built against a
+            // different runtime ABI and would corrupt the device. The
+            // hash is the only signal we have, so any case where we can't
+            // verify it must fall back to full DFU.
+            //
+            // Three cases land here as "unverifiable" → RESULT_ATTEMPT_DFU:
+            //   1. fileHash null — MicroPython hex without a DAL hash
+            //      pointer (see findPythonData "partial hex without DAL").
+            //      Previously this path WARNED and proceeded, which let
+            //      cross-runtime swaps silently half-flash the device.
+            //   2. dalHash null — device didn't report a hash for region 1
+            //      (DAL region). Same risk: we can't verify.
+            //   3. file/device hashes don't match — different runtimes.
             if (fileHash == null) {
-                Log.w(TAG, "Hash not available in hex file (partial hex), skipping hash verification")
-            } else if (dalHash == null || fileHash != dalHash) {
-                Log.e(TAG, "Hash mismatch: file=$fileHash, device=$dalHash")
+                Log.w(TAG, "File hash missing — cannot verify runtime compatibility, falling back to full DFU")
+                ApplicationStateHandler.updateNotification(
+                    Notification.INFO,
+                    "Partial flash declined: hex has no runtime hash"
+                )
                 return RESULT_ATTEMPT_DFU
-            } else {
-                Log.d(TAG, "Hash match confirmed: $fileHash")
             }
+            if (dalHash == null) {
+                Log.w(TAG, "Device DAL hash missing — cannot verify runtime compatibility, falling back to full DFU")
+                ApplicationStateHandler.updateNotification(
+                    Notification.INFO,
+                    "Partial flash declined: device hash unavailable"
+                )
+                return RESULT_ATTEMPT_DFU
+            }
+            if (fileHash != dalHash) {
+                Log.e(TAG, "Hash mismatch: file=$fileHash, device=$dalHash — falling back to full DFU")
+                ApplicationStateHandler.updateNotification(
+                    Notification.INFO,
+                    "Partial flash declined: runtime mismatch (file=$fileHash device=$dalHash)"
+                )
+                return RESULT_ATTEMPT_DFU
+            }
+            Log.d(TAG, "Hash match confirmed: $fileHash")
 
             // Verify code start address matches hex file
             val fileCodeAddr = hexPosToAddress(hex, dataPos)
