@@ -1,16 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="grey_transparent_light">#20C1C1C1</color>
+    <!-- ============================================================= -->
+    <!-- Material Design 3 color roles (DARK) — brand seed #00C8C6.      -->
+    <!-- Mirrors the role names in values/colors.xml; the single theme   -->
+    <!-- in values/themes.xml picks the right set per night mode.        -->
+    <!-- ============================================================= -->
+    <color name="md_primary">#88D4D2</color>
+    <color name="md_on_primary">#003735</color>
+    <color name="md_primary_container">#1F4E4D</color>
+    <color name="md_on_primary_container">#A4F0EE</color>
+    <color name="md_secondary">#B0CCCA</color>
+    <color name="md_on_secondary">#1B3534</color>
+    <color name="md_secondary_container">#324B4A</color>
+    <color name="md_on_secondary_container">#CCE8E6</color>
+    <color name="md_tertiary">#A2CDE8</color>
+    <color name="md_on_tertiary">#02344B</color>
+    <color name="md_tertiary_container">#214B5F</color>
+    <color name="md_on_tertiary_container">#BFE9FF</color>
+    <color name="md_error">#FFB4AB</color>
+    <color name="md_on_error">#690005</color>
+    <color name="md_error_container">#93000A</color>
+    <color name="md_on_error_container">#FFDAD6</color>
+    <color name="md_background">#0E1413</color>
+    <color name="md_on_background">#DEE3E2</color>
+    <color name="md_surface">#0E1413</color>
+    <color name="md_on_surface">#DEE3E2</color>
+    <color name="md_surface_variant">#3F4948</color>
+    <color name="md_on_surface_variant">#BEC9C8</color>
+    <color name="md_outline">#889392</color>
+    <color name="md_outline_variant">#3F4948</color>
+    <color name="md_inverse_surface">#DEE3E2</color>
+    <color name="md_inverse_on_surface">#2D3131</color>
+    <color name="md_inverse_primary">#1B6968</color>
+    <color name="md_surface_dim">#0E1413</color>
+    <color name="md_surface_bright">#343A39</color>
+    <color name="md_surface_container_lowest">#090F0E</color>
+    <color name="md_surface_container_low">#171D1C</color>
+    <color name="md_surface_container">#1B2120</color>
+    <color name="md_surface_container_high">#252B2A</color>
+    <color name="md_surface_container_highest">#303635</color>
+    <color name="md_scrim">#000000</color>
 
+    <!-- Dark icon fills (unchanged) -->
+    <color name="grey_transparent_light">#20C1C1C1</color>
     <color name="ic_fill_primary">#FFFFFFFF</color>
     <color name="ic_fill_secondary">#FF131720</color>
     <color name="ic_fill_pattern">#FF131720</color>
 
-    <color name="item_text">#FFFFFFFF</color>
-    <color name="item_icon">#FFFFFFFF</color>
-    <color name="item_background">#FF232730</color>
-    <color name="nav_background">#FF232730</color>
-    <color name="stroke_color">#40FFFFFF</color>
-    <color name="background_transparent">#00131720</color>
-    <color name="background_solid">#FF131720</color>
+    <!-- Link text: the vivid brand aqua reads well on dark surfaces (~8:1). -->
+    <color name="brand_link">#FF00C8C6</color>
+
+    <!-- Semantic aliases (dark) -->
+    <color name="item_text">@color/md_on_surface</color>
+    <color name="item_icon">@color/md_on_surface_variant</color>
+    <color name="item_background">@color/md_surface_container_low</color>
+    <color name="nav_background">@color/md_surface_container_high</color>
+    <color name="stroke_color">@color/md_outline_variant</color>
+    <color name="background_solid">@color/md_surface</color>
+    <color name="background_transparent">#000E1413</color>
 </resources>
