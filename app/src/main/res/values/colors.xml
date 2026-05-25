@@ -59,6 +59,10 @@
     <color name="brand_accent">#FF00C8C6</color>
     <color name="brand_accent_pressed">#FF009896</color>
     <color name="brand_on_accent">#FFFFFFFF</color>
+    <!-- Link text: a deep brand teal that stays readable (>=4.5:1) on light
+         surfaces, where the vivid aqua would be illegible. The bright aqua is
+         used instead on dark surfaces (values-night). -->
+    <color name="brand_link">#FF057876</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>

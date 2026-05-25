@@ -37,6 +37,7 @@
         <!-- Background / surface -->
         <item name="android:colorBackground">@color/md_background</item>
         <item name="colorOnBackground">@color/md_on_background</item>
+        <item name="android:textColorLink">@color/brand_link</item>
         <item name="colorSurface">@color/md_surface</item>
         <item name="colorOnSurface">@color/md_on_surface</item>
         <item name="colorSurfaceVariant">@color/md_surface_variant</item>
