@@ -9,6 +9,10 @@
     <!-- ============================================================= -->
     <style name="Theme.CalliopeMini" parent="Theme.Material3.DayNight.NoActionBar">
 
+        <!-- Brand typeface: monospace Roboto Mono across the whole UI. -->
+<!--        <item name="android:fontFamily">@font/roboto_mono_regular</item>-->
+<!--        <item name="fontFamily">@font/roboto_mono_regular</item>-->
+
         <!-- Primary -->
         <item name="colorPrimary">@color/md_primary</item>
         <item name="colorOnPrimary">@color/md_on_primary</item>
