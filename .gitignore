@@ -89,3 +89,5 @@ lint/tmp/
 # lint/reports/
 
 app/release/
+/.tmp/
+/.claude/
