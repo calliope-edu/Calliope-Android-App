@@ -127,14 +127,22 @@ class BridgeController(
     }
 
     override fun onConnected(deviceName: String?) {
+        val (boardVersion, calliopeVersion) = versionStrings()
         emitState(
             "ble",
             status = "connected",
             deviceName = deviceName ?: "",
+            friendlyName = friendlyNameOf(deviceName),
+            boardVersion = boardVersion,
+            calliopeVersion = calliopeVersion,
             bleCanFlash = true,
             bleCanCommunicate = true,
             bleHasPermission = true,
         )
+        // Auto-subscribe Nordic UART TX so REPL/console/live-data reaches the
+        // widget as `serialData` without the web side requesting it. Best-effort:
+        // fails silently on programs with no UART service (e.g. MicroPython).
+        session.enableNotify(uartService, uartTx) { /* best-effort */ }
         val id = pendingConnectReplyId
         pendingConnectReplyId = null
         if (id != null) replyOk(id)
@@ -159,6 +167,14 @@ class BridgeController(
     }
 
     override fun onNotify(serviceUuid: UUID, characteristicUuid: UUID, data: ByteArray) {
+        // Nordic UART TX → forward as `serialData`, which the widget's serial
+        // layer (serial.ts onSerialData/onSerialLine) consumes directly. This
+        // is the inbound half of the proxy serial channel; without it proxy
+        // serial is write-only.
+        if (serviceUuid == uartService && characteristicUuid == uartTx) {
+            sendEvent("serialData", JSONObject().put("data", base64Encode(data)))
+            return
+        }
         val key = subKey(serviceUuid.toString(), characteristicUuid.toString())
         if (key !in notifySubs) return
         sendEvent(
@@ -515,6 +531,8 @@ class BridgeController(
         deviceName: String? = null,
         errorMessage: String? = null,
         friendlyName: String? = null,
+        boardVersion: String? = null,
+        calliopeVersion: String? = null,
         bleCanFlash: Boolean? = null,
         bleCanCommunicate: Boolean? = null,
         bleHasPermission: Boolean? = null,
@@ -524,10 +542,37 @@ class BridgeController(
         if (deviceName != null) d.put("deviceName", deviceName)
         if (errorMessage != null) d.put("errorMessage", errorMessage)
         if (friendlyName != null) d.put("friendlyName", friendlyName)
+        if (boardVersion != null) d.put("boardVersion", boardVersion)
+        if (calliopeVersion != null) d.put("calliopeVersion", calliopeVersion)
         if (bleCanFlash != null) d.put("bleCanFlash", bleCanFlash)
         if (bleCanCommunicate != null) d.put("bleCanCommunicate", bleCanCommunicate)
         if (bleHasPermission != null) d.put("bleHasPermission", bleHasPermission)
         sendEvent("state", d)
+    }
+
+    /**
+     * Map the persisted chip class (BondingService writes
+     * [Constants.CURRENT_DEVICE_VERSION]) to the widget's version strings, so
+     * the web layer doesn't have to guess. Returns (boardVersion, calliopeVersion).
+     * MINI_V2 = V1-class silicon (Calliope Mini 1 & 2); MINI_V3 = V2-class
+     * (Mini 3 == micro:bit v2). Unidentified → (null, null).
+     */
+    private fun versionStrings(): Pair<String?, String?> {
+        val v = PreferenceManager.getDefaultSharedPreferences(context)
+            .getInt(Constants.CURRENT_DEVICE_VERSION, Constants.UNIDENTIFIED)
+        return when (v) {
+            Constants.MINI_V3 -> "V2" to "V3"
+            Constants.MINI_V2 -> "V1" to "V1"
+            else -> null to null
+        }
+    }
+
+    /** Pull the 5-letter CVCVC friendly name out of an advertised name like
+     *  "Calliope mini [zuvav]". Null if absent. */
+    private fun friendlyNameOf(deviceName: String?): String? {
+        if (deviceName == null) return null
+        return Regex("[zvgpt][uoiea][zvgpt][uoiea][zvgpt]", RegexOption.IGNORE_CASE)
+            .find(deviceName)?.value?.lowercase()
     }
 
     private fun emitFlashProgress(phase: String, progress: Int) {
