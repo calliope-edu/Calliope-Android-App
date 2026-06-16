@@ -257,5 +257,15 @@
 
     <!-- Native-proxy bridge -->
     <string name="bridge_connect_timeout">Zeitüberschreitung bei der Verbindung</string>
+    <string name="bridge_no_paired_device">Kein Calliope mini gekoppelt — bitte zuerst in der App koppeln</string>
+    <string name="bridge_invalid_device_address">Ungültige Geräteadresse</string>
+    <string name="bridge_blocks_runtime_detected">Blocks-Runtime erkannt — vollständiges Flashen statt partiellem Flashen</string>
+
+    <!-- Partielles Flashen: Ablehnungsgründe -->
+    <string name="partial_flashing_declined_no_layout_table">Partielles Flashen abgelehnt: Gerät hat keine Layout-Tabelle</string>
+    <string name="partial_flashing_declined_invalid_memory_map">Partielles Flashen abgelehnt: ungültige Speicherzuordnung</string>
+    <string name="partial_flashing_declined_no_runtime_hash">Partielles Flashen abgelehnt: Hex ohne Runtime-Hash</string>
+    <string name="partial_flashing_declined_device_hash_unavailable">Partielles Flashen abgelehnt: Geräte-Hash nicht verfügbar</string>
+    <string name="partial_flashing_declined_runtime_mismatch">Partielles Flashen abgelehnt: Runtime stimmt nicht überein (Datei=%1$s Gerät=%2$s)</string>
 
 </resources>

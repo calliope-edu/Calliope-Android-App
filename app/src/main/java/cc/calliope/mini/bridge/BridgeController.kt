@@ -165,20 +165,23 @@ class BridgeController(
         emitState("ble", status = "connecting", errorMessage = "")
         val adapter = BluetoothAdapter.getDefaultAdapter()
         if (adapter == null || !adapter.isEnabled) {
-            replyError(id, "Bluetooth is not enabled")
-            emitState("ble", status = "error", errorMessage = "Bluetooth disabled")
+            val msg = context.getString(R.string.error_bluetooth_not_enabled)
+            replyError(id, msg)
+            emitState("ble", status = "error", errorMessage = msg)
             return
         }
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         val mac = prefs.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
         if (mac.isEmpty()) {
-            replyError(id, "No paired Calliope mini — pair one in the app first")
-            emitState("ble", status = "error", errorMessage = "Kein Calliope mini gekoppelt")
+            val msg = context.getString(R.string.bridge_no_paired_device)
+            replyError(id, msg)
+            emitState("ble", status = "error", errorMessage = msg)
             return
         }
         val device = try { adapter.getRemoteDevice(mac) } catch (e: Exception) {
-            replyError(id, "Invalid device address: $mac")
-            emitState("ble", status = "error", errorMessage = "Ungültige Geräteadresse")
+            val msg = context.getString(R.string.bridge_invalid_device_address)
+            replyError(id, msg)
+            emitState("ble", status = "error", errorMessage = msg)
             return
         }
         // Reply only after services are discovered (onConnected callback)
@@ -509,7 +512,7 @@ class BridgeController(
             if (isBlocksRuntime && !argForceFullDfu) {
                 sendEvent("log", JSONObject()
                     .put("direction", "info")
-                    .put("text", "Blocks-Runtime erkannt — vollständiger DFU statt partial-flash"))
+                    .put("text", context.getString(R.string.bridge_blocks_runtime_detected)))
             }
             beginFlash(id, out, forceFullDfu)
         }

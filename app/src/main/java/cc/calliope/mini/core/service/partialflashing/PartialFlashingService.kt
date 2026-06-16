@@ -909,7 +909,7 @@ class PartialFlashingService : Service() {
                 Log.w(TAG, "DAL region reports zero range — device has no partial-flash layout table (likely blocks-runtime), falling back to full DFU")
                 ApplicationStateHandler.updateNotification(
                     Notification.INFO,
-                    "Partial flash declined: device has no layout table"
+                    getString(R.string.partial_flashing_declined_no_layout_table)
                 )
                 return RESULT_ATTEMPT_DFU
             }
@@ -918,7 +918,7 @@ class PartialFlashingService : Service() {
                 Log.w(TAG, "MakeCode region zero/invalid — partial-flash layout malformed, falling back to full DFU")
                 ApplicationStateHandler.updateNotification(
                     Notification.INFO,
-                    "Partial flash declined: invalid memory map"
+                    getString(R.string.partial_flashing_declined_invalid_memory_map)
                 )
                 return RESULT_ATTEMPT_DFU
             }
@@ -942,7 +942,7 @@ class PartialFlashingService : Service() {
                 Log.w(TAG, "File hash missing — cannot verify runtime compatibility, falling back to full DFU")
                 ApplicationStateHandler.updateNotification(
                     Notification.INFO,
-                    "Partial flash declined: hex has no runtime hash"
+                    getString(R.string.partial_flashing_declined_no_runtime_hash)
                 )
                 return RESULT_ATTEMPT_DFU
             }
@@ -950,7 +950,7 @@ class PartialFlashingService : Service() {
                 Log.w(TAG, "Device DAL hash missing — cannot verify runtime compatibility, falling back to full DFU")
                 ApplicationStateHandler.updateNotification(
                     Notification.INFO,
-                    "Partial flash declined: device hash unavailable"
+                    getString(R.string.partial_flashing_declined_device_hash_unavailable)
                 )
                 return RESULT_ATTEMPT_DFU
             }
@@ -958,7 +958,7 @@ class PartialFlashingService : Service() {
                 Log.e(TAG, "Hash mismatch: file=$fileHash, device=$dalHash — falling back to full DFU")
                 ApplicationStateHandler.updateNotification(
                     Notification.INFO,
-                    "Partial flash declined: runtime mismatch (file=$fileHash device=$dalHash)"
+                    getString(R.string.partial_flashing_declined_runtime_mismatch, fileHash, dalHash)
                 )
                 return RESULT_ATTEMPT_DFU
             }

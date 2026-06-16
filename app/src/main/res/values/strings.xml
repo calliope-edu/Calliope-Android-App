@@ -332,5 +332,15 @@
 
     <!-- Native-proxy bridge -->
     <string name="bridge_connect_timeout">Connection timed out</string>
+    <string name="bridge_no_paired_device">No paired Calliope mini — pair one in the app first</string>
+    <string name="bridge_invalid_device_address">Invalid device address</string>
+    <string name="bridge_blocks_runtime_detected">Blocks runtime detected — using full flash instead of partial flash</string>
+
+    <!-- Partial flashing fall-back reasons -->
+    <string name="partial_flashing_declined_no_layout_table">Partial flash declined: device has no layout table</string>
+    <string name="partial_flashing_declined_invalid_memory_map">Partial flash declined: invalid memory map</string>
+    <string name="partial_flashing_declined_no_runtime_hash">Partial flash declined: hex has no runtime hash</string>
+    <string name="partial_flashing_declined_device_hash_unavailable">Partial flash declined: device hash unavailable</string>
+    <string name="partial_flashing_declined_runtime_mismatch">Partial flash declined: runtime mismatch (file=%1$s device=%2$s)</string>
 
 </resources>
