@@ -65,7 +65,23 @@ class BridgeController(
 
     // ---- JS dispatch -------------------------------------------------------
 
+    /** Top-level URL the WebView is currently showing, updated by the host
+     *  WebViewClient. Gates [dispatch] so the bridge only ever services a
+     *  real campus origin — the firmware-flashing capability must not leak
+     *  to a page the campus site navigates or links out to. */
+    @Volatile
+    private var currentPageUrl: String? = null
+
+    fun onPageUrl(url: String?) {
+        currentPageUrl = url
+    }
+
     fun dispatch(id: String, op: String, args: JSONObject) {
+        if (!CampusUrls.isCampusUrl(currentPageUrl)) {
+            Log.w(TAG, "dispatch refused — origin not in campus allowlist: $currentPageUrl")
+            replyError(id, "bridge unavailable for this origin")
+            return
+        }
         try {
             when (op) {
                 "connect" -> handleConnect(id, args)

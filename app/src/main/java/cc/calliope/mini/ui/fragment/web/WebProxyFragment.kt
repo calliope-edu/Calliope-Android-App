@@ -112,15 +112,32 @@ class WebProxyFragment : Fragment() {
 
         val ctrl = BridgeController(requireContext().applicationContext, webView, viewLifecycleOwner)
         controller = ctrl
+        // Seed the controller's origin gate before the first load so a
+        // request can't slip through against a stale/null URL.
+        ctrl.onPageUrl(pageUrl)
         webView.addJavascriptInterface(CalliopeProxyBridge(ctrl), CalliopeProxyBridge.JS_NAME)
 
         webView.webViewClient = object : WebViewClient() {
+            override fun onPageStarted(view: WebView, url: String?, favicon: android.graphics.Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                controller?.onPageUrl(url)
+            }
+
+            // Fires on SPA history changes (campus is a Svelte SPA), where
+            // the URL changes without a full page load. Keeps the origin
+            // gate current across in-app navigation.
+            override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
+                super.doUpdateVisitedHistory(view, url, isReload)
+                controller?.onPageUrl(url)
+            }
+
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
                 // The widget's detection probes `window.CalliopeNative` on
                 // every call to `isNativeMode()`. The injection already
-                // happened via `addJavascriptInterface`; nothing else
-                // needs to run here.
+                // happened via `addJavascriptInterface`; here we just keep
+                // the controller's origin gate in sync with the final URL.
+                controller?.onPageUrl(url)
             }
         }
 
