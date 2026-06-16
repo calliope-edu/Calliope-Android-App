@@ -57,7 +57,18 @@ class BridgeController(
 
     // ---- Lifecycle ---------------------------------------------------------
 
+    /** Set once the host fragment tears the view down. After this, [post]
+     *  refuses to touch the WebView — BLE callbacks can still arrive on a
+     *  binder thread after onDestroyView() and would otherwise call
+     *  evaluateJavascript() on a destroyed WebView. */
+    @Volatile
+    private var destroyed = false
+
     fun destroy() {
+        // Mark destroyed BEFORE disconnecting: session.disconnect() can
+        // trigger an async onDisconnected -> emitState -> post() that would
+        // otherwise race the WebView teardown.
+        destroyed = true
         // LifecycleOwner removes the observers automatically when its state
         // hits DESTROYED — no manual cleanup needed for them.
         session.disconnect()
@@ -603,6 +614,7 @@ class BridgeController(
     }
 
     private fun post(msg: JSONObject) {
+        if (destroyed) return
         val payload = msg.toString()
         // The Native-Web envelope is wrapped in JSON.parse on the web side
         // when it's a string; passing the JSON string itself is the safest
@@ -610,7 +622,9 @@ class BridgeController(
         val escaped = JSONArray().put(payload).toString()
             .let { it.substring(1, it.length - 1) } // strip array brackets → quoted string
         val js = "if(window.__calliopeNative)window.__calliopeNative.onMessage(${escaped});"
-        main.post { webView.evaluateJavascript(js, null) }
+        // Re-check on the main thread: destroy() may have run between the
+        // check above (possibly on a binder thread) and this runnable.
+        main.post { if (!destroyed) webView.evaluateJavascript(js, null) }
     }
 
     // ---- Helpers -----------------------------------------------------------
