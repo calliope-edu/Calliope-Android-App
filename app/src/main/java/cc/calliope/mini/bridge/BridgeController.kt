@@ -13,6 +13,7 @@ import android.webkit.WebView
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.Observer
 import androidx.preference.PreferenceManager
+import cc.calliope.mini.R
 import cc.calliope.mini.core.service.FlashingService
 import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.Event
@@ -122,6 +123,31 @@ class BridgeController(
     // ---- Connect / disconnect ---------------------------------------------
 
     private var pendingConnectReplyId: String? = null
+    private var connectTimeout: Runnable? = null
+
+    /** Overall connect ceiling. The BLE stack itself fails at ~30 s for an
+     *  unreachable device, but a device that connects yet never completes
+     *  service discovery would otherwise leave the JS promise pending
+     *  forever — this guarantees a reply either way. Main-thread only. */
+    private fun scheduleConnectTimeout(id: String) {
+        cancelConnectTimeout()
+        val r = Runnable {
+            if (pendingConnectReplyId == id) {
+                pendingConnectReplyId = null
+                connectTimeout = null
+                session.disconnect()
+                replyError(id, "connect timed out")
+                emitState("ble", status = "error", errorMessage = context.getString(R.string.bridge_connect_timeout))
+            }
+        }
+        connectTimeout = r
+        main.postDelayed(r, CONNECT_TIMEOUT_MS)
+    }
+
+    private fun cancelConnectTimeout() {
+        connectTimeout?.let { main.removeCallbacks(it) }
+        connectTimeout = null
+    }
 
     @SuppressLint("MissingPermission")
     private fun handleConnect(id: String, args: JSONObject) {
@@ -151,6 +177,7 @@ class BridgeController(
         }
         // Reply only after services are discovered (onConnected callback)
         pendingConnectReplyId = id
+        scheduleConnectTimeout(id)
         session.connect(device)
     }
 
@@ -196,6 +223,7 @@ class BridgeController(
         // widget as `serialData` without the web side requesting it. Best-effort:
         // fails silently on programs with no UART service (e.g. MicroPython).
         session.enableNotify(uartService, uartTx) { /* best-effort */ }
+        cancelConnectTimeout()
         val id = pendingConnectReplyId
         pendingConnectReplyId = null
         if (id != null) replyOk(id)
@@ -203,6 +231,7 @@ class BridgeController(
 
     private fun onDisconnectedMain(reason: String) {
         notifySubs.clear()
+        cancelConnectTimeout()
         emitState("ble", status = "disconnected", deviceName = "")
         val id = pendingConnectReplyId
         pendingConnectReplyId = null
@@ -211,6 +240,7 @@ class BridgeController(
 
     private fun onErrorMain(message: String) {
         sendEvent("error", JSONObject().put("message", message))
+        cancelConnectTimeout()
         val id = pendingConnectReplyId
         pendingConnectReplyId = null
         if (id != null) {
@@ -679,5 +709,8 @@ class BridgeController(
     private fun base64Decode(s: String): ByteArray =
         if (s.isEmpty()) ByteArray(0) else Base64.decode(s, Base64.NO_WRAP)
 
-    companion object { private const val TAG = "BridgeController" }
+    companion object {
+        private const val TAG = "BridgeController"
+        private const val CONNECT_TIMEOUT_MS = 25_000L
+    }
 }

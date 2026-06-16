@@ -330,4 +330,7 @@
     <!-- Web errors -->
     <string name="web_error_oh_no">Oh no! %s</string>
 
+    <!-- Native-proxy bridge -->
+    <string name="bridge_connect_timeout">Connection timed out</string>
+
 </resources>

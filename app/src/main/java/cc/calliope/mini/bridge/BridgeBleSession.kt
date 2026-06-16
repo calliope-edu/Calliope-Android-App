@@ -62,6 +62,18 @@ class BridgeBleSession(
 
     private var gatt: BluetoothGatt? = null
     private var mtuPayload: Int = 20
+    /** Guards against discovering services twice and lets the MTU-timeout
+     *  fallback know whether discovery already started. */
+    private var discoveryStarted = false
+
+    /** Posted after STATE_CONNECTED: if onMtuChanged never arrives (some
+     *  stacks silently drop it, or requestMtu fails to dispatch), discover
+     *  services anyway so the connect can't hang forever. */
+    private val mtuFallback = Runnable {
+        val g = gatt ?: return@Runnable
+        Log.w(TAG, "onMtuChanged not received — discovering services anyway")
+        startServiceDiscovery(g)
+    }
 
     private val cccd: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
 
@@ -328,6 +340,14 @@ class BridgeBleSession(
         return svc.getCharacteristic(characteristicUuid)
     }
 
+    @SuppressLint("MissingPermission")
+    private fun startServiceDiscovery(g: BluetoothGatt) {
+        if (discoveryStarted) return
+        discoveryStarted = true
+        handler.removeCallbacks(mtuFallback)
+        g.discoverServices()
+    }
+
     // ---- GATT callback -----------------------------------------------------
 
     @SuppressLint("MissingPermission")
@@ -335,11 +355,22 @@ class BridgeBleSession(
         override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
+                    discoveryStarted = false
                     try { g.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH) } catch (_: Exception) {}
-                    g.requestMtu(247)
+                    val requested = try { g.requestMtu(247) } catch (_: Exception) { false }
+                    if (requested) {
+                        // Normal path: onMtuChanged triggers discovery. Arm a
+                        // fallback in case that callback never lands.
+                        handler.postDelayed(mtuFallback, 1500)
+                    } else {
+                        // requestMtu didn't dispatch — go straight to discovery.
+                        startServiceDiscovery(g)
+                    }
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     val name = try { g.device?.name } catch (_: Exception) { null }
+                    handler.removeCallbacks(mtuFallback)
+                    discoveryStarted = false
                     try { g.close() } catch (_: Exception) {}
                     gatt = null
                     mtuPayload = 20
@@ -355,7 +386,7 @@ class BridgeBleSession(
 
         override fun onMtuChanged(g: BluetoothGatt, mtu: Int, status: Int) {
             mtuPayload = (if (status == BluetoothGatt.GATT_SUCCESS) mtu else 23) - 3
-            g.discoverServices()
+            startServiceDiscovery(g)
         }
 
         override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {

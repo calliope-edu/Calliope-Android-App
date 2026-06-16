@@ -255,4 +255,7 @@
     <!-- Web errors -->
     <string name="web_error_oh_no">Oh nein! %s</string>
 
+    <!-- Native-proxy bridge -->
+    <string name="bridge_connect_timeout">Zeitüberschreitung bei der Verbindung</string>
+
 </resources>
