@@ -14,12 +14,24 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import cc.calliope.mini.utils.settings.Settings;
 
 public class FileUtils {
     private static final String TAG = "FileUtils";
     private static final String FILE_EXTENSION = ".hex";
+
+    /**
+     * Version-detection cache. {@link #getFileVersion} can scan an entire
+     * hex file (see containsV3Evidence) and is called per row while binding
+     * the scripts list, so re-scanning the same file on every rebind caused
+     * scroll jank. Keyed by path + lastModified + length so a rewritten file
+     * (same path, new content) misses and is re-scanned.
+     */
+    private static final Map<String, FileVersion> VERSION_CACHE = new ConcurrentHashMap<>();
+    private static final int VERSION_CACHE_MAX = 256;
 
     public static File getFile(Context context, String editorName, String filename) {
 
@@ -80,6 +92,25 @@ public class FileUtils {
     }
 
     public static FileVersion getFileVersion(String filePath) {
+        File file = new File(filePath);
+        String cacheKey = filePath + ":" + file.lastModified() + ":" + file.length();
+        FileVersion cached = VERSION_CACHE.get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
+
+        FileVersion result = computeFileVersion(filePath);
+
+        // The set of distinct hex files is small; a hard clear is enough to
+        // keep the cache from growing without bound.
+        if (VERSION_CACHE.size() > VERSION_CACHE_MAX) {
+            VERSION_CACHE.clear();
+        }
+        VERSION_CACHE.put(cacheKey, result);
+        return result;
+    }
+
+    private static FileVersion computeFileVersion(String filePath) {
         String[] lines = new String[2];
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             lines[0] = br.readLine();

@@ -11,6 +11,8 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,6 +23,11 @@ import cc.calliope.mini.utils.file.FileVersion;
 import cc.calliope.mini.utils.Utils;
 
 public class ScriptsRecyclerAdapter extends RecyclerView.Adapter<ScriptsRecyclerAdapter.ViewHolder> {
+    // Version detection can scan an entire hex file; keep it off the main
+    // thread so binding/scrolling never blocks on disk I/O. Single thread:
+    // these are cheap disk reads and serialising them avoids contention.
+    private static final ExecutorService VERSION_EXECUTOR = Executors.newSingleThreadExecutor();
+
     private final ArrayList<FileWrapper> files;
     private OnItemClickListener onItemClickListener;
     private OnItemLongClickListener onItemLongClickListener;
@@ -132,27 +139,41 @@ public class ScriptsRecyclerAdapter extends RecyclerView.Adapter<ScriptsRecycler
         void setItem(FileWrapper file) {
             String name = FilenameUtils.removeExtension(file.getName());
             String date = Utils.dateFormat(file.lastModified());
-            FileVersion version = FileUtils.getFileVersion(file.getAbsolutePath());
-
-            switch (version) {
-                case UNIVERSAL:
-                    this.version.setText(R.string.version_universal);
-                    break;
-                case VERSION_2:
-                    this.version.setText(R.string.version_v2);
-                    break;
-                case VERSION_3:
-                    this.version.setText(R.string.version_v3);
-                    break;
-                case UNDEFINED:
-                default:
-                    this.version.setText(R.string.version_error);
-                    break;
-            }
 
             this.name.setText(name);
             this.date.setText(date);
             this.icon.setImageResource(file.editor().getIconResId());
+
+            // Resolve the hex version off the main thread (it may scan the
+            // whole file). Tag the view with the path so a recycled holder
+            // discards a stale result that finishes after it was rebound.
+            final String path = file.getAbsolutePath();
+            final TextView versionView = this.version;
+            versionView.setText("");
+            versionView.setTag(path);
+            VERSION_EXECUTOR.execute(() -> {
+                FileVersion version = FileUtils.getFileVersion(path);
+                versionView.post(() -> {
+                    if (!path.equals(versionView.getTag())) {
+                        return; // holder recycled to a different file
+                    }
+                    switch (version) {
+                        case UNIVERSAL:
+                            versionView.setText(R.string.version_universal);
+                            break;
+                        case VERSION_2:
+                            versionView.setText(R.string.version_v2);
+                            break;
+                        case VERSION_3:
+                            versionView.setText(R.string.version_v3);
+                            break;
+                        case UNDEFINED:
+                        default:
+                            versionView.setText(R.string.version_error);
+                            break;
+                    }
+                });
+            });
         }
     }
 }
