@@ -156,6 +156,12 @@ class BridgeController(
             replyError(id, "transport=$transport not supported in proxy mode (BLE only)")
             return
         }
+        // Reject overlapping connects: a second connect would overwrite
+        // pendingConnectReplyId and orphan the first JS promise.
+        if (pendingConnectReplyId != null) {
+            replyError(id, "connect already in progress")
+            return
+        }
         emitState("ble", status = "connecting", errorMessage = "")
         val adapter = BluetoothAdapter.getDefaultAdapter()
         if (adapter == null || !adapter.isEnabled) {
@@ -450,6 +456,13 @@ class BridgeController(
     }
 
     private fun handleFlash(id: String, args: JSONObject) {
+        // Reject overlapping flashes: a second flash would overwrite
+        // pendingFlashReplyId and orphan the first JS promise (and
+        // FlashingService refuses a concurrent run anyway).
+        if (flashInFlight) {
+            replyError(id, "flash already in progress")
+            return
+        }
         val hex = args.optString("hex", "")
         val name = args.optString("name", "project")
         if (hex.isEmpty()) { replyError(id, "flash: empty hex"); return }
