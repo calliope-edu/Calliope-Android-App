@@ -171,6 +171,13 @@ class EditorsFragment : Fragment() {
                 val action = EditorsFragmentDirections.actionEditorsToWebBle(url, item.directoryName)
                 findNavController().navigate(action)
             }
+            EditorType.CAMPUS.id -> {
+                // Native-proxy: campus widget detects the JS bridge and
+                // delegates all BLE/flash work to the BridgeController.
+                // No download interception — flash flows through the bridge.
+                val action = EditorsFragmentDirections.actionEditorsToWebProxy(url, item.directoryName)
+                findNavController().navigate(action)
+            }
             else -> {
                 val action = EditorsFragmentDirections.actionEditorsToWeb(url, item.directoryName)
                 findNavController().navigate(action)
