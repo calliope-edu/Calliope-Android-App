@@ -41,12 +41,18 @@ class BridgeBleSession(
 
     /** A single pending GATT op. `run` returns true if the op was
      *  dispatched successfully (and the queue should wait for a callback)
-     *  or false if the caller should be unblocked immediately. */
+     *  or false if the caller should be unblocked immediately.
+     *
+     *  `done` latches completion so the op's `complete` callback fires
+     *  exactly once even if the GATT callback (binder thread) and the op
+     *  timeout (main thread) race. */
     private class GattOp(
         val description: String,
         val run: (BluetoothGatt) -> Boolean,
         val complete: (Boolean, ByteArray?) -> Unit,
-    )
+    ) {
+        val done = AtomicBoolean(false)
+    }
 
     private val handler = Handler(Looper.getMainLooper())
     private val queue = ConcurrentLinkedQueue<GattOp>()
@@ -259,10 +265,11 @@ class BridgeBleSession(
         current = op
         // 3-second hard ceiling per op so a wedged callback doesn't stall
         // the entire bridge. Empirically every CODAL char op finishes in
-        // <300ms; partial-flash bursts run at ~50ms/op.
+        // <300ms; partial-flash bursts run at ~50ms/op. The timeout targets
+        // *this* op explicitly so it can never complete a later one.
         currentTimeout = Runnable {
             Log.w(TAG, "op timeout: ${op.description}")
-            finishCurrent(false, null)
+            finishOp(op, false, null)
         }.also { handler.postDelayed(it, 3000) }
         val dispatched = try {
             op.run(g)
@@ -274,11 +281,20 @@ class BridgeBleSession(
     }
 
     private fun finishCurrent(ok: Boolean, data: ByteArray?) {
-        val op = current ?: return
-        current = null
-        currentTimeout?.let { handler.removeCallbacks(it) }
-        currentTimeout = null
-        busy.set(false)
+        finishOp(current ?: return, ok, data)
+    }
+
+    /** Complete [op] at most once. Only advances the queue if [op] is still
+     *  the in-flight op — a stale callback for an already-finished op just
+     *  no-ops on the latch. */
+    private fun finishOp(op: GattOp, ok: Boolean, data: ByteArray?) {
+        if (!op.done.compareAndSet(false, true)) return
+        if (current === op) {
+            current = null
+            currentTimeout?.let { handler.removeCallbacks(it) }
+            currentTimeout = null
+            busy.set(false)
+        }
         try { op.complete(ok, data) } catch (e: Exception) {
             Log.w(TAG, "op completion threw: ${e.message}")
         }
@@ -291,10 +307,14 @@ class BridgeBleSession(
         val cur = current
         current = null
         busy.set(false)
-        try { cur?.complete?.invoke(false, null) } catch (_: Exception) {}
+        if (cur != null && cur.done.compareAndSet(false, true)) {
+            try { cur.complete(false, null) } catch (_: Exception) {}
+        }
         while (true) {
             val op = queue.poll() ?: break
-            try { op.complete(false, null) } catch (_: Exception) {}
+            if (op.done.compareAndSet(false, true)) {
+                try { op.complete(false, null) } catch (_: Exception) {}
+            }
         }
         Log.d(TAG, "queue cleared ($reason)")
     }
