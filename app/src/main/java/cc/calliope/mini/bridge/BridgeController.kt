@@ -88,6 +88,14 @@ class BridgeController(
     }
 
     fun dispatch(id: String, op: String, args: JSONObject) {
+        // @JavascriptInterface delivers on a WebView binder thread. All
+        // controller state (pending reply ids, flash flags, notifySubs) is
+        // confined to the main thread — where the LiveData observers also
+        // run — so hop over before touching anything.
+        main.post { dispatchOnMain(id, op, args) }
+    }
+
+    private fun dispatchOnMain(id: String, op: String, args: JSONObject) {
         if (!CampusUrls.isCampusUrl(currentPageUrl)) {
             Log.w(TAG, "dispatch refused — origin not in campus allowlist: $currentPageUrl")
             replyError(id, "bridge unavailable for this origin")
@@ -153,7 +161,25 @@ class BridgeController(
         replyOk(id)
     }
 
+    // BridgeBleSession delivers these on a binder thread; marshal to main so
+    // all controller state stays single-threaded.
     override fun onConnected(deviceName: String?) {
+        main.post { onConnectedMain(deviceName) }
+    }
+
+    override fun onDisconnected(reason: String) {
+        main.post { onDisconnectedMain(reason) }
+    }
+
+    override fun onError(message: String) {
+        main.post { onErrorMain(message) }
+    }
+
+    override fun onNotify(serviceUuid: UUID, characteristicUuid: UUID, data: ByteArray) {
+        main.post { onNotifyMain(serviceUuid, characteristicUuid, data) }
+    }
+
+    private fun onConnectedMain(deviceName: String?) {
         val (boardVersion, calliopeVersion) = versionStrings()
         emitState(
             "ble",
@@ -175,7 +201,7 @@ class BridgeController(
         if (id != null) replyOk(id)
     }
 
-    override fun onDisconnected(reason: String) {
+    private fun onDisconnectedMain(reason: String) {
         notifySubs.clear()
         emitState("ble", status = "disconnected", deviceName = "")
         val id = pendingConnectReplyId
@@ -183,7 +209,7 @@ class BridgeController(
         if (id != null) replyError(id, "connect failed: $reason")
     }
 
-    override fun onError(message: String) {
+    private fun onErrorMain(message: String) {
         sendEvent("error", JSONObject().put("message", message))
         val id = pendingConnectReplyId
         pendingConnectReplyId = null
@@ -193,7 +219,7 @@ class BridgeController(
         }
     }
 
-    override fun onNotify(serviceUuid: UUID, characteristicUuid: UUID, data: ByteArray) {
+    private fun onNotifyMain(serviceUuid: UUID, characteristicUuid: UUID, data: ByteArray) {
         // Nordic UART TX → forward as `serialData`, which the widget's serial
         // layer (serial.ts onSerialData/onSerialLine) consumes directly. This
         // is the inbound half of the proxy serial channel; without it proxy
@@ -509,20 +535,24 @@ class BridgeController(
             onResult(false)
             return
         }
+        // `settled` is touched only on the main thread; the session read
+        // callback fires on a binder thread, so it hops to main before
+        // settling. This guarantees onResult (which leads into beginFlash)
+        // runs on the main thread too.
         var settled = false
-        val timeout = Runnable {
+        lateinit var timeout: Runnable
+        val finish: (Boolean) -> Unit = { result ->
             if (!settled) {
                 settled = true
-                onResult(false)
+                main.removeCallbacks(timeout)
+                onResult(result)
             }
         }
+        timeout = Runnable { finish(false) }
         main.postDelayed(timeout, 1500)
         session.read(mbitMoreService, mbitMoreState) { data ->
-            if (settled) return@read
-            settled = true
-            main.removeCallbacks(timeout)
             val anyNonZero = data != null && data.any { it != 0.toByte() }
-            onResult(anyNonZero)
+            main.post { finish(anyNonZero) }
         }
     }
 
