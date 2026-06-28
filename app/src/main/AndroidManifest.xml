@@ -85,10 +85,22 @@
 
         <activity
             android:name=".ui.activity.MainActivity"
+            android:launchMode="singleTop"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- App Links: open makecode.calliope.cc links directly in the app.
+                 Automatic (no chooser) verification on Android 12+ requires a
+                 matching /.well-known/assetlinks.json hosted on the domain. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="makecode.calliope.cc" />
+                <data android:scheme="http" android:host="makecode.calliope.cc" />
             </intent-filter>
         </activity>
         <activity
@@ -115,6 +127,14 @@
             android:exported="false" />
         <activity
             android:name=".ui.activity.CameraPermissionActivity"
+            android:exported="false" />
+        <!-- QR scanner capture screen — follows the device orientation
+             (the library's default CaptureActivity forces landscape). -->
+        <activity
+            android:name=".ui.activity.QrCaptureActivity"
+            android:screenOrientation="fullUser"
+            android:stateNotNeeded="true"
+            android:theme="@style/zxing_CaptureTheme"
             android:exported="false" />
         <service
             android:name=".core.service.DfuService"

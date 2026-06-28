@@ -2,8 +2,10 @@ package cc.calliope.mini.ui.activity;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -29,15 +31,22 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.journeyapps.barcodescanner.ScanContract;
+import com.journeyapps.barcodescanner.ScanOptions;
 
+import cc.calliope.mini.core.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.ui.popup.PopupItem;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityMainBinding;
 import cc.calliope.mini.ui.dialog.scripts.ScriptsFragment;
+import cc.calliope.mini.ui.model.EditorType;
 
 public class MainActivity extends BaseActivity {
     private static final String TAG = "MainActivity";
+    private static final String MAKECODE_HOST = "makecode.calliope.cc";
     private ActivityMainBinding binding;
+    private NavController navController;
     private boolean fullScreen = false;
     private final ActivityResultLauncher<String> pushNotificationPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -45,6 +54,16 @@ public class MainActivity extends BaseActivity {
                     Log.i(TAG, "NotificationPermission is Granted");
                 } else {
                     Log.w(TAG, "NotificationPermission NOT Granted");
+                }
+            });
+
+    // ZXing's capture screen requests the CAMERA permission itself when it
+    // opens, so the prompt appears only when the user actually scans.
+    private final ActivityResultLauncher<ScanOptions> qrScanLauncher =
+            registerForActivityResult(new ScanContract(), result -> {
+                // result.getContents() == null means the user cancelled.
+                if (result.getContents() != null) {
+                    handleScannedContent(result.getContents());
                 }
             });
 
@@ -59,7 +78,7 @@ public class MainActivity extends BaseActivity {
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
 
-        NavController navController = Navigation.findNavController(this, R.id.navigation_host_fragment);
+        navController = Navigation.findNavController(this, R.id.navigation_host_fragment);
         NavigationUI.setupWithNavController(bottomNavigationView, navController);
 
         Map<Integer, Integer> navMapping = new HashMap<>();
@@ -91,6 +110,71 @@ public class MainActivity extends BaseActivity {
         }
 
         externalStorageVolumes();
+
+        // Cold start from a makecode.calliope.cc App Link. On config-change
+        // recreation savedInstanceState is non-null, so we don't re-navigate.
+        if (savedInstanceState == null) {
+            handleMakeCodeLink(getIntent());
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        // App already running (singleTop) — a new link arrives here.
+        setIntent(intent);
+        handleMakeCodeLink(intent);
+    }
+
+    /**
+     * If {@code intent} is a VIEW on a makecode.calliope.cc URL, open it in the
+     * MakeCode web editor (same destination the editors list uses), loading the
+     * exact incoming URL so shared projects open as-is.
+     */
+    private void handleMakeCodeLink(Intent intent) {
+        if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction())) {
+            return;
+        }
+        Uri data = intent.getData();
+        if (data == null || !MAKECODE_HOST.equalsIgnoreCase(data.getHost())) {
+            return;
+        }
+        navigateToMakeCode(data.toString());
+    }
+
+    /** Opens {@code url} in the MakeCode web editor (callers verify the host). */
+    private void navigateToMakeCode(String url) {
+        if (navController == null) {
+            return;
+        }
+        Bundle args = new Bundle();
+        args.putString("editorUrl", url);
+        args.putString("editorName", EditorType.MAKECODE.getDirectoryName());
+        navController.navigate(R.id.navigation_web, args);
+    }
+
+    /** Opens the in-app QR scanner (permission is requested by the scanner). */
+    private void startQrScan() {
+        ScanOptions options = new ScanOptions();
+        options.setDesiredBarcodeFormats(ScanOptions.QR_CODE);
+        options.setPrompt(getString(R.string.qr_scan_prompt));
+        options.setBeepEnabled(false);
+        options.setOrientationLocked(false);
+        options.setCaptureActivity(QrCaptureActivity.class);
+        qrScanLauncher.launch(options);
+    }
+
+    /**
+     * A scanned makecode.calliope.cc link opens in the editor; anything else
+     * shows an error so a wrong/foreign QR code doesn't silently do nothing.
+     */
+    private void handleScannedContent(String contents) {
+        Uri uri = Uri.parse(contents);
+        if (MAKECODE_HOST.equalsIgnoreCase(uri.getHost())) {
+            navigateToMakeCode(contents);
+        } else {
+            ApplicationStateHandler.updateNotification(Notification.ERROR, R.string.error_qr_not_makecode);
+        }
     }
 
     private void externalStorageVolumes() {
@@ -142,6 +226,8 @@ public class MainActivity extends BaseActivity {
             ScriptsFragment scriptsFragment = new ScriptsFragment();
             scriptsFragment.show(getSupportFragmentManager(), "Bottom Sheet Dialog Fragment");
         } else if (position == 2) {
+            startQrScan();
+        } else if (position == 3) {
             if (fullScreen) {
                 disableFullScreenMode();
             } else {
@@ -212,6 +298,7 @@ public class MainActivity extends BaseActivity {
     public void addPopupMenuItems(List<PopupItem> popupItems) {
         super.addPopupMenuItems(popupItems);
         popupItems.add(new PopupItem(R.string.menu_fab_scripts, R.drawable.ic_coding_black_24dp));
+        popupItems.add(new PopupItem(R.string.menu_fab_scan_qr, R.drawable.ic_qr_scan_24dp));
         popupItems.add(new PopupItem(R.string.menu_fab_full_screen, fullScreen ?
                 R.drawable.ic_disable_full_screen_24dp : R.drawable.ic_enable_full_screen_24dp));
     }

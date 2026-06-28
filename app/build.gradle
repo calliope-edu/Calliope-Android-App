@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "cc.calliope.mini"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 36
         versionCode = 27
         versionName = '2.0.9'
@@ -58,4 +58,7 @@ dependencies {
     implementation 'androidx.documentfile:documentfile:1.1.0'
     implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
     implementation 'com.google.android.material:material:1.13.0'
+
+    // QR scanning — open source (Apache-2.0), on-device, no Play Services.
+    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
 }
