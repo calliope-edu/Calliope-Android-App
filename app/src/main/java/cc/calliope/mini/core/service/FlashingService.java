@@ -9,18 +9,30 @@ import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 import static cc.calliope.mini.utils.file.FileVersion.VERSION_2;
 import static cc.calliope.mini.utils.file.FileVersion.VERSION_3;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ServiceInfo;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.ResultReceiver;
 import android.util.Log;
 
+import androidx.core.app.NotificationCompat;
+import androidx.core.util.Consumer;
 import androidx.lifecycle.LifecycleService;
 import androidx.lifecycle.Observer;
 import androidx.preference.PreferenceManager;
 
 import java.io.File;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import cc.calliope.mini.ui.activity.NotificationActivity;
 
 import cc.calliope.mini.utils.file.FirmwareZipCreator;
 import cc.calliope.mini.utils.hex.HexParser;
@@ -45,6 +57,9 @@ public class FlashingService extends LifecycleService {
     private static final String TAG = "FlashingService";
     private static final int NUMBER_OF_RETRIES = 3;
     private static final int REBOOT_TIME = 2000; // time required by the device to reboot, ms
+    private static final long LEGACY_DFU_REBOOT_DELAY_MS = 3000L;
+    private static final String NOTIFICATION_CHANNEL_ID = "flashing_service_channel";
+    private static final int NOTIFICATION_ID = 201;
     public static final String EXTRA_FORCE_FULL_DFU = "extra_force_full_dfu";
     private String currentAddress;
     private String currentPattern;
@@ -53,6 +68,9 @@ public class FlashingService extends LifecycleService {
     private boolean forceFullDfu = false;
 
     private State currentState = new State(State.STATE_IDLE);
+
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private ExecutorService backgroundExecutor;
 
     private final Observer<State> stateObserver = state -> {
         if (state == null) {
@@ -85,8 +103,14 @@ public class FlashingService extends LifecycleService {
     @Override
     public void onCreate() {
         super.onCreate();
+        startForegroundWithNotification();
+        backgroundExecutor = Executors.newSingleThreadExecutor();
+
         // Get the current state
-        currentState = ApplicationStateHandler.getStateLiveData().getValue();
+        State value = ApplicationStateHandler.getStateLiveData().getValue();
+        if (value != null) {
+            currentState = value;
+        }
 
         // Observe the state and progress
         ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
@@ -97,8 +121,45 @@ public class FlashingService extends LifecycleService {
     public void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "FlashingService destroyed");
+        mainHandler.removeCallbacksAndMessages(null);
+        if (backgroundExecutor != null) {
+            backgroundExecutor.shutdownNow();
+        }
         ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver);
         ApplicationStateHandler.getProgressLiveData().removeObserver(progressObserver);
+    }
+
+    private void startForegroundWithNotification() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    NOTIFICATION_CHANNEL_ID,
+                    getString(R.string.partial_flashing_starting),
+                    NotificationManager.IMPORTANCE_LOW
+            );
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (manager != null) {
+                manager.createNotificationChannel(channel);
+            }
+        }
+
+        Intent notificationIntent = new Intent(this, NotificationActivity.class);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this, 0, notificationIntent,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
+        );
+
+        android.app.Notification notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+                .setContentTitle(getString(R.string.partial_flashing_starting))
+                .setSmallIcon(R.drawable.ic_notification_flash)
+                .setContentIntent(pendingIntent)
+                .setOngoing(true)
+                .build();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE);
+        } else {
+            startForeground(NOTIFICATION_ID, notification);
+        }
     }
 
     @Override
@@ -106,12 +167,18 @@ public class FlashingService extends LifecycleService {
         super.onStartCommand(intent, flags, startId);
         Log.d(TAG, "FlashingService started");
 
-        String message = getString(R.string.partial_flashing_starting);
-        ApplicationStateHandler.updateNotification(Notification.INFO, message);
+        if (intent == null) {
+            Log.w(TAG, "Null intent, stopping service");
+            stopSelf();
+            return START_NOT_STICKY;
+        }
 
         if (!isBluetoothEnabled() || flashingInProgress()) {
             return START_NOT_STICKY;
         }
+
+        String message = getString(R.string.partial_flashing_starting);
+        ApplicationStateHandler.updateNotification(Notification.INFO, message);
 
         if (!loadDeviceInfo()) {
             return START_NOT_STICKY;
@@ -228,11 +295,14 @@ public class FlashingService extends LifecycleService {
                 boolean isSuccess = resultData.getBoolean("result");
                 if (isSuccess) {
                     // Wait for device to reboot into DFU mode before starting Nordic DFU
-                    new Handler().postDelayed(() -> startDfuLegacy(), 3000);
+                    mainHandler.postDelayed(FlashingService.this::startDfuLegacy, LEGACY_DFU_REBOOT_DELAY_MS);
                 } else {
                     Log.e(TAG, "DFU failed");
                     handleError(getString(R.string.error_dfu_failed));
                 }
+            } else {
+                Log.e(TAG, "Legacy DFU unexpected resultCode: " + resultCode);
+                handleError(getString(R.string.error_dfu_failed));
             }
         }
     }
@@ -268,7 +338,7 @@ public class FlashingService extends LifecycleService {
 
     private void handlePartialFlashing() {
         Log.d(TAG, "Starting partial flashing service");
-        PartialFlashingReceiver resultReceiver = new PartialFlashingReceiver(new Handler());
+        PartialFlashingReceiver resultReceiver = new PartialFlashingReceiver(mainHandler);
 
         Intent service = new Intent(this, PartialFlashingService.class);
         service.putExtra(PartialFlashingService.EXTRA_DEVICE_ADDRESS, currentAddress);
@@ -281,16 +351,43 @@ public class FlashingService extends LifecycleService {
         if (boardVersion == MINI_V2) {
             startDfuControlService();
         } else if (boardVersion == MINI_V3) {
-            startDfu();
+            prepareFirmwareAsync(this::startDfu);
         } else {
             Log.e(TAG, "Unsupported board version: " + boardVersion);
             handleError(String.format(getString(R.string.error_unsupported_board_version), boardVersion));
         }
     }
 
+    /**
+     * Runs {@link #prepareFirmwareZip()} off the main thread and delivers the
+     * resulting zip path back on the main thread. Prevents ANR on large hex files.
+     */
+    private void prepareFirmwareAsync(Consumer<String> onReady) {
+        backgroundExecutor.execute(() -> {
+            String zipPath;
+            try {
+                zipPath = prepareFirmwareZip();
+            } catch (Throwable t) {
+                Log.e(TAG, "Firmware preparation crashed", t);
+                mainHandler.post(() -> handleError(getString(R.string.error_failed_prepare_firmware_zip)));
+                return;
+            }
+
+            final String finalZipPath = zipPath;
+            mainHandler.post(() -> {
+                if (finalZipPath == null) {
+                    Log.e(TAG, "Failed to prepare firmware ZIP");
+                    handleError(getString(R.string.error_failed_prepare_firmware_zip));
+                    return;
+                }
+                onReady.accept(finalZipPath);
+            });
+        });
+    }
+
     private void startDfuControlService() {
         Log.d(TAG, "Starting DfuControl Service...");
-        LegacyDfuResultReceiver resultReceiver = new LegacyDfuResultReceiver(new Handler());
+        LegacyDfuResultReceiver resultReceiver = new LegacyDfuResultReceiver(mainHandler);
 
         // Start the service
         Intent service = new Intent(this, LegacyDfuService.class);
@@ -300,44 +397,45 @@ public class FlashingService extends LifecycleService {
     }
 
     private String prepareFirmwareZip() {
-        // Prepare firmware file
-        HexParser parser = new HexParser(currentPath);
-        byte[] firmware = parser.getCalliopeBin(boardVersion);
+        try {
+            // Prepare firmware file
+            HexParser parser = new HexParser(currentPath);
+            byte[] firmware = parser.getCalliopeBin(boardVersion);
 
-        String firmwarePath = getCacheDir() + File.separator + "application.bin";
-        if (!FileUtils.writeFile(firmwarePath, firmware)) {
-            Log.e(TAG, "Failed to write firmware to file");
+            String firmwarePath = new File(getCacheDir(), "application.bin").getAbsolutePath();
+            if (!FileUtils.writeFile(firmwarePath, firmware)) {
+                Log.e(TAG, "Failed to write firmware to file");
+                return null;
+            }
+
+            // Prepare init packet
+            InitPacket initPacket = new InitPacket(boardVersion);
+            byte[] initData = initPacket.encode(firmware);
+
+            String initPacketPath = new File(getCacheDir(), "application.dat").getAbsolutePath();
+            if (!FileUtils.writeFile(initPacketPath, initData)) {
+                Log.e(TAG, "Failed to write init packet to file");
+                return null;
+            }
+
+            // Create ZIP
+            FirmwareZipCreator zipCreator = new FirmwareZipCreator(this, firmwarePath, initPacketPath);
+            String zipPath = zipCreator.createZip();
+            if (zipPath == null) {
+                Log.e(TAG, "Failed to create ZIP");
+            }
+
+            return zipPath;
+        } catch (OutOfMemoryError e) {
+            Log.e(TAG, "Out of memory while preparing firmware", e);
+            return null;
+        } catch (Exception e) {
+            Log.e(TAG, "Error while preparing firmware", e);
             return null;
         }
-
-        // Prepare init packet
-        InitPacket initPacket = new InitPacket(boardVersion);
-        byte[] initData = initPacket.encode(firmware);
-
-        String initPacketPath = getCacheDir() + File.separator + "application.dat";
-        if (!FileUtils.writeFile(initPacketPath, initData)) {
-            Log.e(TAG, "Failed to write init packet to file");
-            return null;
-        }
-
-        // Create ZIP
-        FirmwareZipCreator zipCreator = new FirmwareZipCreator(this, firmwarePath, initPacketPath);
-        String zipPath = zipCreator.createZip();
-        if (zipPath == null) {
-            Log.e(TAG, "Failed to create ZIP");
-        }
-
-        return zipPath;
     }
 
-    private void startDfu() {
-        String zipPath = prepareFirmwareZip();
-        if (zipPath == null) {
-            Log.e(TAG, "Failed to prepare firmware ZIP");
-            handleError(getString(R.string.error_failed_prepare_firmware_zip));
-            return;
-        }
-
+    private void startDfu(String zipPath) {
         new DfuServiceInitiator(currentAddress)
                 .setDeviceName(currentPattern)
                 .setPrepareDataObjectDelay(300L)
@@ -355,26 +453,21 @@ public class FlashingService extends LifecycleService {
      * from waiting for Service Changed indication (which V2 bootloader doesn't send).
      */
     private void startDfuLegacy() {
-        String zipPath = prepareFirmwareZip();
-        if (zipPath == null) {
-            Log.e(TAG, "Failed to prepare firmware ZIP");
-            handleError(getString(R.string.error_failed_prepare_firmware_zip));
-            return;
-        }
-
-        new DfuServiceInitiator(currentAddress)
-                .setDeviceName(currentPattern)
-                .setMtu(23)
-                .setNumberOfRetries(NUMBER_OF_RETRIES)
-                .setRebootTime(REBOOT_TIME)
-                .setKeepBond(false)
-                .setForceDfu(true)
-                .setForceScanningForNewAddressInLegacyDfu(true)
-                // V2 (nRF51) needs PRN enabled - it can't handle data sent too fast
-                .setPacketsReceiptNotificationsEnabled(true)
-                .setPacketsReceiptNotificationsValue(6)
-                .setZip(zipPath)
-                .start(this, DfuService.class);
+        prepareFirmwareAsync(zipPath ->
+                new DfuServiceInitiator(currentAddress)
+                        .setDeviceName(currentPattern)
+                        .setMtu(23)
+                        .setNumberOfRetries(NUMBER_OF_RETRIES)
+                        .setRebootTime(REBOOT_TIME)
+                        .setKeepBond(false)
+                        .setForceDfu(true)
+                        .setForceScanningForNewAddressInLegacyDfu(true)
+                        // V2 (nRF51) needs PRN enabled - it can't handle data sent too fast
+                        .setPacketsReceiptNotificationsEnabled(true)
+                        .setPacketsReceiptNotificationsValue(6)
+                        .setZip(zipPath)
+                        .start(this, DfuService.class)
+        );
     }
 
     private void handleError(String message) {

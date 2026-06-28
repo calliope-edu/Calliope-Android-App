@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 import cc.calliope.mini.R;
+import cc.calliope.mini.utils.WindowUtils;
 
 public final class DialogUtils {
     private DialogUtils() {
@@ -24,6 +25,8 @@ public final class DialogUtils {
                 .setView(view)
                 .create();
         setTransparentBackground(alertDialog);
+        alertDialog.setOnShowListener(d -> WindowUtils.blurBehindDialog(context, true));
+        alertDialog.setOnDismissListener(d -> WindowUtils.blurBehindDialog(context, false));
         return new Pair<>(alertDialog, view);
     }
 

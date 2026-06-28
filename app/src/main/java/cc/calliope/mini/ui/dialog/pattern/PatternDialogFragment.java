@@ -46,6 +46,7 @@ import cc.calliope.mini.ui.views.FobParams;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.DialogPatternBinding;
 import cc.calliope.mini.utils.Utils;
+import cc.calliope.mini.utils.WindowUtils;
 
 import androidx.preference.PreferenceManager;
 
@@ -129,6 +130,7 @@ public class PatternDialogFragment extends DialogFragment {
     @Override
     public void onDismiss(@NonNull final DialogInterface dialog) {
         super.onDismiss(dialog);
+        WindowUtils.blurBehindDialog(context, false);
 
         final Activity activity = getActivity();
         if (activity instanceof DialogInterface.OnDismissListener) {
@@ -152,6 +154,7 @@ public class PatternDialogFragment extends DialogFragment {
 
         window.setBackgroundDrawable(new ColorDrawable(android.graphics.Color.TRANSPARENT));
         window.setGravity(Gravity.TOP | Gravity.START);
+        WindowUtils.blurBehindDialog(context, true);
 
         Bundle bundle = getArguments();
         if (bundle != null) {

@@ -142,7 +142,8 @@
             android:foregroundServiceType="connectedDevice" />
         <service
             android:name=".core.service.FlashingService"
-            android:enabled="true" />
+            android:enabled="true"
+            android:foregroundServiceType="connectedDevice" />
         <service
             android:name=".core.service.BondingService"
             android:enabled="true" />

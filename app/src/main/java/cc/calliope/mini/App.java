@@ -32,6 +32,9 @@ public class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        // Dynamic color is intentionally NOT applied: the brand-seeded scheme in
+        // colors.xml is pinned so the dark theme always shows the classic Calliope
+        // navy (#131720) used on the official sites, instead of the wallpaper tint.
         AppContext.initialize(this);
         migrateSnakeFromMakecodeToPython();
         copyFilesToInternalStorage();

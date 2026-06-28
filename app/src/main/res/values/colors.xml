@@ -1,8 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- ============================================================= -->
+    <!-- Material Design 3 color roles (LIGHT) — generated from the     -->
+    <!-- Calliope brand seed #00C8C6 via the TonalSpot scheme (the same -->
+    <!-- algorithm the system uses for dynamic color). These are the    -->
+    <!-- static fallback used on devices without dynamic color (< API 31)-->
+    <!-- and the single source of truth for every semantic color below. -->
+    <!-- Dark equivalents live in values-night/colors.xml.              -->
+    <!-- ============================================================= -->
+    <!-- Primary is pinned to the raw brand aqua #00C8C6 (NOT run through the
+         MD3 tonal palette) so the brand colour renders exactly; a dark
+         on-colour keeps text/icons legible on the bright fill. -->
+    <color name="md_primary">#00C8C6</color>
+    <color name="md_on_primary">#131720</color>
+    <color name="md_primary_container">#A8EFED</color>
+    <color name="md_on_primary_container">#005C5B</color>
+    <!-- Secondary is also the raw brand aqua #00C8C6 (master used aqua_200
+         for both primary and secondary); not run through the tonal palette. -->
+    <color name="md_secondary">#00C8C6</color>
+    <color name="md_on_secondary">#131720</color>
+    <color name="md_secondary_container">#CCE8E6</color>
+    <color name="md_on_secondary_container">#3D5655</color>
+    <color name="md_tertiary">#39647C</color>
+    <color name="md_on_tertiary">#FFFFFF</color>
+    <color name="md_tertiary_container">#BFE9FF</color>
+    <color name="md_on_tertiary_container">#1E4D60</color>
+    <color name="md_error">#A83836</color>
+    <color name="md_on_error">#FFFFFF</color>
+    <color name="md_error_container">#FFDAD6</color>
+    <color name="md_on_error_container">#410002</color>
+    <color name="md_background">#F6FAF9</color>
+    <color name="md_on_background">#191C1C</color>
+    <color name="md_surface">#F6FAF9</color>
+    <color name="md_on_surface">#191C1C</color>
+    <color name="md_surface_variant">#D9E5E4</color>
+    <color name="md_on_surface_variant">#3F4948</color>
+    <color name="md_outline">#6F7979</color>
+    <color name="md_outline_variant">#BEC9C8</color>
+    <color name="md_inverse_surface">#2D3131</color>
+    <color name="md_inverse_on_surface">#EFF1F0</color>
+    <color name="md_inverse_primary">#88D4D2</color>
+    <color name="md_surface_dim">#D7DAD9</color>
+    <color name="md_surface_bright">#F6FAF9</color>
+    <color name="md_surface_container_lowest">#FFFFFF</color>
+    <color name="md_surface_container_low">#F1F4F3</color>
+    <color name="md_surface_container">#EBEEED</color>
+    <color name="md_surface_container_high">#E5E9E8</color>
+    <color name="md_surface_container_highest">#DFE3E2</color>
+    <color name="md_scrim">#000000</color>
+
+    <!-- ============================================================= -->
+    <!-- Brand accent palette — kept intentionally vivid for key CTAs   -->
+    <!-- (e.g. the connect button) so the Calliope identity stays.      -->
+    <!-- ============================================================= -->
     <color name="aqua_200">#FF00C8C6</color>
     <color name="aqua_500">#FF009896</color>
     <color name="aqua_700">#FF057876</color>
+
+    <!-- Brand accent — the classic vivid Calliope aqua, used for the key
+         accents (FAB, bottom-nav indicator, checkboxes) with a white icon,
+         matching the app's original look. Pinned (not a dynamic role) so
+         accents stay on-brand under Material You. -->
+    <color name="brand_accent">#FF00C8C6</color>
+    <color name="brand_accent_pressed">#FF009896</color>
+    <color name="brand_on_accent">#FFFFFFFF</color>
+    <!-- Link text: a deep brand teal that stays readable (>=4.5:1) on light
+         surfaces, where the vivid aqua would be illegible. The bright aqua is
+         used instead on dark surfaces (values-night). -->
+    <color name="brand_link">#FF057876</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
@@ -34,11 +99,16 @@
     <color name="ic_fill_secondary">#FFFFFFFF</color>
     <color name="ic_fill_pattern">#FFEEEEEE</color>
 
-    <color name="item_text">#FF232730</color>
-    <color name="item_icon">#FF585858</color>
-    <color name="item_background">#FFFFFFFF</color>
-    <color name="nav_background">#FFF2F2F2</color>
-    <color name="stroke_color">#30000000</color>
-    <color name="background_transparent">#00F2F2F2</color>
-    <color name="background_solid">#FFF2F2F2</color>
+    <!-- ============================================================= -->
+    <!-- Semantic aliases — these names are referenced across layouts,   -->
+    <!-- drawables and custom views. They now resolve to MD3 roles, so   -->
+    <!-- the whole UI tracks the theme with no per-file edits.           -->
+    <!-- ============================================================= -->
+    <color name="item_text">@color/md_on_surface</color>
+    <color name="item_icon">@color/md_on_surface_variant</color>
+    <color name="item_background">@color/md_surface_container_low</color>
+    <color name="nav_background">@color/md_surface_container_high</color>
+    <color name="stroke_color">@color/md_outline_variant</color>
+    <color name="background_solid">@color/md_surface</color>
+    <color name="background_transparent">#00F6FAF9</color>
 </resources>

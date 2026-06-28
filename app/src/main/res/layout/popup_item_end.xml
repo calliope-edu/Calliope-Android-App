@@ -20,7 +20,7 @@
         android:paddingVertical="@dimen/fab_title_vertical_padding"
         android:layout_marginEnd="@dimen/margin_half"
         android:text="@string/menu_fab_connect"
-        android:textColor="@color/white"
+        android:textColor="?attr/colorOnSurface"
         android:focusable="false"
         android:focusableInTouchMode="false"
         android:clickable="false"
@@ -39,5 +39,5 @@
         android:focusable="false"
         android:focusableInTouchMode="false"
         android:clickable="false"
-        app:tint="@color/white" />
+        app:tint="@color/brand_on_accent" />
 </LinearLayout>

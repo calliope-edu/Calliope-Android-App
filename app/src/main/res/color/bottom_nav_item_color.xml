@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Bottom navigation item color.
+  Active item is the raw brand aqua (matches master, where the selected
+  icon was tinted with aqua_200); the active indicator is transparent so
+  the aqua icon reads on its own. Inactive items use the themed
+  on-surface-variant so they track light/dark mode.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="@color/brand_accent" android:state_checked="true" />
+    <item android:color="?attr/colorOnSurfaceVariant" />
+</selector>

@@ -34,7 +34,8 @@
             android:layout_margin="@dimen/margin_half"
             android:src="@drawable/ic_device_24dp"
             app:maxImageSize="32dp"
-            app:tint="@color/white" />
+            app:backgroundTint="@color/brand_accent"
+            app:tint="@color/brand_on_accent" />
 
     </FrameLayout>
 
@@ -63,5 +64,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:labelVisibilityMode="unlabeled"
+        app:itemActiveIndicatorStyle="@style/Widget.CalliopeMini.BottomNavigation.ActiveIndicator"
+        app:itemIconTint="@color/bottom_nav_item_color"
+        app:itemTextColor="@color/bottom_nav_item_color"
         app:menu="@menu/bottom_nav_menu" />
 </androidx.constraintlayout.widget.ConstraintLayout>
