@@ -4,8 +4,6 @@ import android.app.Application;
 import android.content.Intent;
 import android.util.Log;
 
-import com.google.android.material.color.DynamicColors;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -34,9 +32,9 @@ public class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        // Material You: adapt the theme to the user's wallpaper on Android 12+.
-        // On older devices the brand-seeded scheme in colors.xml is used as-is.
-        DynamicColors.applyToActivitiesIfAvailable(this);
+        // Dynamic color is intentionally NOT applied: the brand-seeded scheme in
+        // colors.xml is pinned so the dark theme always shows the classic Calliope
+        // navy (#131720) used on the official sites, instead of the wallpaper tint.
         AppContext.initialize(this);
         migrateSnakeFromMakecodeToPython();
         copyFilesToInternalStorage();

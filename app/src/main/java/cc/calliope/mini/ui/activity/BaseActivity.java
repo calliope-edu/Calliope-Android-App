@@ -35,7 +35,6 @@ import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Observer;
 import androidx.preference.PreferenceManager;
 
-import com.google.android.material.color.DynamicColors;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 
 import java.util.ArrayList;

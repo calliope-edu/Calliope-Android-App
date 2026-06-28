@@ -10,8 +10,8 @@
     <style name="Theme.CalliopeMini" parent="Theme.Material3.DayNight.NoActionBar">
 
         <!-- Brand typeface: monospace Roboto Mono across the whole UI. -->
-<!--        <item name="android:fontFamily">@font/roboto_mono_regular</item>-->
-<!--        <item name="fontFamily">@font/roboto_mono_regular</item>-->
+        <item name="android:fontFamily">@font/roboto_mono_regular</item>
+        <item name="fontFamily">@font/roboto_mono_regular</item>
 
         <!-- Primary -->
         <item name="colorPrimary">@color/md_primary</item>
@@ -105,9 +105,9 @@
     </style>
 
     <!-- ===================== Typography ===================== -->
-    <!-- Material 3 default type scale uses Roboto for all UI text.      -->
-    <!-- Monospace is reserved for technical/code content via this       -->
-    <!-- appearance (apply android:textAppearance on those views).       -->
+    <!-- The brand monospace (Roboto Mono) is applied app-wide via the   -->
+    <!-- fontFamily on the base theme above. This appearance is kept for  -->
+    <!-- views that set android:textAppearance explicitly.               -->
     <style name="TextAppearance.CalliopeMini.Mono" parent="TextAppearance.Material3.BodyMedium">
         <item name="android:fontFamily">@font/roboto_mono_regular</item>
         <item name="fontFamily">@font/roboto_mono_regular</item>

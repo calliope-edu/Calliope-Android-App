@@ -4,6 +4,12 @@
     <!-- Material Design 3 color roles (DARK) — brand seed #00C8C6.      -->
     <!-- Mirrors the role names in values/colors.xml; the single theme   -->
     <!-- in values/themes.xml picks the right set per night mode.        -->
+    <!--                                                                  -->
+    <!-- The neutral SURFACE roles are deliberately re-toned onto the     -->
+    <!-- classic Calliope navy (#131720, the dark_blue_900 used on the    -->
+    <!-- official Calliope sites) instead of the teal-grey the seed would -->
+    <!-- generate, so the dark background matches the brand. The teal     -->
+    <!-- primary/secondary/tertiary accents are left on the seed scheme.  -->
     <!-- ============================================================= -->
     <color name="md_primary">#88D4D2</color>
     <color name="md_on_primary">#003735</color>
@@ -21,24 +27,25 @@
     <color name="md_on_error">#690005</color>
     <color name="md_error_container">#93000A</color>
     <color name="md_on_error_container">#FFDAD6</color>
-    <color name="md_background">#0E1413</color>
-    <color name="md_on_background">#DEE3E2</color>
-    <color name="md_surface">#0E1413</color>
-    <color name="md_on_surface">#DEE3E2</color>
-    <color name="md_surface_variant">#3F4948</color>
-    <color name="md_on_surface_variant">#BEC9C8</color>
-    <color name="md_outline">#889392</color>
-    <color name="md_outline_variant">#3F4948</color>
-    <color name="md_inverse_surface">#DEE3E2</color>
-    <color name="md_inverse_on_surface">#2D3131</color>
+    <!-- Neutral surfaces re-toned onto the Calliope navy (#131720). -->
+    <color name="md_background">#131720</color>
+    <color name="md_on_background">#E3E2E9</color>
+    <color name="md_surface">#131720</color>
+    <color name="md_on_surface">#E3E2E9</color>
+    <color name="md_surface_variant">#43474F</color>
+    <color name="md_on_surface_variant">#C3C6CF</color>
+    <color name="md_outline">#8D9099</color>
+    <color name="md_outline_variant">#43474F</color>
+    <color name="md_inverse_surface">#E3E2E9</color>
+    <color name="md_inverse_on_surface">#2E323B</color>
     <color name="md_inverse_primary">#1B6968</color>
-    <color name="md_surface_dim">#0E1413</color>
-    <color name="md_surface_bright">#343A39</color>
-    <color name="md_surface_container_lowest">#090F0E</color>
-    <color name="md_surface_container_low">#171D1C</color>
-    <color name="md_surface_container">#1B2120</color>
-    <color name="md_surface_container_high">#252B2A</color>
-    <color name="md_surface_container_highest">#303635</color>
+    <color name="md_surface_dim">#131720</color>
+    <color name="md_surface_bright">#393D47</color>
+    <color name="md_surface_container_lowest">#0E1119</color>
+    <color name="md_surface_container_low">#1B1F29</color>
+    <color name="md_surface_container">#1F232E</color>
+    <color name="md_surface_container_high">#232730</color>
+    <color name="md_surface_container_highest">#2E323C</color>
     <color name="md_scrim">#000000</color>
 
     <!-- Dark icon fills (unchanged) -->
@@ -57,5 +64,5 @@
     <color name="nav_background">@color/md_surface_container_high</color>
     <color name="stroke_color">@color/md_outline_variant</color>
     <color name="background_solid">@color/md_surface</color>
-    <color name="background_transparent">#000E1413</color>
+    <color name="background_transparent">#00131720</color>
 </resources>
