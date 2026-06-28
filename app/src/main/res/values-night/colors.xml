@@ -8,11 +8,13 @@
     <!-- The neutral SURFACE roles are deliberately re-toned onto the     -->
     <!-- classic Calliope navy (#131720, the dark_blue_900 used on the    -->
     <!-- official Calliope sites) instead of the teal-grey the seed would -->
-    <!-- generate, so the dark background matches the brand. The teal     -->
-    <!-- primary/secondary/tertiary accents are left on the seed scheme.  -->
+    <!-- generate, so the dark background matches the brand. Primary is   -->
+    <!-- pinned to the raw brand aqua (below); the secondary/tertiary     -->
+    <!-- accents are left on the seed-derived scheme.                     -->
     <!-- ============================================================= -->
-    <color name="md_primary">#88D4D2</color>
-    <color name="md_on_primary">#003735</color>
+    <!-- Primary pinned to the raw brand aqua #00C8C6 (NOT tonalized). -->
+    <color name="md_primary">#00C8C6</color>
+    <color name="md_on_primary">#131720</color>
     <color name="md_primary_container">#1F4E4D</color>
     <color name="md_on_primary_container">#A4F0EE</color>
     <color name="md_secondary">#B0CCCA</color>

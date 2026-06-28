@@ -3,9 +3,9 @@
     <!-- ============================================================= -->
     <!-- Base application theme — Material Design 3.                    -->
     <!-- Colors come from the md_* roles (values/colors.xml +           -->
-    <!-- values-night/colors.xml). On Android 12+ these are replaced at -->
-    <!-- runtime by dynamic color (see App.java); on older devices this -->
-    <!-- brand-seeded scheme is the fallback.                           -->
+    <!-- values-night/colors.xml). Dynamic color is intentionally NOT   -->
+    <!-- applied (see App.java), so this brand-seeded scheme is used as  -->
+    <!-- is on every device — colorPrimary is the raw brand aqua.        -->
     <!-- ============================================================= -->
     <style name="Theme.CalliopeMini" parent="Theme.Material3.DayNight.NoActionBar">
 

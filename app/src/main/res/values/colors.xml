@@ -8,8 +8,11 @@
     <!-- and the single source of truth for every semantic color below. -->
     <!-- Dark equivalents live in values-night/colors.xml.              -->
     <!-- ============================================================= -->
-    <color name="md_primary">#1B6968</color>
-    <color name="md_on_primary">#FFFFFF</color>
+    <!-- Primary is pinned to the raw brand aqua #00C8C6 (NOT run through the
+         MD3 tonal palette) so the brand colour renders exactly; a dark
+         on-colour keeps text/icons legible on the bright fill. -->
+    <color name="md_primary">#00C8C6</color>
+    <color name="md_on_primary">#131720</color>
     <color name="md_primary_container">#A8EFED</color>
     <color name="md_on_primary_container">#005C5B</color>
     <color name="md_secondary">#4A6463</color>
