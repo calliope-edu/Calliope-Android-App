@@ -9,6 +9,7 @@ import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import cc.calliope.mini.R
+import cc.calliope.mini.bridge.CampusUrls
 import cc.calliope.mini.databinding.FragmentEditorsBinding
 import cc.calliope.mini.ui.adapter.MenuAdapter
 import cc.calliope.mini.ui.model.MenuItem
@@ -165,9 +166,19 @@ class EditorsFragment : Fragment() {
                 ?: (if (boardVersion == 2) item.urlV2 else item.urlV3)
         }
 
-        // Use directoryName for file storage (UPPERCASE for backwards compatibility)
-        when (item.id) {
-            EditorType.CARDBOARD_CONTROL.id, EditorType.CARDBOARD_FACE.id -> {
+        // Routing is decided by the resolved URL, not the editor id: any
+        // campus origin (incl. a CUSTOM editor pointed at campus) goes
+        // through the native-proxy bridge. Use directoryName for file
+        // storage (UPPERCASE for backwards compatibility).
+        when {
+            CampusUrls.isCampusUrl(url) -> {
+                // Native-proxy: campus widget detects the JS bridge and
+                // delegates all BLE/flash work to the BridgeController.
+                // No download interception — flash flows through the bridge.
+                val action = EditorsFragmentDirections.actionEditorsToWebProxy(url, item.directoryName)
+                findNavController().navigate(action)
+            }
+            item.id == EditorType.CARDBOARD_CONTROL.id || item.id == EditorType.CARDBOARD_FACE.id -> {
                 val action = EditorsFragmentDirections.actionEditorsToWebBle(url, item.directoryName)
                 findNavController().navigate(action)
             }

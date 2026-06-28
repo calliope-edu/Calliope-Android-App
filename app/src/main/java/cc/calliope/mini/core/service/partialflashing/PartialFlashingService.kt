@@ -139,6 +139,13 @@ class PartialFlashingService : Service() {
     private var isPython = false
     private var dalHash: String? = null
     private var fileHash: String? = null
+    /** DAL region bounds reported by the device. A zero range
+     *  (start==0 && end==0) signals the firmware was built without
+     *  `addlayouttable.py` — true for the blocks-runtime CODAL build —
+     *  and means partial flash cannot work on this device regardless of
+     *  what the hex carries. Must fall back to full DFU. */
+    private var dalStartAddress = 0L
+    private var dalEndAddress = 0L
     private var codeStartAddress = 0L
     private var codeEndAddress = 0L
     private var packetState: Byte = PACKET_STATE_WAITING
@@ -880,26 +887,82 @@ class PartialFlashingService : Service() {
             ApplicationStateHandler.updateNotification(Notification.INFO, getString(R.string.flashing_firmware_validating))
             codeStartAddress = 0
             codeEndAddress = 0
+            dalStartAddress = 0
+            dalEndAddress = 0
 
             if (!readMemoryMap()) {
                 Log.e(TAG, "Failed to read memory map")
                 return RESULT_ATTEMPT_DFU
             }
 
-            if (codeStartAddress == 0L || codeEndAddress <= codeStartAddress) {
-                Log.e(TAG, "Invalid memory map addresses")
+            // DAL zero-range sentinel — matches the widget's check at
+            // ble-flash-web.ts:597-599. The blocks-runtime CODAL build
+            // doesn't ship `addlayouttable.py`, so its partial-flash
+            // service responds to REGION_INFO with all-zero start/end
+            // and an all-zero hash. The legacy hash compare alone could
+            // be fooled into "match confirmed" if the file's hash also
+            // happened to be all zeros (rare but possible). The widget
+            // catches this defensively before any hash compare; do the
+            // same here so a Blocks → MakeCode swap reliably refuses
+            // partial flash and falls back to full DFU.
+            if (dalStartAddress == 0L && dalEndAddress == 0L) {
+                Log.w(TAG, "DAL region reports zero range — device has no partial-flash layout table (likely blocks-runtime), falling back to full DFU")
+                ApplicationStateHandler.updateNotification(
+                    Notification.INFO,
+                    getString(R.string.partial_flashing_declined_no_layout_table)
+                )
                 return RESULT_ATTEMPT_DFU
             }
 
-            // Compare DAL hash
-            if (fileHash == null) {
-                Log.w(TAG, "Hash not available in hex file (partial hex), skipping hash verification")
-            } else if (dalHash == null || fileHash != dalHash) {
-                Log.e(TAG, "Hash mismatch: file=$fileHash, device=$dalHash")
+            if (codeStartAddress == 0L || codeEndAddress <= codeStartAddress) {
+                Log.w(TAG, "MakeCode region zero/invalid — partial-flash layout malformed, falling back to full DFU")
+                ApplicationStateHandler.updateNotification(
+                    Notification.INFO,
+                    getString(R.string.partial_flashing_declined_invalid_memory_map)
+                )
                 return RESULT_ATTEMPT_DFU
-            } else {
-                Log.d(TAG, "Hash match confirmed: $fileHash")
             }
+
+            // Compare DAL hash. Partial flash is only safe when we can
+            // PROVE the file's runtime matches the device's runtime — a
+            // mismatch means the new program section is built against a
+            // different runtime ABI and would corrupt the device. The
+            // hash is the only signal we have, so any case where we can't
+            // verify it must fall back to full DFU.
+            //
+            // Three cases land here as "unverifiable" → RESULT_ATTEMPT_DFU:
+            //   1. fileHash null — MicroPython hex without a DAL hash
+            //      pointer (see findPythonData "partial hex without DAL").
+            //      Previously this path WARNED and proceeded, which let
+            //      cross-runtime swaps silently half-flash the device.
+            //   2. dalHash null — device didn't report a hash for region 1
+            //      (DAL region). Same risk: we can't verify.
+            //   3. file/device hashes don't match — different runtimes.
+            if (fileHash == null) {
+                Log.w(TAG, "File hash missing — cannot verify runtime compatibility, falling back to full DFU")
+                ApplicationStateHandler.updateNotification(
+                    Notification.INFO,
+                    getString(R.string.partial_flashing_declined_no_runtime_hash)
+                )
+                return RESULT_ATTEMPT_DFU
+            }
+            if (dalHash == null) {
+                Log.w(TAG, "Device DAL hash missing — cannot verify runtime compatibility, falling back to full DFU")
+                ApplicationStateHandler.updateNotification(
+                    Notification.INFO,
+                    getString(R.string.partial_flashing_declined_device_hash_unavailable)
+                )
+                return RESULT_ATTEMPT_DFU
+            }
+            if (fileHash != dalHash) {
+                Log.e(TAG, "Hash mismatch: file=$fileHash, device=$dalHash — falling back to full DFU")
+                ApplicationStateHandler.updateNotification(
+                    Notification.INFO,
+                    getString(R.string.partial_flashing_declined_runtime_mismatch, fileHash, dalHash)
+                )
+                return RESULT_ATTEMPT_DFU
+            }
+            Log.d(TAG, "Hash match confirmed: $fileHash")
 
             // Verify code start address matches hex file
             val fileCodeAddr = hexPosToAddress(hex, dataPos)
@@ -1367,6 +1430,8 @@ class PartialFlashingService : Service() {
                         }
 
                         if (region == REGION_DAL) {
+                            dalStartAddress = startAddr
+                            dalEndAddress = endAddr
                             dalHash = hash
                         }
                     }
