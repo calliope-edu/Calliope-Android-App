@@ -56,6 +56,7 @@ import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Permission;
 import cc.calliope.mini.utils.Utils;
+import cc.calliope.mini.utils.WindowUtils;
 import cc.calliope.mini.ui.views.FobParams;
 import cc.calliope.mini.ui.views.MovableFloatingActionButton;
 import cc.calliope.mini.ui.views.SnowfallView;
@@ -455,6 +456,7 @@ public abstract class BaseActivity extends AppCompatActivity
         Point point = getOffset(view);
         popupWindow.showAsDropDown(view, point.x, point.y);
         dimBackground(0.5f);
+        WindowUtils.blurBehindDialog(this, true);
         ViewCompat.animate(view)
                 .rotation(45.0F)
                 .withLayer().setDuration(300)
@@ -464,6 +466,7 @@ public abstract class BaseActivity extends AppCompatActivity
 
     private void onDismissPopupMenu(View view) {
         dimBackground(1.0f);
+        WindowUtils.blurBehindDialog(this, false);
         ViewCompat.animate(view)
                 .rotation(0.0F)
                 .withLayer().setDuration(300)

@@ -2,6 +2,7 @@ package cc.calliope.mini.ui.dialog.scripts;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
@@ -55,6 +56,7 @@ import cc.calliope.mini.databinding.FragmentScriptsBinding;
 import cc.calliope.mini.ui.model.EditorType;
 import cc.calliope.mini.utils.settings.Settings;
 import cc.calliope.mini.utils.Utils;
+import cc.calliope.mini.utils.WindowUtils;
 
 import static android.app.Activity.RESULT_OK;
 import static cc.calliope.mini.core.state.Notification.ERROR;
@@ -88,6 +90,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         BottomSheetDialog dialog = (BottomSheetDialog) super.onCreateDialog(savedInstanceState);
         dialog.setOnShowListener(di -> {
+            WindowUtils.blurBehindDialog(getActivity(), true);
             BottomSheetDialog d = (BottomSheetDialog) di;
             bottomSheet = d.findViewById(com.google.android.material.R.id.design_bottom_sheet);
             if (bottomSheet != null) {
@@ -96,6 +99,12 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
             }
         });
         return dialog;
+    }
+
+    @Override
+    public void onDismiss(@NonNull DialogInterface dialog) {
+        WindowUtils.blurBehindDialog(getActivity(), false);
+        super.onDismiss(dialog);
     }
 
     @Override
