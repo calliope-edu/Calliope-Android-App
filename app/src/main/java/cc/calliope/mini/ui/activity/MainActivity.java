@@ -2,8 +2,10 @@ package cc.calliope.mini.ui.activity;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -34,10 +36,13 @@ import cc.calliope.mini.ui.popup.PopupItem;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityMainBinding;
 import cc.calliope.mini.ui.dialog.scripts.ScriptsFragment;
+import cc.calliope.mini.ui.model.EditorType;
 
 public class MainActivity extends BaseActivity {
     private static final String TAG = "MainActivity";
+    private static final String MAKECODE_HOST = "makecode.calliope.cc";
     private ActivityMainBinding binding;
+    private NavController navController;
     private boolean fullScreen = false;
     private final ActivityResultLauncher<String> pushNotificationPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -59,7 +64,7 @@ public class MainActivity extends BaseActivity {
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
 
-        NavController navController = Navigation.findNavController(this, R.id.navigation_host_fragment);
+        navController = Navigation.findNavController(this, R.id.navigation_host_fragment);
         NavigationUI.setupWithNavController(bottomNavigationView, navController);
 
         Map<Integer, Integer> navMapping = new HashMap<>();
@@ -91,6 +96,42 @@ public class MainActivity extends BaseActivity {
         }
 
         externalStorageVolumes();
+
+        // Cold start from a makecode.calliope.cc App Link. On config-change
+        // recreation savedInstanceState is non-null, so we don't re-navigate.
+        if (savedInstanceState == null) {
+            handleMakeCodeLink(getIntent());
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        // App already running (singleTop) — a new link arrives here.
+        setIntent(intent);
+        handleMakeCodeLink(intent);
+    }
+
+    /**
+     * If {@code intent} is a VIEW on a makecode.calliope.cc URL, open it in the
+     * MakeCode web editor (same destination the editors list uses), loading the
+     * exact incoming URL so shared projects open as-is.
+     */
+    private void handleMakeCodeLink(Intent intent) {
+        if (intent == null || !Intent.ACTION_VIEW.equals(intent.getAction())) {
+            return;
+        }
+        Uri data = intent.getData();
+        if (data == null || !MAKECODE_HOST.equalsIgnoreCase(data.getHost())) {
+            return;
+        }
+        if (navController == null) {
+            return;
+        }
+        Bundle args = new Bundle();
+        args.putString("editorUrl", data.toString());
+        args.putString("editorName", EditorType.MAKECODE.getDirectoryName());
+        navController.navigate(R.id.navigation_web, args);
     }
 
     private void externalStorageVolumes() {
