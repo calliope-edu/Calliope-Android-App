@@ -923,27 +923,18 @@ class PartialFlashingService : Service() {
                 return RESULT_ATTEMPT_DFU
             }
 
-            // Compare DAL hash. Partial flash is only safe when we can
-            // PROVE the file's runtime matches the device's runtime — a
-            // mismatch means the new program section is built against a
-            // different runtime ABI and would corrupt the device. The
-            // hash is the only signal we have, so any case where we can't
-            // verify it must fall back to full DFU.
-            //
-            // Three cases land here as "unverifiable" → RESULT_ATTEMPT_DFU:
-            //   1. fileHash null — MicroPython hex without a DAL hash
-            //      pointer (see findPythonData "partial hex without DAL").
-            //      Previously this path WARNED and proceeded, which let
-            //      cross-runtime swaps silently half-flash the device.
-            //   2. dalHash null — device didn't report a hash for region 1
-            //      (DAL region). Same risk: we can't verify.
-            //   3. file/device hashes don't match — different runtimes.
+            // Compare DAL hash
+            // TEMPORARY: partial flashing is disabled for hex files without a DAL
+            // hash (Open Roberta Lab). Open Roberta will add the hash on their side;
+            // once their hex carries a hash, fileHash is non-null and this falls
+            // through to the normal comparison below, re-enabling partial flashing
+            // automatically. To re-enable manually before then, replace the early
+            // return with just the "skipping hash verification" warning (fall through).
             if (fileHash == null) {
-                Log.w(TAG, "File hash missing — cannot verify runtime compatibility, falling back to full DFU")
-                ApplicationStateHandler.updateNotification(
-                    Notification.INFO,
-                    getString(R.string.partial_flashing_declined_no_runtime_hash)
-                )
+                Log.w(TAG, "No DAL hash (partial hex / Open Roberta) — partial flashing temporarily disabled, falling back to DFU")
+                return RESULT_ATTEMPT_DFU
+            } else if (dalHash == null || fileHash != dalHash) {
+                Log.e(TAG, "Hash mismatch: file=$fileHash, device=$dalHash")
                 return RESULT_ATTEMPT_DFU
             }
             if (dalHash == null) {
