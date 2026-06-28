@@ -15,8 +15,10 @@
     <color name="md_on_primary">#131720</color>
     <color name="md_primary_container">#A8EFED</color>
     <color name="md_on_primary_container">#005C5B</color>
-    <color name="md_secondary">#4A6463</color>
-    <color name="md_on_secondary">#FFFFFF</color>
+    <!-- Secondary is also the raw brand aqua #00C8C6 (master used aqua_200
+         for both primary and secondary); not run through the tonal palette. -->
+    <color name="md_secondary">#00C8C6</color>
+    <color name="md_on_secondary">#131720</color>
     <color name="md_secondary_container">#CCE8E6</color>
     <color name="md_on_secondary_container">#3D5655</color>
     <color name="md_tertiary">#39647C</color>

@@ -136,10 +136,11 @@
     </style>
 
     <!-- ===================== Bottom navigation ===================== -->
-    <!-- Active indicator uses the fixed brand aqua (not a theme/dynamic   -->
-    <!-- role) so the selected tab always shows the Calliope colour.       -->
+    <!-- Active indicator is transparent so the selected item shows as a    -->
+    <!-- plain brand-aqua icon (the master look), instead of a white icon   -->
+    <!-- on an aqua pill. Icon colour comes from bottom_nav_item_color.     -->
     <style name="Widget.CalliopeMini.BottomNavigation.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">@color/brand_accent</item>
+        <item name="android:color">@android:color/transparent</item>
     </style>
 
     <!-- ===================== Transparent dialog ===================== -->

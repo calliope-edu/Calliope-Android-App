@@ -17,8 +17,9 @@
     <color name="md_on_primary">#131720</color>
     <color name="md_primary_container">#1F4E4D</color>
     <color name="md_on_primary_container">#A4F0EE</color>
-    <color name="md_secondary">#B0CCCA</color>
-    <color name="md_on_secondary">#1B3534</color>
+    <!-- Secondary = raw brand aqua #00C8C6 too (not tonalized). -->
+    <color name="md_secondary">#00C8C6</color>
+    <color name="md_on_secondary">#131720</color>
     <color name="md_secondary_container">#324B4A</color>
     <color name="md_on_secondary_container">#CCE8E6</color>
     <color name="md_tertiary">#A2CDE8</color>
