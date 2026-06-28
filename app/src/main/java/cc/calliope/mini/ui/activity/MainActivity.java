@@ -31,7 +31,11 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.journeyapps.barcodescanner.ScanContract;
+import com.journeyapps.barcodescanner.ScanOptions;
 
+import cc.calliope.mini.core.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.ui.popup.PopupItem;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityMainBinding;
@@ -50,6 +54,16 @@ public class MainActivity extends BaseActivity {
                     Log.i(TAG, "NotificationPermission is Granted");
                 } else {
                     Log.w(TAG, "NotificationPermission NOT Granted");
+                }
+            });
+
+    // ZXing's capture screen requests the CAMERA permission itself when it
+    // opens, so the prompt appears only when the user actually scans.
+    private final ActivityResultLauncher<ScanOptions> qrScanLauncher =
+            registerForActivityResult(new ScanContract(), result -> {
+                // result.getContents() == null means the user cancelled.
+                if (result.getContents() != null) {
+                    handleScannedContent(result.getContents());
                 }
             });
 
@@ -125,13 +139,42 @@ public class MainActivity extends BaseActivity {
         if (data == null || !MAKECODE_HOST.equalsIgnoreCase(data.getHost())) {
             return;
         }
+        navigateToMakeCode(data.toString());
+    }
+
+    /** Opens {@code url} in the MakeCode web editor (callers verify the host). */
+    private void navigateToMakeCode(String url) {
         if (navController == null) {
             return;
         }
         Bundle args = new Bundle();
-        args.putString("editorUrl", data.toString());
+        args.putString("editorUrl", url);
         args.putString("editorName", EditorType.MAKECODE.getDirectoryName());
         navController.navigate(R.id.navigation_web, args);
+    }
+
+    /** Opens the in-app QR scanner (permission is requested by the scanner). */
+    private void startQrScan() {
+        ScanOptions options = new ScanOptions();
+        options.setDesiredBarcodeFormats(ScanOptions.QR_CODE);
+        options.setPrompt(getString(R.string.qr_scan_prompt));
+        options.setBeepEnabled(false);
+        options.setOrientationLocked(false);
+        options.setCaptureActivity(QrCaptureActivity.class);
+        qrScanLauncher.launch(options);
+    }
+
+    /**
+     * A scanned makecode.calliope.cc link opens in the editor; anything else
+     * shows an error so a wrong/foreign QR code doesn't silently do nothing.
+     */
+    private void handleScannedContent(String contents) {
+        Uri uri = Uri.parse(contents);
+        if (MAKECODE_HOST.equalsIgnoreCase(uri.getHost())) {
+            navigateToMakeCode(contents);
+        } else {
+            ApplicationStateHandler.updateNotification(Notification.ERROR, R.string.error_qr_not_makecode);
+        }
     }
 
     private void externalStorageVolumes() {
@@ -183,6 +226,8 @@ public class MainActivity extends BaseActivity {
             ScriptsFragment scriptsFragment = new ScriptsFragment();
             scriptsFragment.show(getSupportFragmentManager(), "Bottom Sheet Dialog Fragment");
         } else if (position == 2) {
+            startQrScan();
+        } else if (position == 3) {
             if (fullScreen) {
                 disableFullScreenMode();
             } else {
@@ -253,6 +298,7 @@ public class MainActivity extends BaseActivity {
     public void addPopupMenuItems(List<PopupItem> popupItems) {
         super.addPopupMenuItems(popupItems);
         popupItems.add(new PopupItem(R.string.menu_fab_scripts, R.drawable.ic_coding_black_24dp));
+        popupItems.add(new PopupItem(R.string.menu_fab_scan_qr, R.drawable.ic_qr_scan_24dp));
         popupItems.add(new PopupItem(R.string.menu_fab_full_screen, fullScreen ?
                 R.drawable.ic_disable_full_screen_24dp : R.drawable.ic_enable_full_screen_24dp));
     }
