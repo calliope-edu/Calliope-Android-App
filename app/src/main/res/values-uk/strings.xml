@@ -26,6 +26,7 @@
     <string name="info_roberta">У "Open Roberta Lab" можна навчитися програмувати за допомогою графічної мови NEPO!</string>
     <string name="info_python">MicroPython — це версія Python, спеціально адаптована для мікроконтролерів. Python є чудовою першою текстовою мовою програмування.</string>
     <string name="info_blocks">Редактор Calliope mini Blocks дозволяє програмувати Calliope mini мовою програмування Scratch. Таким чином, можна керувати застосунками на комп’ютері за допомогою Calliope mini і навпаки.</string>
+    <string name="info_campus">Calliope Campus поєднує всі редактори Calliope в одному середовищі зі спільними проєктами та прямим керуванням Calliope mini.</string>
 
     <string name="info_custom">Тут ви можете перейти до кастомного редактору.</string>
     <string name="info_scripts">Тут будуть ваші програми.</string>
