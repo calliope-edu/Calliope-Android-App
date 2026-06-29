@@ -153,7 +153,7 @@
     <string name="menu_fab_full_screen">Full screen</string>
     <string name="menu_fab_scan_qr">Scan QR</string>
     <string name="qr_scan_prompt">Point the camera at the project QR code</string>
-    <string name="error_qr_not_makecode">This QR code is not a MakeCode link</string>
+    <string name="error_qr_unsupported">This QR code is not a Calliope project link</string>
     <string name="summary_custom">Link to the custom editor</string>
 
     <!-- Settings -->

@@ -19,6 +19,7 @@ import android.widget.AdapterView;
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -34,6 +35,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
 
+import cc.calliope.mini.bridge.CampusUrls;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.ui.popup.PopupItem;
@@ -85,12 +87,14 @@ public class MainActivity extends BaseActivity {
         navMapping.put(R.id.navigation_info, R.id.navigation_home);
         navMapping.put(R.id.navigation_web, R.id.navigation_editors);
         navMapping.put(R.id.navigation_web_ble, R.id.navigation_editors);
+        navMapping.put(R.id.navigation_web_proxy, R.id.navigation_editors);
         navMapping.put(R.id.navigation_help, R.id.navigation_settings);
         navMapping.put(R.id.navigation_editor_settings, R.id.navigation_settings);
 
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
             int destId = destination.getId();
-            if (destId == R.id.navigation_web || destId == R.id.navigation_web_ble) {
+            if (destId == R.id.navigation_web || destId == R.id.navigation_web_ble
+                    || destId == R.id.navigation_web_proxy) {
                moveFabDown();
             } else {
                moveFabUp();
@@ -136,7 +140,7 @@ public class MainActivity extends BaseActivity {
             return;
         }
         Uri data = intent.getData();
-        if (data == null || !MAKECODE_HOST.equalsIgnoreCase(data.getHost())) {
+        if (data == null || !isMakeCodeUrl(data)) {
             return;
         }
         navigateToMakeCode(data.toString());
@@ -144,13 +148,32 @@ public class MainActivity extends BaseActivity {
 
     /** Opens {@code url} in the MakeCode web editor (callers verify the host). */
     private void navigateToMakeCode(String url) {
+        navigateToEditor(R.id.navigation_web, url, EditorType.MAKECODE.getDirectoryName());
+    }
+
+    /** Opens {@code url} in the Campus web editor (native-proxy bridge). */
+    private void navigateToCampus(String url) {
+        navigateToEditor(R.id.navigation_web_proxy, url, EditorType.CAMPUS.getDirectoryName());
+    }
+
+    private void navigateToEditor(int destinationId, String url, String editorName) {
         if (navController == null) {
             return;
         }
         Bundle args = new Bundle();
         args.putString("editorUrl", url);
-        args.putString("editorName", EditorType.MAKECODE.getDirectoryName());
-        navController.navigate(R.id.navigation_web, args);
+        args.putString("editorName", editorName);
+        navController.navigate(destinationId, args);
+    }
+
+    /** True for makecode.calliope.cc and its subdomains (e.g. a /beta link). */
+    private static boolean isMakeCodeUrl(Uri uri) {
+        String host = uri.getHost();
+        if (host == null) {
+            return false;
+        }
+        host = host.toLowerCase(Locale.ROOT);
+        return host.equals(MAKECODE_HOST) || host.endsWith("." + MAKECODE_HOST);
     }
 
     /** Opens the in-app QR scanner (permission is requested by the scanner). */
@@ -165,15 +188,18 @@ public class MainActivity extends BaseActivity {
     }
 
     /**
-     * A scanned makecode.calliope.cc link opens in the editor; anything else
-     * shows an error so a wrong/foreign QR code doesn't silently do nothing.
+     * Routes a scanned link to the matching in-app editor: Campus links open in
+     * the native-proxy editor, MakeCode links (incl. /beta) in the MakeCode
+     * editor. Anything else shows an error so a foreign QR doesn't silently do
+     * nothing.
      */
     private void handleScannedContent(String contents) {
-        Uri uri = Uri.parse(contents);
-        if (MAKECODE_HOST.equalsIgnoreCase(uri.getHost())) {
+        if (CampusUrls.INSTANCE.isCampusUrl(contents)) {
+            navigateToCampus(contents);
+        } else if (isMakeCodeUrl(Uri.parse(contents))) {
             navigateToMakeCode(contents);
         } else {
-            ApplicationStateHandler.updateNotification(Notification.ERROR, R.string.error_qr_not_makecode);
+            ApplicationStateHandler.updateNotification(Notification.ERROR, R.string.error_qr_unsupported);
         }
     }
 

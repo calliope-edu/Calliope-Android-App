@@ -97,7 +97,7 @@
     <string name="menu_fab_full_screen">Vollbild</string>
     <string name="menu_fab_scan_qr">QR scannen</string>
     <string name="qr_scan_prompt">Richte die Kamera auf den QR-Code des Projekts</string>
-    <string name="error_qr_not_makecode">Dieser QR-Code ist kein MakeCode-Link</string>
+    <string name="error_qr_unsupported">Dieser QR-Code ist kein Calliope-Projektlink</string>
     <string name="title_select_editor">Editoren</string>
 
     <!-- Errors and messages -->

@@ -96,7 +96,7 @@
     <string name="menu_fab_full_screen">На весь екран</string>
     <string name="menu_fab_scan_qr">Сканувати QR</string>
     <string name="qr_scan_prompt">Наведіть камеру на QR-код проєкту</string>
-    <string name="error_qr_not_makecode">Цей QR-код не є посиланням MakeCode</string>
+    <string name="error_qr_unsupported">Цей QR-код не є посиланням на проєкт Calliope</string>
     <string name="title_select_editor">Редактори</string>
 
     <!-- Errors and messages -->
