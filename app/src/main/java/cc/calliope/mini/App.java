@@ -12,15 +12,17 @@ import java.io.InputStream;
 import cc.calliope.mini.core.bluetooth.CheckService;
 
 public class App extends Application {
+    private static final String BLOCKS_DIR = "BLOCKS";
     private static final String CUSTOM_DIR = "CUSTOM";
     private static final String MAKECODE_DIR = "MAKECODE";
     private static final String CARDBOARD_CONTROL_DIR = "CARDBOARD_CONTROL";
     private static final String CARDBOARD_FACE_DIR = "CARDBOARD_FACE";
     private static final String PYTHON_DIR = "PYTHON";
-    
+
     private static final String[] RAW_FILES = {
+        "blocks",
         "one_time_pairing",
-        "demo_lofi_control", 
+        "demo_lofi_control",
         "demo_lofi_face",
         "demo_snake",
         "demo_matrix",
@@ -67,26 +69,22 @@ public class App extends Application {
             copyRawFileToInternalStorage(libraryDir, fileName);
         }
     }
-    
+
     private String getTargetDirectory(String fileName) {
-        if (fileName.equals("one_time_pairing")) {
-            return CUSTOM_DIR;
-        } else if (fileName.equals("demo_matrix")) {
-            return MAKECODE_DIR;
-        } else if (fileName.equals("demo_snake") || fileName.equals("demo_dodge") || fileName.equals("demo_effects") || fileName.equals("demo_pong")) {
-            return PYTHON_DIR;
-        } else if (fileName.equals("demo_lofi_control")) {
-            return CARDBOARD_CONTROL_DIR;
-        } else if (fileName.equals("demo_lofi_face")) {
-            return CARDBOARD_FACE_DIR;
-        }
-        return CUSTOM_DIR; // default fallback
+        return switch (fileName) {
+            case "blocks" -> BLOCKS_DIR;
+            case "demo_matrix" -> MAKECODE_DIR;
+            case "demo_snake", "demo_dodge", "demo_effects", "demo_pong" -> PYTHON_DIR;
+            case "demo_lofi_control" -> CARDBOARD_CONTROL_DIR;
+            case "demo_lofi_face" -> CARDBOARD_FACE_DIR;
+            default -> CUSTOM_DIR;
+        };
     }
-    
+
     private void copyRawFileToInternalStorage(File libraryDir, String fileName) {
         String extension = getFileExtension(fileName);
         String fullFileName = fileName + extension;
-        
+
         File file = new File(libraryDir, fullFileName);
         if (!file.exists()) {
             try {
@@ -111,16 +109,18 @@ public class App extends Application {
             Log.d("App", "File already exists: " + fullFileName);
         }
     }
-    
+
     private String getFileExtension(String fileName) {
         if (fileName.equals("one_time_pairing")) {
             return ".hex";
         } else if (fileName.startsWith("demo_")) {
             return ".hex";
+        } else if (fileName.equals("blocks")) {
+            return ".hex";
         }
         return "";
     }
-    
+
     private int getRawResourceId(String fileName) {
         try {
             return getResources().getIdentifier(fileName, "raw", getPackageName());
