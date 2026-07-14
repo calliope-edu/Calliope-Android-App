@@ -61,4 +61,8 @@ dependencies {
 
     // QR scanning — open source (Apache-2.0), on-device, no Play Services.
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
+
+    // Loopback Scratch Link server for scratch-based editors —
+    // open source (MIT), on-device, no Play Services.
+    implementation 'org.java-websocket:Java-WebSocket:1.6.0'
 }

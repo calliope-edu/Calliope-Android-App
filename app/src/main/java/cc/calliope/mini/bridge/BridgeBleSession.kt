@@ -140,6 +140,23 @@ class BridgeBleSession(
 
     val isConnected: Boolean get() = gatt != null
 
+    /** True if [characteristicUuid] exists under [serviceUuid] on the
+     *  connected peripheral. Used by the Scratch Link bridge to resolve an
+     *  omitted serviceId and to validate service access. */
+    fun hasCharacteristic(serviceUuid: UUID, characteristicUuid: UUID): Boolean {
+        val g = gatt ?: return false
+        return g.getService(serviceUuid)?.getCharacteristic(characteristicUuid) != null
+    }
+
+    /** Whether the characteristic advertises Write-Without-Response.
+     *  null if not connected / not found. Lets the bridge mirror Scratch
+     *  Link's `withResponse ?? !canWriteWithoutResponse` default. */
+    fun canWriteWithoutResponse(serviceUuid: UUID, characteristicUuid: UUID): Boolean? {
+        val g = gatt ?: return null
+        val ch = g.getService(serviceUuid)?.getCharacteristic(characteristicUuid) ?: return null
+        return (ch.properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0
+    }
+
     // ---- Public op surface ------------------------------------------------
 
     fun read(

@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment;
 import cc.calliope.mini.ui.SnackbarHelper;
 import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.R;
+import cc.calliope.mini.scratchlink.ScratchLinkServer;
 import cc.calliope.mini.ui.activity.FlashingActivity;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.settings.Settings;
@@ -190,6 +191,88 @@ public class WebFragment extends Fragment implements DownloadListener {
     }
 
     /**
+     * JS injected into scratch-based editors (Blocks). scratch-vm's io/ble.js
+     * already falls back to the Scratch Link protocol when navigator.bluetooth
+     * is absent (always, in Android WebView) and connects to our in-app server
+     * on ws://127.0.0.1:20111. What's missing on Android is the device-picker
+     * step that sends `connect` — the stock connection modal only shows it on
+     * iPad. This script closes that gap from the app side: it locates the vm
+     * (via the React tree / redux store), and when a peripheral is discovered
+     * it calls vm.connectPeripheral() with the first result — exactly what
+     * Scratch's own AutoScanningStep does. scratch-vm then emits
+     * PERIPHERAL_CONNECTED, which makes the modal close and the extension's
+     * status turn green automatically.
+     *
+     * Note: connects to the FIRST peripheral found (like AutoScanningStep). In
+     * a room with several minis this picks the nearest/first to advertise.
+     */
+    private static String getScratchAutoConnectScript() {
+        return """
+            (function(){
+              if (window.__calliopeAutoConnect) return;
+              window.__calliopeAutoConnect = true;
+              var TAG = '[CalliopeAutoConnect]';
+              function isVM(o){
+                try { return o && typeof o.connectPeripheral==='function'
+                  && typeof o.scanForPeripheral==='function'
+                  && typeof o.on==='function'; } catch(e){ return false; }
+              }
+              function findVM(){
+                try {
+                  var nodes = document.querySelectorAll('*'), anyFiber = null;
+                  for (var i=0; i<nodes.length && i<4000; i++){
+                    var el = nodes[i];
+                    var k = Object.keys(el).find(function(x){
+                      return x.indexOf('__reactFiber$')===0 || x.indexOf('__reactInternalInstance$')===0; });
+                    if (k){ anyFiber = el[k]; break; }
+                  }
+                  if (!anyFiber) return null;
+                  var root = anyFiber, g = 0;
+                  while (root.return && g++ < 5000) root = root.return;
+                  var stack = [root], seen = new Set(), visited = 0, store = null;
+                  while (stack.length && visited < 60000){
+                    var f = stack.pop(); if (!f || seen.has(f)) continue; seen.add(f); visited++;
+                    var mp = f.memoizedProps, ms = f.memoizedState;
+                    if (mp){ if (isVM(mp.vm)) return mp.vm;
+                      if (mp.store && typeof mp.store.getState==='function') store = mp.store; }
+                    if (ms && isVM(ms.vm)) return ms.vm;
+                    if (f.child) stack.push(f.child);
+                    if (f.sibling) stack.push(f.sibling);
+                  }
+                  if (store){ try { var v = store.getState().scratchGui.vm; if (isVM(v)) return v; } catch(e){} }
+                } catch(e){}
+                return null;
+              }
+              function install(vm){
+                window.__calliopeVM = vm;
+                var currentExt = null, connecting = false;
+                var origScan = vm.scanForPeripheral.bind(vm);
+                vm.scanForPeripheral = function(extId){ currentExt = extId; connecting = false; return origScan(extId); };
+                vm.on('PERIPHERAL_LIST_UPDATE', function(list){
+                  if (connecting || !currentExt || !list) return;
+                  try { if (vm.getPeripheralIsConnected(currentExt)) return; } catch(e){}
+                  var ids = Object.keys(list); if (!ids.length) return;
+                  var p = list[ids[0]]; if (!p || !p.peripheralId) return;
+                  connecting = true;
+                  console.log(TAG, 'auto-connecting', currentExt, p.peripheralId, p.name);
+                  try { vm.connectPeripheral(currentExt, p.peripheralId); } catch(e){ connecting = false; }
+                });
+                vm.on('PERIPHERAL_CONNECTED', function(){ connecting = false; console.log(TAG, 'connected'); });
+                vm.on('PERIPHERAL_REQUEST_ERROR', function(){ connecting = false; console.log(TAG, 'request error'); });
+                vm.on('PERIPHERAL_SCAN_TIMEOUT', function(){ connecting = false; });
+                console.log(TAG, 'installed');
+              }
+              var tries = 0;
+              var timer = setInterval(function(){
+                var vm = findVM();
+                if (vm){ clearInterval(timer); install(vm); }
+                else if (++tries > 60){ clearInterval(timer); console.log(TAG, 'vm not found'); }
+              }, 500);
+            })();
+            """;
+    }
+
+    /**
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
@@ -220,6 +303,14 @@ public class WebFragment extends Fragment implements DownloadListener {
             editorName = arguments.getString(TARGET_NAME);
         }
         Log.d(TAG, "WebFragment created for editor: " + editorName + ", URL: " + editorUrl);
+
+        // Scratch-based editors (Blocks) drive BLE through the Scratch Link
+        // protocol when navigator.bluetooth is unavailable. Start the loopback
+        // server only for those editors; it is idempotent and lives for the
+        // process, so non-scratch editors never open the port.
+        if (ScratchLinkServer.isScratchEditorUrl(editorUrl)) {
+            ScratchLinkServer.start(requireContext());
+        }
     }
 
     public int getLayoutId() {
@@ -232,6 +323,12 @@ public class WebFragment extends Fragment implements DownloadListener {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(getLayoutId(), container, false);
+
+        // Allow inspecting the editor's WebView via chrome://inspect in debug
+        // builds only (no-op in release).
+        if (cc.calliope.mini.BuildConfig.DEBUG) {
+            WebView.setWebContentsDebuggingEnabled(true);
+        }
 
         webView = view.findViewById(R.id.webView);
         WebSettings webSettings = webView.getSettings();
@@ -274,6 +371,14 @@ public class WebFragment extends Fragment implements DownloadListener {
                 if (url.contains("makecode") || url.contains("python.calliope")) {
                     Log.d(TAG, "Injecting download intercept for: " + url);
                     view.evaluateJavascript(JavaScriptInterface.getDownloadInterceptScript(), null);
+                }
+                // Scratch-based editors (Blocks): drive scratch-vm to auto-connect
+                // to the first peripheral discovered via the in-app Scratch Link
+                // server, so a single "Connect" tap connects and the extension's
+                // status turns green — no scratch-gui changes required.
+                if (ScratchLinkServer.isScratchEditorUrl(url)) {
+                    Log.d(TAG, "Injecting Scratch auto-connect for: " + url);
+                    view.evaluateJavascript(getScratchAutoConnectScript(), null);
                 }
             }
         });
