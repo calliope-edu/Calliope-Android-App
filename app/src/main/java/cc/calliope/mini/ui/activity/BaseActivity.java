@@ -436,13 +436,22 @@ public abstract class BaseActivity extends AppCompatActivity
     }
 
     public void addPopupMenuItems(List<PopupItem> popupItems) {
-        popupItems.add(new PopupItem(R.string.menu_fab_connect, R.drawable.ic_connect));
+        // While controlling the mini (STATE_CONTROL) we're already linked to it,
+        // so pairing to another device makes no sense — hide the connect item.
+        State state = ApplicationStateHandler.getStateLiveData().getValue();
+        if (state == null || state.getType() != State.STATE_CONTROL) {
+            popupItems.add(new PopupItem(R.string.menu_fab_connect, R.drawable.ic_connect));
+        }
     }
 
     public void onPopupMenuItemClick(AdapterView<?> parent, View view, int position, long id) {
-        Log.v("SA", "position: " + position);
+        // Dispatch by item identity, not position: the connect item is hidden
+        // in STATE_CONTROL, which shifts the remaining items' positions.
         popupWindow.dismiss();
-        if (position == 0) {
+        if (!(parent.getItemAtPosition(position) instanceof PopupItem item)) {
+            return;
+        }
+        if (item.titleId() == R.string.menu_fab_connect) {
             showPatternDialog(new FobParams(
                     patternFab.getWidth(),
                     patternFab.getHeight(),

@@ -248,12 +248,16 @@ public class MainActivity extends BaseActivity {
 
     public void onPopupMenuItemClick(AdapterView<?> parent, View view, int position, long id) {
         super.onPopupMenuItemClick(parent, view, position, id);
-        if (position == 1) {
+        if (!(parent.getItemAtPosition(position) instanceof PopupItem item)) {
+            return;
+        }
+        int titleId = item.titleId();
+        if (titleId == R.string.menu_fab_scripts) {
             ScriptsFragment scriptsFragment = new ScriptsFragment();
             scriptsFragment.show(getSupportFragmentManager(), "Bottom Sheet Dialog Fragment");
-        } else if (position == 2) {
+        } else if (titleId == R.string.menu_fab_scan_qr) {
             startQrScan();
-        } else if (position == 3) {
+        } else if (titleId == R.string.menu_fab_full_screen) {
             if (fullScreen) {
                 disableFullScreenMode();
             } else {
