@@ -83,6 +83,15 @@ class ScratchLinkServer private constructor(private val appCtx: Context) :
         Log.i(TAG, "Scratch Link server listening on $LOOPBACK:$PORT")
     }
 
+    private fun closeSessions(reason: String) {
+        if (sessions.isEmpty()) return
+        Log.i(TAG, "closing ${sessions.size} session(s): $reason")
+        for (conn in sessions.keys.toList()) {
+            sessions.remove(conn)?.dispose()
+            runCatching { conn.close(NORMAL, reason) }
+        }
+    }
+
     private fun isAllowedOrigin(origin: String?): Boolean {
         if (origin.isNullOrEmpty()) return false
         val uri = runCatching { Uri.parse(origin) }.getOrNull() ?: return false
@@ -118,6 +127,21 @@ class ScratchLinkServer private constructor(private val appCtx: Context) :
             if (url.isNullOrEmpty()) return false
             val host = runCatching { Uri.parse(url).host?.lowercase() }.getOrNull() ?: return false
             return SCRATCH_HOSTS.contains(host)
+        }
+
+        /**
+         * End every open session, dropping the BLE link each one holds.
+         *
+         * Called when the page that owned them goes away. Destroying a WebView
+         * closes its socket, and the socket closing is what releases the
+         * peripheral — but a page that lingers keeps the device connected, and
+         * a connected Calliope stops advertising, so the next page can never
+         * find it. Saying it explicitly makes that release deterministic
+         * instead of dependent on when the old WebView happens to die.
+         */
+        @JvmStatic
+        fun closeAllSessions(reason: String) {
+            instance?.closeSessions(reason)
         }
 
         /**

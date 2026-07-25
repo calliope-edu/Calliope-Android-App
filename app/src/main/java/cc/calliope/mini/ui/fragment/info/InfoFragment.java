@@ -21,6 +21,16 @@ public class InfoFragment extends WebFragment {
         return R.layout.fragment_info;
     }
 
+    /**
+     * The info page holds no project and no BLE session, so it uses a plain
+     * WebView from its own layout — retaining it would only evict the editor
+     * the user is actually working in.
+     */
+    @Override
+    protected boolean isWebViewRetained() {
+        return false;
+    }
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {

@@ -8,8 +8,11 @@
     android:layout_height="match_parent"
     tools:context=".ui.fragment.web.WebFragment">
 
-    <WebView
-        android:id="@+id/webView"
+    <!-- The editor's WebView outlives this view hierarchy (see
+         RetainedWebEditor), so it is added here in code instead of being
+         inflated. Full-screen mode drops this container's bottom margin. -->
+    <FrameLayout
+        android:id="@+id/webViewContainer"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginBottom="70dp"

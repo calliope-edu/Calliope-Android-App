@@ -7,6 +7,8 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
@@ -58,132 +60,122 @@ import java.nio.charset.StandardCharsets;
  * A simple {@link Fragment} subclass.
  * Use the {@link WebFragment#newInstance} factory method to
  * create an instance of this fragment.
+ *
+ * <p>The WebView showing an editor is retained across view recreation by
+ * {@link RetainedWebEditor}, so leaving the editor and coming back keeps the
+ * open project and any live BLE session. Subclasses that host a page with no
+ * such state (see {@code InfoFragment}) opt out via
+ * {@link #isWebViewRetained()} and get a plain, view-scoped WebView.
  */
-public class WebFragment extends Fragment implements DownloadListener {
+public class WebFragment extends Fragment implements DownloadListener, HostAccess {
 
     private static final String TAG = "WEB_VIEW";
     private static final String UTF_8 = "UTF-8";
     private static final String TARGET_URL = "editorUrl";
     private static final String TARGET_NAME = "editorName";
+    private static final String STATE_WEB_VIEW = "webViewState";
     private String editorUrl;
     private String editorName;
     private WebView webView;
+    private RetainedWebEditor editor;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
-    private class JavaScriptInterface {
-        private final Context context;
+    /**
+     * The {@code Android} object the editors call into. Bound to the WebView
+     * rather than to a fragment, because replacing a JavaScript interface
+     * only takes effect on the next page load — the very thing retaining the
+     * page avoids.
+     */
+    private static class JavaScriptInterface {
+        private final HostAccess hostAccess;
 
-        public JavaScriptInterface(Context context) {
-            this.context = context;
+        JavaScriptInterface(HostAccess hostAccess) {
+            this.hostAccess = hostAccess;
         }
 
         @JavascriptInterface
         public void getBase64FromBlobData(String url, String name) {
-            Log.d(TAG, "Received file: " + name);
-
-            File file = FileUtils.getFile(context, editorName, name);
-            if (file == null) {
-                SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_save_file_error)).show();
-            } else {
-                if (createAndSaveFileFromBase64Url(url, file)) {
-                    startDfuActivity(file);
-                } else {
-                    SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_download_error)).show();
-                }
-            }
+            hostAccess.runOnHost(host -> host.onBlobDownload(url, name));
         }
 
         /**
          * Handle download from MakeCode controller mode.
          * Called when MakeCode sends postMessage with download data and project name.
-         * @param hexData The hex file content as string
-         * @param name The project name from MakeCode
          */
         @JavascriptInterface
         public void handleControllerDownload(String hexData, String name) {
-            Log.d(TAG, "Controller download: " + name);
-
-            String fileName = cleanFileName(name);
-            File file = FileUtils.getFile(context, editorName, fileName);
-            if (file == null) {
-                SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_save_file_error)).show();
-            } else {
-                if (saveHexFile(hexData, file)) {
-                    startDfuActivity(file);
-                } else {
-                    SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_download_error)).show();
-                }
-            }
+            hostAccess.runOnHost(host -> host.onControllerDownload(hexData, name));
         }
+    }
 
-        public static String getBase64StringFromBlobUrl(String blobUrl, String mimeType, String fileName) {
-            if (blobUrl.startsWith("blob")) {
-                return "javascript: " +
-                        "var xhr = new XMLHttpRequest();" +
-                        "xhr.open('GET', '" + blobUrl + "', true);" +
-                        "xhr.setRequestHeader('Content-type','" + mimeType + ";charset=UTF-8');" +
-                        "xhr.responseType = 'blob';" +
-                        "xhr.onload = function(e) {" +
-                        "    if (this.status == 200) {" +
-                        "        var blobFile = this.response;" +
-                        "        var name = window.androidLastDownloadName;" +
-                        "        if (name) {" +
-                        "            name = name.replace(/\\.hex$/i, '').replace(/^mini-/i, '');" +
-                        "        } else {" +
-                        "            name = blobFile.name;" +
-                        "        }" +
-                        "        if (!name) {" +
-                        "            name = '" + fileName + "';" +
-                        "        }" +
-                        "        window.androidLastDownloadName = null;" +
-                        "        var reader = new FileReader();" +
-                        "        reader.readAsDataURL(blobFile);" +
-                        "        reader.onloadend = function() {" +
-                        "            base64data = reader.result;" +
-                        "            Android.getBase64FromBlobData(base64data, name);" +
-                        "        }" +
-                        "    }" +
-                        "};" +
-                        "xhr.send();";
-            }
-            return "javascript: console.log('It is not a Blob URL');";
-        }
-
-        /**
-         * JavaScript to inject for intercepting download links.
-         * This hooks into anchor element clicks and URL.createObjectURL to capture the download filename.
-         */
-        public static String getDownloadInterceptScript() {
+    public static String getBase64StringFromBlobUrl(String blobUrl, String mimeType, String fileName) {
+        if (blobUrl.startsWith("blob")) {
             return "javascript: " +
-                    "if (!window.androidDownloadInterceptAdded) {" +
-                    "    window.androidDownloadInterceptAdded = true;" +
-                    "    window.androidLastDownloadName = null;" +
-                    "    var originalClick = HTMLAnchorElement.prototype.click;" +
-                    "    HTMLAnchorElement.prototype.click = function() {" +
-                    "        if (this.download && this.href && this.href.startsWith('blob:')) {" +
-                    "            window.androidLastDownloadName = this.download;" +
+                    "var xhr = new XMLHttpRequest();" +
+                    "xhr.open('GET', '" + blobUrl + "', true);" +
+                    "xhr.setRequestHeader('Content-type','" + mimeType + ";charset=UTF-8');" +
+                    "xhr.responseType = 'blob';" +
+                    "xhr.onload = function(e) {" +
+                    "    if (this.status == 200) {" +
+                    "        var blobFile = this.response;" +
+                    "        var name = window.androidLastDownloadName;" +
+                    "        if (name) {" +
+                    "            name = name.replace(/\\.hex$/i, '').replace(/^mini-/i, '');" +
+                    "        } else {" +
+                    "            name = blobFile.name;" +
                     "        }" +
-                    "        return originalClick.apply(this, arguments);" +
-                    "    };" +
-                    "    var originalCreateElement = document.createElement.bind(document);" +
-                    "    document.createElement = function(tag) {" +
-                    "        var el = originalCreateElement(tag);" +
-                    "        if (tag.toLowerCase() === 'a') {" +
-                    "            var desc = Object.getOwnPropertyDescriptor(HTMLAnchorElement.prototype, 'download');" +
-                    "            Object.defineProperty(el, 'download', {" +
-                    "                set: function(val) { window.androidLastDownloadName = val; desc.set.call(this, val); }," +
-                    "                get: function() { return desc.get.call(this); }" +
-                    "            });" +
+                    "        if (!name) {" +
+                    "            name = '" + fileName + "';" +
                     "        }" +
-                    "        return el;" +
-                    "    };" +
-                    "    window.addEventListener('message', function(ev) {" +
-                    "        var msg = ev.data;" +
-                    "        if (msg && msg.download && msg.name) {" +
-                    "            Android.handleControllerDownload(msg.download, msg.name);" +
+                    "        window.androidLastDownloadName = null;" +
+                    "        var reader = new FileReader();" +
+                    "        reader.readAsDataURL(blobFile);" +
+                    "        reader.onloadend = function() {" +
+                    "            base64data = reader.result;" +
+                    "            Android.getBase64FromBlobData(base64data, name);" +
                     "        }" +
-                    "    }, false);" +
-                    "}";
+                    "    }" +
+                    "};" +
+                    "xhr.send();";
         }
+        return "javascript: console.log('It is not a Blob URL');";
+    }
+
+    /**
+     * JavaScript to inject for intercepting download links.
+     * This hooks into anchor element clicks and URL.createObjectURL to capture the download filename.
+     */
+    public static String getDownloadInterceptScript() {
+        return "javascript: " +
+                "if (!window.androidDownloadInterceptAdded) {" +
+                "    window.androidDownloadInterceptAdded = true;" +
+                "    window.androidLastDownloadName = null;" +
+                "    var originalClick = HTMLAnchorElement.prototype.click;" +
+                "    HTMLAnchorElement.prototype.click = function() {" +
+                "        if (this.download && this.href && this.href.startsWith('blob:')) {" +
+                "            window.androidLastDownloadName = this.download;" +
+                "        }" +
+                "        return originalClick.apply(this, arguments);" +
+                "    };" +
+                "    var originalCreateElement = document.createElement.bind(document);" +
+                "    document.createElement = function(tag) {" +
+                "        var el = originalCreateElement(tag);" +
+                "        if (tag.toLowerCase() === 'a') {" +
+                "            var desc = Object.getOwnPropertyDescriptor(HTMLAnchorElement.prototype, 'download');" +
+                "            Object.defineProperty(el, 'download', {" +
+                "                set: function(val) { window.androidLastDownloadName = val; desc.set.call(this, val); }," +
+                "                get: function() { return desc.get.call(this); }" +
+                "            });" +
+                "        }" +
+                "        return el;" +
+                "    };" +
+                "    window.addEventListener('message', function(ev) {" +
+                "        var msg = ev.data;" +
+                "        if (msg && msg.download && msg.name) {" +
+                "            Android.handleControllerDownload(msg.download, msg.name);" +
+                "        }" +
+                "    }, false);" +
+                "}";
     }
 
     public WebFragment() {
@@ -317,7 +309,36 @@ public class WebFragment extends Fragment implements DownloadListener {
         return R.layout.fragment_web;
     }
 
+    /**
+     * Whether this fragment's WebView should survive view recreation. True for
+     * editors, whose page holds the user's project and any live BLE session;
+     * subclasses showing a stateless page override it to false and get a
+     * WebView inflated from their own layout instead.
+     */
+    protected boolean isWebViewRetained() {
+        return true;
+    }
+
+    /**
+     * Applies the settings every editor page needs and binds the JavaScript
+     * bridge. Called once per WebView — including for the retained one, which
+     * is why the bridge talks to {@code hostAccess} instead of a fragment.
+     */
     @SuppressLint("SetJavaScriptEnabled")
+    static void configureWebView(@NonNull WebView webView, @NonNull HostAccess hostAccess) {
+        WebSettings webSettings = webView.getSettings();
+
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setUseWideViewPort(true);
+        webSettings.setLoadWithOverviewMode(true);
+        webSettings.setDatabaseEnabled(true);
+        webSettings.setDefaultTextEncodingName("utf-8");
+
+        webView.addJavascriptInterface(new JavaScriptInterface(hostAccess), "Android");
+        webView.setWebChromeClient(new WebChromeClient());
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -330,19 +351,43 @@ public class WebFragment extends Fragment implements DownloadListener {
             WebView.setWebContentsDebuggingEnabled(true);
         }
 
-        webView = view.findViewById(R.id.webView);
-        WebSettings webSettings = webView.getSettings();
+        boolean alreadyLoaded = false;
+        if (isWebViewRetained()) {
+            ViewGroup webViewContainer = view.findViewById(R.id.webViewContainer);
+            editor = RetainedWebEditor.acquire(requireActivity(), editorUrl);
+            webView = editor.getWebView();
+            alreadyLoaded = editor.isLoaded();
+            editor.attach(this, webViewContainer);
+        } else {
+            webView = view.findViewById(R.id.webView);
+            configureWebView(webView, this);
+        }
 
-        webSettings.setJavaScriptEnabled(true);
-        webSettings.setDomStorageEnabled(true);
-        webSettings.setUseWideViewPort(true);
-        webSettings.setLoadWithOverviewMode(true);
-        webSettings.setDatabaseEnabled(true);
-        webSettings.setDefaultTextEncodingName("utf-8");
+        // Rebound on every attach: these callbacks reference this fragment, so
+        // they must not outlive it (detach()/onDestroyView() clear them).
+        webView.setWebViewClient(createWebViewClient());
+        webView.setDownloadListener(this);
 
-        webView.addJavascriptInterface(new JavaScriptInterface(getContext()), "Android");
-        webView.setWebChromeClient(new WebChromeClient());
-        webView.setWebViewClient(new WebViewClient() {
+        if (!alreadyLoaded) {
+            // Only reached for a WebView with no page yet. A saved bundle is
+            // present when the process was killed and rebuilt; it restores the
+            // navigation history, not the page state, so it is a fallback
+            // rather than the mechanism that keeps the project alive.
+            Bundle webViewState = savedInstanceState != null
+                    ? savedInstanceState.getBundle(STATE_WEB_VIEW) : null;
+            if (webViewState == null || webView.restoreState(webViewState) == null) {
+                Log.d(TAG, "Loading URL in WebFragment: " + editorUrl);
+                webView.loadUrl(editorUrl);
+            }
+            if (editor != null) {
+                editor.markLoaded();
+            }
+        }
+        return view;
+    }
+
+    private WebViewClient createWebViewClient() {
+        return new WebViewClient() {
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 // Only show error for main page, not for sub-resources
                 if (request.isForMainFrame()) {
@@ -370,7 +415,7 @@ public class WebFragment extends Fragment implements DownloadListener {
                 // Inject download intercept for editors that use blob URLs
                 if (url.contains("makecode") || url.contains("python.calliope")) {
                     Log.d(TAG, "Injecting download intercept for: " + url);
-                    view.evaluateJavascript(JavaScriptInterface.getDownloadInterceptScript(), null);
+                    view.evaluateJavascript(getDownloadInterceptScript(), null);
                 }
                 // Scratch-based editors (Blocks): drive scratch-vm to auto-connect
                 // to the first peripheral discovered via the in-app Scratch Link
@@ -381,16 +426,61 @@ public class WebFragment extends Fragment implements DownloadListener {
                     view.evaluateJavascript(getScratchAutoConnectScript(), null);
                 }
             }
-        });
-        webView.setDownloadListener(this);
+        };
+    }
 
-        if (savedInstanceState != null) {
-            webView.restoreState(savedInstanceState.getBundle("webViewState"));
-        } else {
-            Log.d(TAG, "Loading URL in WebFragment: " + editorUrl);
-            webView.loadUrl(editorUrl);
+    @Override
+    public void runOnHost(@NonNull HostAccess.HostAction action) {
+        // Editor callbacks arrive on the JavaScript bridge thread; hop to the
+        // main thread and drop anything that lands after the view is gone.
+        mainHandler.post(() -> {
+            if (isAdded() && webView != null) {
+                action.run(this);
+            } else {
+                Log.w(TAG, "dropping editor callback: view is gone");
+            }
+        });
+    }
+
+    /** A blob download finished in the page and arrived as a data URL. */
+    void onBlobDownload(String url, String name) {
+        Log.d(TAG, "Received file: " + name);
+
+        Context context = getContext();
+        if (context == null) {
+            return;
         }
-        return view;
+        File file = FileUtils.getFile(context, editorName, name);
+        if (file == null) {
+            SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_save_file_error)).show();
+        } else {
+            if (createAndSaveFileFromBase64Url(url, file)) {
+                startDfuActivity(file);
+            } else {
+                SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_download_error)).show();
+            }
+        }
+    }
+
+    /** MakeCode controller mode posted a hex payload and its project name. */
+    void onControllerDownload(String hexData, String name) {
+        Log.d(TAG, "Controller download: " + name);
+
+        Context context = getContext();
+        if (context == null) {
+            return;
+        }
+        String fileName = cleanFileName(name);
+        File file = FileUtils.getFile(context, editorName, fileName);
+        if (file == null) {
+            SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_save_file_error)).show();
+        } else {
+            if (saveHexFile(hexData, file)) {
+                startDfuActivity(file);
+            } else {
+                SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_download_error)).show();
+            }
+        }
     }
 
     @Override
@@ -409,7 +499,7 @@ public class WebFragment extends Fragment implements DownloadListener {
                     fileName = cleanFileName(fileName);
                 }
                 Log.d(TAG, "Resolved fileName: " + fileName);
-                String javaScript = JavaScriptInterface.getBase64StringFromBlobUrl(url, mimetype, fileName);
+                String javaScript = getBase64StringFromBlobUrl(url, mimetype, fileName);
                 webView.loadUrl(javaScript);
             } else {
                 selectDownloadMethod(decodedUrl);
@@ -592,10 +682,33 @@ public class WebFragment extends Fragment implements DownloadListener {
     }
 
     @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (editor != null) {
+            // Keep the page (and its BLE session) running for the next visit.
+            editor.detach(this);
+            editor = null;
+        } else if (webView != null) {
+            webView.setDownloadListener(null);
+            webView.setWebViewClient(new WebViewClient());
+            // destroy() requires the WebView to be out of the view system.
+            if (webView.getParent() instanceof ViewGroup parent) {
+                parent.removeView(webView);
+            }
+            webView.destroy();
+        }
+        webView = null;
+    }
+
+    @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
+        WebView view = webView;
+        if (view == null || (editor != null && editor.isDestroyed())) {
+            return;
+        }
         Bundle bundle = new Bundle();
-        webView.saveState(bundle);
-        outState.putBundle("webViewState", bundle);
+        view.saveState(bundle);
+        outState.putBundle(STATE_WEB_VIEW, bundle);
     }
 }

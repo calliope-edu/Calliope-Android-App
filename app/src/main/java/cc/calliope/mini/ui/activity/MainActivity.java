@@ -2,6 +2,7 @@ package cc.calliope.mini.ui.activity;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.ComponentCallbacks2;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
@@ -42,6 +43,7 @@ import cc.calliope.mini.ui.popup.PopupItem;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityMainBinding;
 import cc.calliope.mini.ui.dialog.scripts.ScriptsFragment;
+import cc.calliope.mini.ui.fragment.web.RetainedWebEditor;
 import cc.calliope.mini.ui.model.EditorType;
 
 public class MainActivity extends BaseActivity {
@@ -220,6 +222,23 @@ public class MainActivity extends BaseActivity {
     public void onDestroy() {
         super.onDestroy();
         binding = null;
+        // A configuration change recreates this activity and re-attaches the
+        // retained editor to it, so only a genuine finish frees the page.
+        if (isFinishing()) {
+            RetainedWebEditor.destroyAll("activity finishing");
+        }
+    }
+
+    @Override
+    public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        // Give the retained editor back only under real memory pressure, and
+        // only while it is off screen — merely putting the app in the
+        // background must not cost the user their open project.
+        if (level == ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL
+                || level == ComponentCallbacks2.TRIM_MEMORY_COMPLETE) {
+            RetainedWebEditor.destroyIfDetached("memory pressure");
+        }
     }
 
     @Override
@@ -315,7 +334,12 @@ public class MainActivity extends BaseActivity {
     }
 
     private void setWebViewBottomMargin(int margin) {
-        View webView = findViewById(R.id.webView);
+        // Editors put their retained WebView inside a container; the info page
+        // still inflates a WebView directly.
+        View webView = findViewById(R.id.webViewContainer);
+        if (webView == null) {
+            webView = findViewById(R.id.webView);
+        }
         if (webView != null) {
             android.view.ViewGroup.MarginLayoutParams params =
                     (android.view.ViewGroup.MarginLayoutParams) webView.getLayoutParams();
