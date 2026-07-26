@@ -183,33 +183,96 @@ public class WebFragment extends Fragment implements DownloadListener, HostAcces
     }
 
     /**
-     * JS injected into scratch-based editors (Blocks). scratch-vm's io/ble.js
-     * already falls back to the Scratch Link protocol when navigator.bluetooth
-     * is absent (always, in Android WebView) and connects to our in-app server
-     * on ws://127.0.0.1:20111. What's missing on Android is the device-picker
-     * step that sends `connect` — the stock connection modal only shows it on
-     * iPad. This script closes that gap from the app side: it locates the vm
-     * (via the React tree / redux store), and when a peripheral is discovered
-     * it calls vm.connectPeripheral() with the first result — exactly what
-     * Scratch's own AutoScanningStep does. scratch-vm then emits
-     * PERIPHERAL_CONNECTED, which makes the modal close and the extension's
-     * status turn green automatically.
+     * CSS injected as early as possible (onPageCommitVisible) into scratch-based
+     * editors. The Blocks editor opens its connection modal from its initial
+     * redux state — {@code modals.connectionModal} starts {@code true} — so the
+     * modal is on screen before {@link #getScratchAutoConnectScript()} can run
+     * and close it. This rule keeps that startup modal invisible until the
+     * driver script decides its fate (silent connect), avoiding a visible flash;
+     * the driver removes the rule so a later user-opened modal shows normally.
      *
-     * Note: connects to the FIRST peripheral found (like AutoScanningStep). In
+     * Scoped to the connection modal's own overlay via :has(), so no other modal
+     * (extension library, project loading, …) is affected. Needs Chromium 105+
+     * (WebView is updatable, so this holds on essentially all live devices); on
+     * anything older the selector is ignored and the modal briefly shows before
+     * the driver closes it — i.e. graceful degradation, never a broken editor.
+     */
+    private static String getConnectionModalHideCss() {
+        return "(function(){"
+                + "var ID='__calliopeCmHide';"
+                + "if(document.getElementById(ID))return;"
+                + "var s=document.createElement('style');s.id=ID;"
+                + "s.textContent='.ReactModal__Overlay:has([class*=\\\"connection-modal_\\\"]){display:none !important;}';"
+                + "(document.head||document.documentElement).appendChild(s);"
+                + "})();";
+    }
+
+    /**
+     * JS injected into scratch-based editors (Blocks) to drive BLE connection
+     * from the app side. scratch-vm's io/ble.js already falls back to the
+     * Scratch Link protocol when navigator.bluetooth is absent (always, in
+     * Android WebView) and connects to our in-app server on ws://127.0.0.1:20111.
+     * Two gaps remain, both closed here without any page changes:
+     *
+     * <p><b>Auto-connect.</b> scratch-gui only routes iPad to its device-picker
+     * step; on Android the connection modal is stuck on the intro step and never
+     * sends {@code connect}. The driver locates the vm (via the React tree /
+     * redux store) and, when a peripheral is discovered during any scan, calls
+     * vm.connectPeripheral() with the first result — exactly what Scratch's own
+     * AutoScanningStep does. scratch-vm then emits PERIPHERAL_CONNECTED and the
+     * extension's status turns green.
+     *
+     * <p><b>No startup modal.</b> The editor opens the connection modal from its
+     * initial redux state, so it pops up on every launch. The driver instead
+     * closes it and starts a silent scan, so startup connects in the background.
+     * A genuine user tap on the extension status button still opens the modal
+     * (detected via a recent input gesture) — that path is left untouched, so
+     * the user can always reconnect or disconnect by hand.
+     *
+     * <p>Note: connects to the FIRST peripheral found (like AutoScanningStep). In
      * a room with several minis this picks the nearest/first to advertise.
      */
     private static String getScratchAutoConnectScript() {
         return """
             (function(){
-              if (window.__calliopeAutoConnect) return;
-              window.__calliopeAutoConnect = true;
-              var TAG = '[CalliopeAutoConnect]';
+              if (window.__calliopeConnect) return;
+              window.__calliopeConnect = true;
+              var TAG = '[CalliopeConnect]';
+              var MODAL = 'connectionModal';
+              var OPEN_MODAL = 'scratch-gui/modals/OPEN_MODAL';
+              var CLOSE_MODAL = 'scratch-gui/modals/CLOSE_MODAL';
+              var GESTURE_MS = 2000;
+              var DEFAULT_EXT = 'calliopeMini';
+
+              // Track real user input so a modal opened by tapping the status
+              // button (manual) is told apart from the automatic startup one.
+              var lastGestureAt = 0;
+              ['pointerdown','touchstart','mousedown','keydown'].forEach(function(ev){
+                document.addEventListener(ev, function(){ lastGestureAt = Date.now(); }, true);
+              });
+              function gestureRecent(){ return (Date.now() - lastGestureAt) < GESTURE_MS; }
+
+              // The early CSS (getConnectionModalHideCss) hides the startup
+              // modal; create it here too in case that injection didn't land,
+              // then drop it once startup is handled so manual opens show.
+              function ensureHide(){
+                if (document.getElementById('__calliopeCmHide')) return;
+                var s = document.createElement('style'); s.id = '__calliopeCmHide';
+                s.textContent = '.ReactModal__Overlay:has([class*="connection-modal_"]){display:none !important;}';
+                (document.head || document.documentElement).appendChild(s);
+              }
+              function revealModal(){
+                var s = document.getElementById('__calliopeCmHide');
+                if (s && s.parentNode) s.parentNode.removeChild(s);
+              }
+              ensureHide();
+
               function isVM(o){
                 try { return o && typeof o.connectPeripheral==='function'
                   && typeof o.scanForPeripheral==='function'
                   && typeof o.on==='function'; } catch(e){ return false; }
               }
-              function findVM(){
+              function findVMandStore(){
                 try {
                   var nodes = document.querySelectorAll('*'), anyFiber = null;
                   for (var i=0; i<nodes.length && i<4000; i++){
@@ -221,28 +284,45 @@ public class WebFragment extends Fragment implements DownloadListener, HostAcces
                   if (!anyFiber) return null;
                   var root = anyFiber, g = 0;
                   while (root.return && g++ < 5000) root = root.return;
-                  var stack = [root], seen = new Set(), visited = 0, store = null;
+                  var stack = [root], seen = new Set(), visited = 0, store = null, vm = null;
                   while (stack.length && visited < 60000){
                     var f = stack.pop(); if (!f || seen.has(f)) continue; seen.add(f); visited++;
                     var mp = f.memoizedProps, ms = f.memoizedState;
-                    if (mp){ if (isVM(mp.vm)) return mp.vm;
+                    if (mp){ if (isVM(mp.vm)) vm = mp.vm;
                       if (mp.store && typeof mp.store.getState==='function') store = mp.store; }
-                    if (ms && isVM(ms.vm)) return ms.vm;
+                    if (ms && isVM(ms.vm)) vm = ms.vm;
                     if (f.child) stack.push(f.child);
                     if (f.sibling) stack.push(f.sibling);
                   }
-                  if (store){ try { var v = store.getState().scratchGui.vm; if (isVM(v)) return v; } catch(e){} }
+                  if (!vm && store){ try { var v = store.getState().scratchGui.vm; if (isVM(v)) vm = v; } catch(e){} }
+                  if (vm && store) return { vm: vm, store: store };
                 } catch(e){}
                 return null;
               }
-              function install(vm){
+
+              function modalOpen(store){
+                try { return !!store.getState().scratchGui.modals[MODAL]; } catch(e){ return false; }
+              }
+              function extIdOf(store){
+                try { return store.getState().scratchGui.connectionModal.extensionId || DEFAULT_EXT; }
+                catch(e){ return DEFAULT_EXT; }
+              }
+              function isConnected(vm, extId){
+                try { return !!(extId && vm.getPeripheralIsConnected(extId)); } catch(e){ return false; }
+              }
+
+              function install(vm, store){
                 window.__calliopeVM = vm;
                 var currentExt = null, connecting = false;
+
+                // Auto-connect to the first peripheral seen during any scan —
+                // whether we start it silently at launch or the user starts it
+                // from the modal's Connect button.
                 var origScan = vm.scanForPeripheral.bind(vm);
                 vm.scanForPeripheral = function(extId){ currentExt = extId; connecting = false; return origScan(extId); };
                 vm.on('PERIPHERAL_LIST_UPDATE', function(list){
                   if (connecting || !currentExt || !list) return;
-                  try { if (vm.getPeripheralIsConnected(currentExt)) return; } catch(e){}
+                  if (isConnected(vm, currentExt)) return;
                   var ids = Object.keys(list); if (!ids.length) return;
                   var p = list[ids[0]]; if (!p || !p.peripheralId) return;
                   connecting = true;
@@ -252,13 +332,45 @@ public class WebFragment extends Fragment implements DownloadListener, HostAcces
                 vm.on('PERIPHERAL_CONNECTED', function(){ connecting = false; console.log(TAG, 'connected'); });
                 vm.on('PERIPHERAL_REQUEST_ERROR', function(){ connecting = false; console.log(TAG, 'request error'); });
                 vm.on('PERIPHERAL_SCAN_TIMEOUT', function(){ connecting = false; });
+
+                function startSilentScan(){
+                  var extId = extIdOf(store);
+                  if (isConnected(vm, extId)) return;
+                  // Small delay so a just-closed modal (iPad's scanning phase)
+                  // finishes tearing down before we (re)start the scan.
+                  setTimeout(function(){ try { vm.scanForPeripheral(extId); } catch(e){} }, 200);
+                }
+
+                // Startup: the modal is open from initial state. Untouched by
+                // the user -> close it and connect in the background.
+                if (modalOpen(store) && !gestureRecent()){
+                  console.log(TAG, 'suppressing startup modal, connecting silently');
+                  store.dispatch({ type: CLOSE_MODAL, modal: MODAL });
+                  startSilentScan();
+                }
+                revealModal();
+
+                // After startup the only opener is the user tapping the status
+                // button — let those through. Anything that opens with no recent
+                // gesture is closed and handled as a silent (re)connect.
+                var prevOpen = modalOpen(store);
+                store.subscribe(function(){
+                  var open = modalOpen(store);
+                  if (open && !prevOpen && !gestureRecent()){
+                    store.dispatch({ type: CLOSE_MODAL, modal: MODAL });
+                    startSilentScan();
+                  }
+                  prevOpen = open;
+                });
+
                 console.log(TAG, 'installed');
               }
+
               var tries = 0;
               var timer = setInterval(function(){
-                var vm = findVM();
-                if (vm){ clearInterval(timer); install(vm); }
-                else if (++tries > 60){ clearInterval(timer); console.log(TAG, 'vm not found'); }
+                var found = findVMandStore();
+                if (found){ clearInterval(timer); install(found.vm, found.store); }
+                else if (++tries > 60){ clearInterval(timer); revealModal(); console.log(TAG, 'vm/store not found'); }
               }, 500);
             })();
             """;
@@ -410,6 +522,19 @@ public class WebFragment extends Fragment implements DownloadListener, HostAcces
             }
 
             @Override
+            public void onPageCommitVisible(WebView view, String url) {
+                super.onPageCommitVisible(view, url);
+                // Hide the Blocks connection modal before scratch-gui renders
+                // it from its initial state, so the driver can dismiss it
+                // (below) without the user seeing a flash. Injected this early
+                // because onPageFinished is already too late — React has mounted
+                // the modal by then.
+                if (ScratchLinkServer.isScratchEditorUrl(url)) {
+                    view.evaluateJavascript(getConnectionModalHideCss(), null);
+                }
+            }
+
+            @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 // Inject download intercept for editors that use blob URLs
@@ -418,9 +543,9 @@ public class WebFragment extends Fragment implements DownloadListener, HostAcces
                     view.evaluateJavascript(getDownloadInterceptScript(), null);
                 }
                 // Scratch-based editors (Blocks): drive scratch-vm to auto-connect
-                // to the first peripheral discovered via the in-app Scratch Link
-                // server, so a single "Connect" tap connects and the extension's
-                // status turns green — no scratch-gui changes required.
+                // to the first peripheral in the background and suppress the
+                // startup connection modal, while leaving a user-tapped modal
+                // open — no scratch-gui changes required.
                 if (ScratchLinkServer.isScratchEditorUrl(url)) {
                     Log.d(TAG, "Injecting Scratch auto-connect for: " + url);
                     view.evaluateJavascript(getScratchAutoConnectScript(), null);
