@@ -39,6 +39,7 @@ import com.journeyapps.barcodescanner.ScanOptions;
 import cc.calliope.mini.bridge.CampusUrls;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.core.state.Notification;
+import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.ui.popup.PopupItem;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityMainBinding;
@@ -351,8 +352,15 @@ public class MainActivity extends BaseActivity {
     @Override
     public void addPopupMenuItems(List<PopupItem> popupItems) {
         super.addPopupMenuItems(popupItems);
-        popupItems.add(new PopupItem(R.string.menu_fab_scripts, R.drawable.ic_coding_black_24dp));
-        popupItems.add(new PopupItem(R.string.menu_fab_scan_qr, R.drawable.ic_qr_scan_24dp));
+        // While controlling the mini (a live BLE session from an editor) leave
+        // only full-screen: opening Scripts or the QR scanner would navigate
+        // away from the editor and drop the connection the user is using.
+        State state = ApplicationStateHandler.getStateLiveData().getValue();
+        boolean controlling = state != null && state.getType() == State.STATE_CONTROL;
+        if (!controlling) {
+            popupItems.add(new PopupItem(R.string.menu_fab_scripts, R.drawable.ic_coding_black_24dp));
+            popupItems.add(new PopupItem(R.string.menu_fab_scan_qr, R.drawable.ic_qr_scan_24dp));
+        }
         popupItems.add(new PopupItem(R.string.menu_fab_full_screen, fullScreen ?
                 R.drawable.ic_disable_full_screen_24dp : R.drawable.ic_enable_full_screen_24dp));
     }

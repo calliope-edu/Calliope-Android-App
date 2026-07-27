@@ -415,7 +415,10 @@ public abstract class BaseActivity extends AppCompatActivity
         listView.setDivider(null);
         listView.setOnItemClickListener(this::onPopupMenuItemClick);
 
-        // get max item measured width
+        // get max item measured width; reset both so a menu with fewer items
+        // (e.g. only full-screen while controlling) isn't sized for a past,
+        // longer menu.
+        popupMenuWidth = 0;
         popupMenuHeight = 0;
         for (int i = 0; i < listView.getAdapter().getCount(); i++) {
             View listItem = listView.getAdapter().getView(i, null, listView);
