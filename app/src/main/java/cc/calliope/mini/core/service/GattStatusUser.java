@@ -20,7 +20,6 @@ public enum GattStatusUser {
     GATT_NOT_LONG(0x0B, R.string.gatt_not_long),
     GATT_INSUF_KEY_SIZE(0x0C, R.string.gatt_insuf_key_size),
     GATT_INVALID_ATTRIBUTE_LENGTH(0x0D, R.string.gatt_invalid_attribute_length),
-    GATT_INVALID_ATTR_LEN(0x0D, R.string.gatt_invalid_attr_len),
     GATT_ERR_UNLIKELY(0x0E, R.string.gatt_err_unlikely),
     GATT_INSUFFICIENT_ENCRYPTION(0x0F, R.string.gatt_insufficient_encryption),
     GATT_UNSUPPORT_GRP_TYPE(0x10, R.string.gatt_unsupport_grp_type),

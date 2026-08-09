@@ -175,7 +175,6 @@
     <string name="gatt_not_long" translatable="false">GATT NOT LONG</string>
     <string name="gatt_insuf_key_size" translatable="false">GATT INSUF KEY SIZE</string>
     <string name="gatt_invalid_attribute_length" translatable="false">A write operation exceeds the maximum length of the attribute</string>
-    <string name="gatt_invalid_attr_len" translatable="false">GATT INVALID ATTR LEN</string>
     <string name="gatt_err_unlikely" translatable="false">GATT ERR UNLIKELY</string>
     <string name="gatt_insufficient_encryption" translatable="false">Insufficient encryption for a given operation</string>
     <string name="gatt_unsupport_grp_type" translatable="false">GATT UNSUPPORT GRP TYPE</string>
