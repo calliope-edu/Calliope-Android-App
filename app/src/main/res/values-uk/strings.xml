@@ -98,6 +98,7 @@
     <string name="flashing_aborted">Прошивку скасовано</string>
     <string name="flashing_uploading">Завантаження…</string>
     <string name="flashing_error">Помилка (%d): %s</string>
+    <string name="flashing_notification_title">Прошивання…</string>
     <string name="partial_flashing_starting">Часткове прошивання розпочато…</string>
     <string name="partial_flashing_failed">Часткове прошивання не вдалося, спроба повного прошивання</string>
 

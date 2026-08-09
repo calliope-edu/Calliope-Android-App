@@ -113,6 +113,7 @@
     <string name="flashing_uploading">Uploading…</string>
     <string name="flashing_percent" translatable="false">%d%%</string>
     <string name="flashing_error">Error (%d): %s</string>
+    <string name="flashing_notification_title">Flashing…</string>
     <string name="partial_flashing_starting">Partial flashing starting…</string>
     <string name="partial_flashing_failed">Partial flashing failed, attempting full flashing</string>
     <string name="points" translatable="false">…</string>

@@ -132,7 +132,7 @@ public class FlashingService extends LifecycleService {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     NOTIFICATION_CHANNEL_ID,
-                    getString(R.string.partial_flashing_starting),
+                    getString(R.string.flashing_notification_title),
                     NotificationManager.IMPORTANCE_LOW
             );
             NotificationManager manager = getSystemService(NotificationManager.class);
@@ -148,7 +148,7 @@ public class FlashingService extends LifecycleService {
         );
 
         android.app.Notification notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setContentTitle(getString(R.string.partial_flashing_starting))
+                .setContentTitle(getString(R.string.flashing_notification_title))
                 .setSmallIcon(R.drawable.ic_notification_flash)
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)
@@ -185,7 +185,7 @@ public class FlashingService extends LifecycleService {
             return START_NOT_STICKY;
         }
 
-        String message = getString(R.string.partial_flashing_starting);
+        String message = getString(R.string.flashing_process_starting);
         ApplicationStateHandler.updateNotification(Notification.INFO, message);
 
         if (!loadDeviceInfo()) {

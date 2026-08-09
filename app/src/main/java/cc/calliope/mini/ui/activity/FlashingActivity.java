@@ -215,8 +215,11 @@ public class FlashingActivity extends AppCompatActivity {
         title.setText("");
         status.setText(R.string.flashing_process_starting);
 
+        // Retry repeats the flash with the user's configured mode (partial if
+        // enabled, otherwise full DFU) — same as a normal flash. The previous
+        // force-full-DFU was a workaround for the stopSelf race (fixed in
+        // FlashingService) and for unreliable partial flashing bonding.
         Intent serviceIntent = new Intent(this, FlashingService.class);
-        serviceIntent.putExtra(FlashingService.EXTRA_FORCE_FULL_DFU, true);
         startService(serviceIntent);
     }
 
