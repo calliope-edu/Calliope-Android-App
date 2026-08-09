@@ -6,9 +6,6 @@ import android.util.Log;
 import android.webkit.URLUtil;
 import androidx.core.content.FileProvider;
 
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -22,6 +19,24 @@ import cc.calliope.mini.utils.settings.Settings;
 public class FileUtils {
     private static final String TAG = "FileUtils";
     private static final String FILE_EXTENSION = ".hex";
+
+    /**
+     * File name without its last extension ("script.hex" -> "script").
+     * The dot must come after the last path separator to count.
+     */
+    public static String removeExtension(String name) {
+        int dot = name.lastIndexOf('.');
+        int separator = Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\'));
+        return dot > separator ? name.substring(0, dot) : name;
+    }
+
+    /**
+     * Last path segment without its extension ("/a/b/script.hex" -> "script").
+     */
+    public static String getBaseName(String path) {
+        int separator = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+        return removeExtension(path.substring(separator + 1));
+    }
 
     /**
      * Version-detection cache. {@link #getFileVersion} can scan an entire
@@ -76,11 +91,11 @@ public class FileUtils {
 
         if (start != -1 && end != -1) {
             name = url.substring(start, end); //this will give abc
-            name = StringUtils.remove(name, "data:");
-            name = StringUtils.remove(name, "mini-");
+            name = name.replace("data:", "");
+            name = name.replace("mini-", "");
             return name;
         } else if (URLUtil.isValidUrl(url) && url.endsWith(".hex")) {
-            return FilenameUtils.getBaseName(url);
+            return getBaseName(url);
         } else {
             return "firmware";
         }

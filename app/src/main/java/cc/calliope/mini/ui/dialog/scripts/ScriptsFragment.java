@@ -22,7 +22,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
-import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -46,6 +45,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.core.service.FlashingService;
+import cc.calliope.mini.utils.file.FileUtils;
 import cc.calliope.mini.utils.file.FileWrapper;
 import cc.calliope.mini.R;
 import cc.calliope.mini.ui.activity.FlashingActivity;
@@ -209,10 +209,10 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
 
     private void renameFile(FileWrapper file) {
         String title = getResources().getString(R.string.title_dialog_rename);
-        String input = FilenameUtils.removeExtension(file.getName());
+        String input = FileUtils.removeExtension(file.getName());
         DialogUtils.showEditDialog(activity, title, input, output -> {
-            File dir = new File(FilenameUtils.getFullPath(file.getAbsolutePath()));
-            if (dir.exists()) {
+            File dir = new File(file.getAbsolutePath()).getParentFile();
+            if (dir != null && dir.exists()) {
                 FileWrapper dest = new FileWrapper(new File(dir, output + FILE_EXTENSION), file.editor());
                 if (file.exists()) {
                     if (!dest.exists() && file.renameTo(dest.file())) {
@@ -230,7 +230,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
 
     private void removeFile(FileWrapper file) {
         String title = getResources().getString(R.string.title_dialog_delete);
-        String message = String.format(getString(R.string.info_dialog_delete), FilenameUtils.removeExtension(file.getName()));
+        String message = String.format(getString(R.string.info_dialog_delete), FileUtils.removeExtension(file.getName()));
         DialogUtils.showWarningDialog(activity, title, message, () -> {
             if (file.delete()) {
                 scriptsRecyclerAdapter.remove(file);

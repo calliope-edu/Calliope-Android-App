@@ -10,7 +10,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
-import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -72,7 +71,7 @@ public class OpenHexActivity extends BaseActivity {
                 throw new RuntimeException(e);
             }
 
-            String name = FilenameUtils.getBaseName(decodedUri);
+            String name = FileUtils.getBaseName(decodedUri);
 
             binding.infoTextView.setText(
                     String.format(getString(R.string.open_hex_info), name)
