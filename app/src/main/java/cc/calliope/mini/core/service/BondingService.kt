@@ -356,18 +356,18 @@ open class BondingService : Service() {
         Log.d(TAG, "Starting service discovery on device: ${gatt.device.address}")
         BluetoothUtils.clearServicesCache(gatt)
 
-        var result = false
-
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
+            // The result must be handled inside the coroutine: reading it right
+            // after launch{} always saw the initial false on API 24 and
+            // disconnected while discovery was still pending.
             serviceScope.launch {
                 Log.d(TAG, "Wait for 1600 milliseconds before starting service discovery")
                 delay(1600)
-                result = gatt.discoverServices()
+                handleServiceDiscoveryResult(gatt.discoverServices(), gatt)
             }
         } else {
-            result = gatt.discoverServices()
+            handleServiceDiscoveryResult(gatt.discoverServices(), gatt)
         }
-        handleServiceDiscoveryResult(result, gatt)
     }
 
     @SuppressWarnings("MissingPermission")
