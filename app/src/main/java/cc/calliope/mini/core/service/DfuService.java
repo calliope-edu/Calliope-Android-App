@@ -57,15 +57,11 @@ public class DfuService extends DfuBaseService{
     public void onDestroy() {
         super.onDestroy();
 
-        //ApplicationStateHandler.updateState(STATE_READY);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(progressReceiver);
     }
 
     @Override
     protected void onHandleIntent(@Nullable final Intent intent) {
-//        assert intent != null;
-//        final long delay = intent.getLongExtra(DfuBaseService.EXTRA_SCAN_DELAY, 200);
-//        waitFor(delay);
         super.onHandleIntent(intent);
     }
 

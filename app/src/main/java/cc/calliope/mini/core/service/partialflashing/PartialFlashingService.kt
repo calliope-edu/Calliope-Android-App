@@ -96,7 +96,6 @@ class PartialFlashingService : Service() {
         // Magic strings for file type detection
         private const val PXT_MAGIC = "708E3B92C615A841C49866C975EE5197"
         private const val UPY_MAGIC1 = "FE307F59"
-        private const val UPY_MAGIC2 = "9DD7B1C1"
         private const val UPY_MAGIC_REGEX = ".*FE307F59.{16}9DD7B1C1.*"
 
         // Timeouts (optimized)
@@ -803,45 +802,6 @@ class PartialFlashingService : Service() {
         return writeCharacteristicNoResponse(byteArrayOf(RESET_COMMAND, MODE_PAIRING))
     }
 
-    private fun writeCharacteristic(data: ByteArray, writeType: Int = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT): Boolean {
-        gattLock.lock()
-        try {
-            val gatt = bluetoothGatt ?: return false
-            val characteristic = partialFlashCharacteristic ?: return false
-
-            characteristicWritten = false
-
-            val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                gatt.writeCharacteristic(characteristic, data, writeType)
-            } else {
-                @Suppress("DEPRECATION")
-                characteristic.writeType = writeType
-                @Suppress("DEPRECATION")
-                characteristic.value = data
-                @Suppress("DEPRECATION")
-                if (gatt.writeCharacteristic(characteristic)) BluetoothStatusCodes.SUCCESS else BluetoothStatusCodes.ERROR_UNKNOWN
-            }
-
-            if (result != BluetoothStatusCodes.SUCCESS) {
-                Log.e(TAG, "Failed to write characteristic: $result")
-                return false
-            }
-
-            // Wait for write confirmation
-            synchronized(operationLock) {
-                try {
-                    operationLock.wait(OPERATION_TIMEOUT_MS)
-                } catch (e: InterruptedException) {
-                    return false
-                }
-            }
-
-            return characteristicWritten
-        } finally {
-            gattLock.unlock()
-        }
-    }
-
     private fun attemptPartialFlash(): Int {
         Log.d(TAG, "Starting partial flash: $filePath")
 
@@ -859,18 +819,6 @@ class PartialFlashingService : Service() {
 
             isPython = false
             Log.d(TAG, "Hex file loaded: ${hex.numOfLines()} lines")
-            Log.d(TAG, "Searching for MakeCode magic: $PXT_MAGIC")
-            val mkLine = hex.searchForData(PXT_MAGIC)
-            Log.d(TAG, "MakeCode magic search result: line=$mkLine")
-
-            Log.d(TAG, "Searching for MicroPython magic: $UPY_MAGIC_REGEX")
-            val upyLine = hex.searchForDataRegEx(UPY_MAGIC_REGEX)
-            Log.d(TAG, "MicroPython magic search result: line=$upyLine")
-
-            // Also try individual magic parts
-            val upy1Line = hex.searchForData(UPY_MAGIC1)
-            val upy2Line = hex.searchForData(UPY_MAGIC2)
-            Log.d(TAG, "UPY_MAGIC1 ($UPY_MAGIC1) at line=$upy1Line, UPY_MAGIC2 ($UPY_MAGIC2) at line=$upy2Line")
 
             val dataPos = findMakeCodeData(hex) ?: run {
                 findPythonData(hex)?.also { isPython = true }

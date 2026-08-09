@@ -10,7 +10,6 @@ public class NotificationActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-//        GoogleAnalyticsManager.getInstance().sendViewEventStats(NotificationActivity.class.getSimpleName());
 
         // If this activity is the root activity of the task, the app is not running
         if (isTaskRoot()) {
@@ -29,12 +28,10 @@ public class NotificationActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-//        GoogleAnalyticsManager.getInstance().activityStart(this);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-//        GoogleAnalyticsManager.getInstance().activityStop(this);
     }
 }

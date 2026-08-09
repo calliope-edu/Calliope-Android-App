@@ -34,26 +34,6 @@
     <!-- Welcome and tutorial -->
     <string name="title_welcome">Los geht\'s</string>
     <string name="info_welcome">Auf dieser Seite erfährst du, wie du den Calliope mini in Betrieb nehmen kannst.</string>
-    <string name="title_battery">Verbinden</string>
-    <string name="info_battery"><![CDATA[
-    Bevor du starten kannst, muss der Calliope mini mit Strom versorgt werden. Es gibt zwei Möglichkeiten.
-    <br/>
-    <br/>1. Nutze das Batteriefach mit zwei Batterien des Typs <b>AAA</b>. Achte auf die richtige Ausrichtung der Batterien.
-    <br/>
-    <br/>2. Nimm den mitgelieferten Batterieblock und stecke das kleine, <b>weiße Plastikende</b> vorsichtig in den auf dem Calliope mini befestigten Batterieanschluss.
-    <br/>
-    <br/>Achte darauf, dass die geschlossene Steckerseite mit der Erhöhung in der Mitte oben ist. Wenn der Kabelstecker leicht in den Batterieanschluss des Boards passt, ist es richtig.
-    ]]></string>
-    <string name="title_demo">Demo Sequenz</string>
-    <string name="info_demo"><![CDATA[
-    Der Calliope mini zeigt dir auf der LED-Matrix an, welche Eingabe du ausführen sollst.
-    <br/>
-    <br/>1. Drücke die <b>Taste A</b>.
-    <br/>2. Drücke die <b>Taste B</b>.
-    <br/>3. Drücke die <b>Tasten A+B</b> gleichzeitig.
-    <br/>4. <b>Der Lagesensor</b> - schüttel den Calliope mini.
-    <br/>5. <b>Fertig!</b>
-    ]]></string>
     <string name="hello_text">Hallo und willkommen in der Calliope mini App!</string>
     <string name="info_app">
         <![CDATA[
@@ -69,7 +49,6 @@
         <br/>Viel Spaß wünscht dir das Calliope Team!
         ]]>
     </string>
-    <string name="welcome">Willkommen</string>
 
     <!-- Common UI elements -->
     <string name="title_copy">kopieren via USB</string>
@@ -79,15 +58,12 @@
     <string name="title_dialog_rename">Datei umbenennen</string>
     <string name="title_dialog_delete">Datei löschen</string>
     <string name="title_dialog_share">Datei teilen</string>
-    <string name="title_dialog_edit_link">Link bearbeiten</string>
     <string name="button_cancel">abbrechen</string>
     <string name="button_select">auswählen</string>
     <string name="button_ok">Ok</string>
-    <string name="button_rename">umbenennen</string>
     <string name="button_continue">fortsetzen</string>
     <string name="button_enable">aktivieren</string>
     <string name="button_remove">entfernen</string>
-    <string name="button_save">speichern</string>
     <string name="button_retry">wiederholen</string>
     <string name="info_dialog_delete">\"%s\" wird entgültig gelöscht.</string>
     <string name="subject_dialog_share">Datei teilen…</string>
@@ -98,12 +74,10 @@
     <string name="menu_fab_scan_qr">QR scannen</string>
     <string name="qr_scan_prompt">Richte die Kamera auf den QR-Code des Projekts</string>
     <string name="error_qr_unsupported">Dieser QR-Code ist kein Calliope-Projektlink</string>
-    <string name="title_select_editor">Editoren</string>
 
     <!-- Errors and messages -->
     <string name="error_no_connected">Kein Calliope mini verbunden</string>
     <string name="error_snackbar_name_exists">Die Datei mit diesem Namen existiert bereits</string>
-    <string name="error_snackbar_no_internet">Kein Internet verfügbar</string>
     <string name="error_snackbar_download_error">Fehler beim Herunterladen</string>
     <string name="error_snackbar_bluetooth_disabled">Bluetooth ist deaktiviert</string>
     <string name="error_snackbar_location_disable">Standort ist deaktiviert</string>
@@ -119,17 +93,13 @@
     <string name="flashing_device_connecting">Gerät verbindet sich…</string>
     <string name="flashing_device_connected">Gerät verbunden</string>
     <string name="flashing_process_starting">Prozess startet…</string>
-    <string name="flashing_process_started">Prozess gestartet</string>
     <string name="flashing_enabling_dfu_mode">DFU-Modus aktivieren…</string>
     <string name="flashing_firmware_validating">Firmware validieren…</string>
     <string name="flashing_device_disconnecting">Gerät trennt sich…</string>
-    <string name="flashing_device_disconnected">Gerät getrennt</string>
     <string name="flashing_completed">Flashen abgeschlossen</string>
     <string name="flashing_aborted">Flashen abgebrochen</string>
     <string name="flashing_uploading">Hochladen…</string>
     <string name="flashing_error">Fehler (%d): %s</string>
-    <string name="flashing_connection_fail">Verbindungsfehler</string>
-    <string name="flashing_status">Status %d</string>
     <string name="partial_flashing_starting">Partielles Flashen startet…</string>
     <string name="partial_flashing_failed">Partielles Flashen fehlgeschlagen, versuche vollständiges Flashen</string>
 
@@ -149,8 +119,6 @@
     <string name="title_pattern_connected">%s verbunden</string>
     
     <!-- Editor settings -->
-    <string name="title_editors_menu">Sichtbare Editoren</string>
-    <string name="summary_editors_menu">Einstellungen für sichtbare Editoren</string>
     <string name="title_editor_visibility">Editor-Sichtbarkeit</string>
     <string name="summary_editor_visibility">Bestimmte Editoren anzeigen oder ausblenden</string>
     <string name="title_show_custom">Benutzerdefinierter Editor</string>
@@ -161,9 +129,6 @@
     <string name="summary_editor_settings">Editor-Sichtbarkeit und benutzerdefinierte Links konfigurieren</string>
 
     <!-- Bonding -->
-    <string name="bonding_started">Paarung gestartet</string>
-    <string name="bonding_succeeded">Paarung erfolgreich</string>
-    <string name="bonding_not_succeeded">Paarung nicht erfolgreich</string>
 
     <!-- Information and contacts -->
     <string name="title_info_category">Information</string>
@@ -182,8 +147,6 @@
     <string name="mini_version_1">1 oder 2</string>
     <string name="mini_version_2">3</string>
     <string name="flashing_version_mismatch">Versionskonflikt. Flashen nicht möglich!</string>
-    <string name="flashing_timeout_v1">Bluetooth verfügbar?\nDrücke AB + Reset.</string>
-    <string name="flashing_timeout_v2">Bluetooth verfügbar?\nDrücke dreimal Reset.</string>
     <string name="info_web">Anleitung</string>
 
     <!-- Device errors -->
@@ -230,14 +193,11 @@
 
     <!-- GATT status descriptions -->
     <string name="gatt_connection_congested">Verbindung überlastet</string>
-    <string name="gatt_connection_timeout">Verbindungs-Timeout</string>
     <string name="gatt_failure">Fehler</string>
-    <string name="gatt_insufficient_authentication">Unzureichende Authentifizierung</string>
     <string name="gatt_insufficient_authorization">Unzureichende Autorisierung</string>
     <string name="gatt_insufficient_encryption">Unzureichende Verschlüsselung</string>
     <string name="gatt_invalid_attribute_length">Ungültige Attributlänge</string>
     <string name="gatt_invalid_offset">Ungültiger Offset</string>
-    <string name="gatt_read_not_permitted">Lesen nicht erlaubt</string>
     <string name="gatt_request_not_supported">Anfrage nicht unterstützt</string>
     <string name="gatt_success">Erfolgreich</string>
     <string name="gatt_write_not_permitted">Schreiben nicht erlaubt</string>
@@ -245,13 +205,11 @@
     <string name="info_cardboard_face">Erstellen und animieren Sie Gesichter mit dem Cardboard Face Editor.</string>
     <string name="editor_hidden">ausgeblendet</string>
     <string name="undo">Rückgängig</string>
-    <string name="swipe_to_hide_hint">Nach links wischen, um Editoren auszublenden</string>
 
     <!-- USB file copy messages -->
     <string name="usb_copy_access_denied">Zugriff auf Verzeichnis verweigert</string>
     <string name="usb_copy_started">Dateikopie gestartet...</string>
     <string name="usb_copy_finished">Dateikopie abgeschlossen. Sie können das USB-Gerät trennen.</string>
-    <string name="usb_copy_finished_warnings">Dateikopie mit Warnungen abgeschlossen.</string>
     <string name="usb_copy_failed">Dateikopie fehlgeschlagen: %s</string>
     <string name="usb_copy_unexpected_error">Unerwarteter Fehler: %s</string>
 
@@ -267,7 +225,6 @@
     <!-- Partielles Flashen: Ablehnungsgründe -->
     <string name="partial_flashing_declined_no_layout_table">Partielles Flashen abgelehnt: Gerät hat keine Layout-Tabelle</string>
     <string name="partial_flashing_declined_invalid_memory_map">Partielles Flashen abgelehnt: ungültige Speicherzuordnung</string>
-    <string name="partial_flashing_declined_no_runtime_hash">Partielles Flashen abgelehnt: Hex ohne Runtime-Hash</string>
     <string name="partial_flashing_declined_device_hash_unavailable">Partielles Flashen abgelehnt: Geräte-Hash nicht verfügbar</string>
     <string name="partial_flashing_declined_runtime_mismatch">Partielles Flashen abgelehnt: Runtime stimmt nicht überein (Datei=%1$s Gerät=%2$s)</string>
 

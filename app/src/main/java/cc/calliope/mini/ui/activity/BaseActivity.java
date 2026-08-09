@@ -43,8 +43,6 @@ import java.util.List;
 import cc.calliope.mini.AppContext;
 import cc.calliope.mini.core.state.Event;
 import cc.calliope.mini.ui.SnackbarHelper;
-import cc.calliope.mini.core.bluetooth.Device;
-import cc.calliope.mini.core.state.ScanResults;
 import cc.calliope.mini.ui.popup.PopupAdapter;
 import cc.calliope.mini.ui.popup.PopupItem;
 import cc.calliope.mini.R;
@@ -111,18 +109,6 @@ public abstract class BaseActivity extends AppCompatActivity
         ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
         ApplicationStateHandler.getDeviceAvailabilityLiveData().observe(this, deviceAvailabilityObserver);
 
-        // Observe devices (ScanResults)
-        ScanResults.getStateLiveData().observe(this, new Observer<List<Device>>() {
-            @Override
-            public void onChanged(List<Device> devices) {
-                if (devices != null) {
-                    for (Device device : devices) {
-                        Log.v("SA", "Device: " + device);
-                    }
-                }
-            }
-        });
-
         // ------------- SENSOR INITIALIZATION (SHAKE DETECTION) -------------
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         if (sensorManager != null) {
@@ -144,16 +130,6 @@ public abstract class BaseActivity extends AppCompatActivity
             return (month == 12 && day >= 6) || (month == 1 && day <= 10);
         }
         return false;
-    }
-
-    /**
-     * Make the status bar transparent (optional).
-     */
-    private void makeStatusBarTransparent() {
-        getWindow().setStatusBarColor(Color.TRANSPARENT);
-        getWindow().getDecorView().setSystemUiVisibility(
-                View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        );
     }
 
     // -------------------------------------------------
@@ -306,8 +282,6 @@ public abstract class BaseActivity extends AppCompatActivity
         this.rootView = view;
 
         if (isHolidaySeason()) {
-            // makeStatusBarTransparent(); // optional
-
             // Create and add the snow overlay
             SnowfallView snowfallViewLocal = new SnowfallView(this);
             this.snowfallView = snowfallViewLocal; // store reference

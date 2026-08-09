@@ -49,7 +49,6 @@
     <color name="md_surface_container">#1F232E</color>
     <color name="md_surface_container_high">#232730</color>
     <color name="md_surface_container_highest">#2E323C</color>
-    <color name="md_scrim">#000000</color>
 
     <!-- Dark icon fills (unchanged) -->
     <color name="grey_transparent_light">#20C1C1C1</color>

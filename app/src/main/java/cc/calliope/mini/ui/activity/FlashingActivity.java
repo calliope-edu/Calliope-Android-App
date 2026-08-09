@@ -132,7 +132,6 @@ public class FlashingActivity extends AppCompatActivity {
             }
             progressBar.setProgress(DfuService.PROGRESS_ABORTED);
             binding.retryButton.setVisibility(View.VISIBLE);
-            //finishActivity();
         }
     };
 
@@ -175,14 +174,12 @@ public class FlashingActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         Log.d(TAG, "onResume: this=" + this.hashCode() + ", flashingCompleted=" + flashingCompleted);
-        //DfuServiceListenerHelper.registerProgressListener(this, dfuProgressListener);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         Log.d(TAG, "onPause: this=" + this.hashCode() + ", flashingCompleted=" + flashingCompleted);
-        //DfuServiceListenerHelper.unregisterProgressListener(this, dfuProgressListener);
     }
 
     @Override

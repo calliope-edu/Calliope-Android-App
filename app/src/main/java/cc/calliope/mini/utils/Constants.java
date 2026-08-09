@@ -7,7 +7,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.UUID;
 
 public class Constants {
-    public static final String EXTRA_DEVICE = "cc.calliope.mini.EXTRA_DEVICE";
     public static final String EXTRA_FILE_PATH = "cc.calliope.mini.EXTRA_FILE_PATH";
     public static final String EXTRA_NUMB_ATTEMPTS = "cc.calliope.mini.EXTRA_NUMB_ATTEMPTS";
     public static final String CURRENT_FILE_PATH = "cc.calliope.mini.CURRENT_FILE_PATH";

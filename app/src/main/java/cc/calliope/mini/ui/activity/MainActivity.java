@@ -251,21 +251,6 @@ public class MainActivity extends BaseActivity {
         }
     }
 
-//    @Override
-//    public void onItemFabMenuClicked(View view) {
-//        super.onItemFabMenuClicked(view);
-//        if (view.getId() == R.id.itemFullScreen) {
-//            if (fullScreen) {
-//                disableFullScreenMode();
-//            } else {
-//                enableFullScreenMode();
-//            }
-//        } else if (view.getId() == R.id.itemScripts) {
-//            ScriptsFragment scriptsFragment = new ScriptsFragment();
-//            scriptsFragment.show(getSupportFragmentManager(), "Bottom Sheet Dialog Fragment");
-//        }
-//    }
-
     public void onPopupMenuItemClick(AdapterView<?> parent, View view, int position, long id) {
         super.onPopupMenuItemClick(parent, view, position, id);
         if (!(parent.getItemAtPosition(position) instanceof PopupItem item)) {

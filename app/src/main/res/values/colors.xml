@@ -47,7 +47,6 @@
     <color name="md_surface_container">#EBEEED</color>
     <color name="md_surface_container_high">#E5E9E8</color>
     <color name="md_surface_container_highest">#DFE3E2</color>
-    <color name="md_scrim">#000000</color>
 
     <!-- ============================================================= -->
     <!-- Brand accent palette — kept intentionally vivid for key CTAs   -->
@@ -55,7 +54,6 @@
     <!-- ============================================================= -->
     <color name="aqua_200">#FF00C8C6</color>
     <color name="aqua_500">#FF009896</color>
-    <color name="aqua_700">#FF057876</color>
 
     <!-- Brand accent — the classic vivid Calliope aqua, used for the key
          accents (FAB, bottom-nav indicator, checkboxes) with a white icon,
@@ -68,11 +66,6 @@
          surfaces, where the vivid aqua would be illegible. The bright aqua is
          used instead on dark surfaces (values-night). -->
     <color name="brand_link">#FF057876</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="dark_blue_700">#FF232730</color>
-    <color name="dark_blue_900">#FF131720</color>
     <color name="white">#FFFFFFFF</color>
     <color name="purple">#FF8073E5</color>
     <color name="blue_light">#FF00C0FF</color>
@@ -81,14 +74,12 @@
     <color name="yellow">#FFFDC800</color>
     <color name="pink">#FFE6006A</color>
     <color name="green">#FF00D265</color>
-    <color name="green_dark">#FF00A235</color>
     <color name="red">#FFB00020</color>
     <color name="grey_transparent">#B0585858</color>
     <color name="grey_transparent_light">#60C1C1C1</color>
     <color name="grey_200">#FFC1C1C1</color>
     <color name="grey_500">#FF818181</color>
     <color name="grey_700">#FF585858</color>
-    <color name="grey_900">#FF414141</color>
     <color name="orange">#FFFF5F1F</color>
     <color name="transparent">#00FFFFFF</color>
 

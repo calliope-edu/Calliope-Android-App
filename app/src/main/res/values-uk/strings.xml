@@ -35,26 +35,6 @@
     <!-- Welcome and tutorial -->
     <string name="title_welcome">Розпочнімо!</string>
     <string name="info_welcome">На цій сторінці ви дізнаєтеся, як крок за кроком підготувати Calliope mini до роботи. У першому кроці показано, як правильно під\'єднати Calliope mini до джерела живлення.</string>
-    <string name="title_battery">Під\'єднання батарейок</string>
-    <string name="info_battery"><![CDATA[
-    Перед початком роботи Calliope mini необхідно увімкнути.
-    <br/>
-    <br/>1. встановіть у батарейний відсік дві батарейки типу <b>AAA</b>. Переконайтеся, що батарейки вставлено правильно.
-    <br/>
-    <br/>2. візьміть акумуляторний блок і обережно вставте маленький, <b>білий пластиковий роз\'єм (JST)</b> в роз\'єм акумулятора, що знаходиться на Calliope mini.
-    <br/>
-    <br/>Переконайтеся, що закрита сторона штекера знаходиться зверху, а напрямна посередині. Якщо роз\'єм кабелю легко вставляється в роз\'єм акумулятора на платі, ви під\'єднуєте правильно.
-    ]]></string>
-    <string name="title_demo">Демо-послідовність</string>
-    <string name="info_demo"><![CDATA[
-    Знайомтеся з Calliope mini. Calliope mini покаже вам на дисплеї, що саме ви маєте зробити.
-    <br/>
-    <br/>1. натисніть кнопку <b>A</b>.
-    <br/>2. натисніть кнопку <b>B</b>.
-    <br/>3. натисніть кнопки <b>A+B</b> одночасно.
-    <br/>4. струсіть Calliope mini.
-    <br/>5. готово!
-    ]]></string>
     <string name="hello_text">Ласкаво просимо до додатку Calliope mini!</string>
     <string name="info_app">
         <![CDATA[
@@ -68,7 +48,6 @@
         <br/>Розважайтеся!
         ]]>
     </string>
-    <string name="welcome">ласкаво просимо</string>
 
     <!-- Common UI elements -->
     <string name="title_copy">Копіювати по USB</string>
@@ -78,15 +57,12 @@
     <string name="title_dialog_rename">Перейменувати файл</string>
     <string name="title_dialog_delete">Видалити файл</string>
     <string name="title_dialog_share">Поділитися файлом</string>
-    <string name="title_dialog_edit_link">Редагувати посилання</string>
     <string name="button_cancel">Скасувати</string>
     <string name="button_select">Вибрати</string>
     <string name="button_ok">Так</string>
-    <string name="button_rename">Так</string>
     <string name="button_continue">Так</string>
     <string name="button_enable">Увімкнути</string>
     <string name="button_remove">Видалити</string>
-    <string name="button_save">Зберегти</string>
     <string name="button_retry">Повторити</string>
     <string name="info_dialog_delete">Ви назавжди видалите \"%s\".</string>
     <string name="subject_dialog_share">Поділитися файлом…</string>
@@ -97,12 +73,10 @@
     <string name="menu_fab_scan_qr">Сканувати QR</string>
     <string name="qr_scan_prompt">Наведіть камеру на QR-код проєкту</string>
     <string name="error_qr_unsupported">Цей QR-код не є посиланням на проєкт Calliope</string>
-    <string name="title_select_editor">Редактори</string>
 
     <!-- Errors and messages -->
     <string name="error_no_connected">Calliope mini не під\'єднано</string>
     <string name="error_snackbar_name_exists">Файл з такою назвою існує</string>
-    <string name="error_snackbar_no_internet">Немає доступу до інтернету</string>
     <string name="error_snackbar_download_error">Помилка завантаження</string>
     <string name="error_snackbar_bluetooth_disabled">Bluetooth вимкнено</string>
     <string name="error_snackbar_location_disable">Визначення місцезнаходження вимкнено</string>
@@ -117,17 +91,13 @@
     <string name="flashing_device_connecting">Під\'єднання пристрою…</string>
     <string name="flashing_device_connected">Пристрій під\'єднано</string>
     <string name="flashing_process_starting">Розпочинаємо процес…</string>
-    <string name="flashing_process_started">Процес розпочато</string>
     <string name="flashing_enabling_dfu_mode">Увімкнення режиму DFU…</string>
     <string name="flashing_firmware_validating">Перевірка прошивки…</string>
     <string name="flashing_device_disconnecting">Від\'єднання пристрою…</string>
-    <string name="flashing_device_disconnected">Пристрій від\'єднано</string>
     <string name="flashing_completed">Прошивку завершено</string>
     <string name="flashing_aborted">Прошивку скасовано</string>
     <string name="flashing_uploading">Завантаження…</string>
     <string name="flashing_error">Помилка (%d): %s</string>
-    <string name="flashing_connection_fail">Помилка з\'єднання</string>
-    <string name="flashing_status">Статус %d</string>
     <string name="partial_flashing_starting">Часткове прошивання розпочато…</string>
     <string name="partial_flashing_failed">Часткове прошивання не вдалося, спроба повного прошивання</string>
 
@@ -147,8 +117,6 @@
     <string name="title_pattern_connected">%s підключено</string>
 
     <!-- Editor settings -->
-    <string name="title_editors_menu">Видимі редактори</string>
-    <string name="summary_editors_menu">Налаштування видимих редакторів</string>
     <string name="title_editor_visibility">Видимість редакторів</string>
     <string name="summary_editor_visibility">Показати або приховати конкретні редактори</string>
     <string name="title_show_custom">Кастомний редактор</string>
@@ -159,9 +127,6 @@
     <string name="summary_editor_settings">Налаштувати видимість редакторів та кастомні посилання</string>
 
     <!-- Bonding -->
-    <string name="bonding_started">Створення пари</string>
-    <string name="bonding_succeeded">Пару створено</string>
-    <string name="bonding_not_succeeded">Не вдалося створити пару</string>
 
     <!-- Information and contacts -->
     <string name="title_info_category">Інформація</string>
@@ -180,8 +145,6 @@
     <string name="mini_version_1">1 або 2</string>
     <string name="mini_version_2">3</string>
     <string name="flashing_version_mismatch">Версії не співпадають. Прошивка неможлива!</string>
-    <string name="flashing_timeout_v1">Bluetooth доступний?\nНатисніть AB + Reset.</string>
-    <string name="flashing_timeout_v2">Bluetooth доступний?\nНатисніть тричі Reset.</string>
     <string name="info_web">Інструкція</string>
 
     <!-- Device errors -->
@@ -228,14 +191,11 @@
 
     <!-- GATT status descriptions -->
     <string name="gatt_connection_congested">З\'єднання перевантажено</string>
-    <string name="gatt_connection_timeout">Таймаут з\'єднання</string>
     <string name="gatt_failure">Помилка</string>
-    <string name="gatt_insufficient_authentication">Недостатня автентифікація</string>
     <string name="gatt_insufficient_authorization">Недостатня авторизація</string>
     <string name="gatt_insufficient_encryption">Недостатнє шифрування</string>
     <string name="gatt_invalid_attribute_length">Неправильна довжина атрибуту</string>
     <string name="gatt_invalid_offset">Неправильне зміщення</string>
-    <string name="gatt_read_not_permitted">Читання не дозволено</string>
     <string name="gatt_request_not_supported">Запит не підтримується</string>
     <string name="gatt_success">Успішно</string>
     <string name="gatt_write_not_permitted">Запис не дозволено</string>
@@ -243,13 +203,11 @@
     <string name="info_cardboard_face">Створюйте та анімуйте обличчя за допомогою редактора Cardboard Face.</string>
     <string name="editor_hidden">приховано</string>
     <string name="undo">Скасувати</string>
-    <string name="swipe_to_hide_hint">Свайпніть вліво, щоб приховати редактори</string>
 
     <!-- USB file copy messages -->
     <string name="usb_copy_access_denied">Доступ до директорії заборонено</string>
     <string name="usb_copy_started">Копіювання файлу розпочато...</string>
     <string name="usb_copy_finished">Копіювання файлу завершено. Можна відключати USB пристрій.</string>
-    <string name="usb_copy_finished_warnings">Копіювання файлу завершено з попередженнями.</string>
     <string name="usb_copy_failed">Копіювання файлу не вдалося: %s</string>
     <string name="usb_copy_unexpected_error">Неочікувана помилка: %s</string>
 

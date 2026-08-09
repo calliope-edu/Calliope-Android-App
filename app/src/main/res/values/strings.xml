@@ -44,28 +44,6 @@
     <!-- Welcome and tutorial -->
     <string name="title_welcome">Let\'s Go</string>
     <string name="info_welcome">On this page you will learn how to get the Calliope mini up and running step by step. The first step shows you how to connect the Calliope mini correctly to the power supply.</string>
-    <string name="title_battery">"Connect "</string>
-    <string name="info_battery"><![CDATA[
-    Before you can start, the Calliope mini must be powered.
-    <br/>
-    <br/>1. fill the battery compartment with two batteries of type <b>AAA</b>. Make sure that the batteries are aligned correctly.
-    <br/>
-    <br/>2. take the battery block provided and carefully insert the small, <b>white plastic end (JST connector)</b> into the battery connector attached to the Calliope mini.
-    <br/>
-    <br/>Make sure that the closed end of the plug is at the top with the raised part in the middle. If the cable connector fits easily into the battery connector on the board, it is correct.
-    ]]></string>
-    <string name="title_demo">Demo sequence</string>
-    <string name="info_demo">
-        <![CDATA[
-        Meet the Calliope mini. The Calliope mini will show you on the display which input you should make.
-        <br/>
-        <br/>1. press the button <b>A</b>.
-        <br/>2. press the button <b>B</b>.
-        <br/>3. press the keys <b>A+B</b> simultaneously.
-        <br/>4. The position sensor - shake the Calliope mini.
-        <br/>5. Ready!
-        ]]>
-    </string>
     <string name="hello_text">Hello and welcome to the Calliope mini app!</string>
     <string name="info_app"><![CDATA[
     <br/>By using this app you can connect, code and flash programs to your <b>Calliope mini</b> via Bluetooth.
@@ -83,29 +61,24 @@
     You can find inspiring and fun projects at the Calliope website at https://calliope.cc!
     Have fun!
     </string>
-    <string name="welcome">welcome</string>
 
     <!-- Common UI elements -->
     <string name="title_copy">Copy by USB</string>
     <string name="title_rename">Rename</string>
     <string name="title_share">Share</string>
     <string name="title_delete">Delete</string>
-    <string name="button_save">Save</string>
     <string name="title_dialog_rename">Rename file</string>
     <string name="title_dialog_delete">Delete file</string>
     <string name="title_dialog_share">Share File</string>
-    <string name="title_dialog_edit_link">Edit link</string>
     <string name="button_cancel">Cancel</string>
     <string name="button_select">Select</string>
     <string name="button_ok">Ok</string>
-    <string name="button_rename">Rename</string>
     <string name="button_continue">Continue</string>
     <string name="button_enable">Enable</string>
     <string name="button_remove">Remove</string>
     <string name="info_dialog_delete">You will permanently delete \"%s\".</string>
     <string name="subject_dialog_share">Sharing File…</string>
     <string name="text_dialog_share">Calliope mini firmware</string>
-    <string name="title_select_editor">Editors</string>
 
     <!-- Layout placeholders and titles -->
     <string name="placeholder_menu_item" translatable="false">Menu Item</string>
@@ -120,7 +93,6 @@
     <string name="error_snackbar_name_exists">The file with this name exists</string>
     <string name="error_snackbar_bluetooth_disabled">Bluetooth is disable</string>
     <string name="error_snackbar_location_disable">Location is disable</string>
-    <string name="error_snackbar_no_internet">No internet available</string>
     <string name="error_snackbar_download_error">Download error</string>
     <string name="error_snackbar_save_file_error">Save file error</string>
 
@@ -133,18 +105,14 @@
     <string name="flashing_device_connecting">Device connecting…</string>
     <string name="flashing_device_connected">Device connected</string>
     <string name="flashing_process_starting">Process starting…</string>
-    <string name="flashing_process_started">Process started</string>
     <string name="flashing_enabling_dfu_mode">Enabling DFU mode…</string>
     <string name="flashing_firmware_validating">Firmware validating…</string>
     <string name="flashing_device_disconnecting">Device disconnecting…</string>
-    <string name="flashing_device_disconnected">Device disconnected</string>
     <string name="flashing_completed">Flashing completed</string>
     <string name="flashing_aborted">Flashing aborted</string>
     <string name="flashing_uploading">Uploading…</string>
     <string name="flashing_percent" translatable="false">%d%%</string>
     <string name="flashing_error">Error (%d): %s</string>
-    <string name="flashing_connection_fail">Connection fail</string>
-    <string name="flashing_status">Status %d</string>
     <string name="partial_flashing_starting">Partial flashing starting…</string>
     <string name="partial_flashing_failed">Partial flashing failed, attempting full flashing</string>
     <string name="points" translatable="false">…</string>
@@ -172,8 +140,6 @@
     <string name="title_pattern_connected">%s connected</string>
     
     <!-- Editor settings -->
-    <string name="title_editors_menu">Visible editors</string>
-    <string name="summary_editors_menu">Settings of visible editors</string>
     <string name="title_editor_visibility">Editor visibility</string>
     <string name="summary_editor_visibility">Show or hide specific editors</string>
     <string name="title_show_makecode" translatable="false">MakeCode</string>
@@ -187,15 +153,11 @@
     <string name="summary_editor_hidden">Editor is hidden</string>
     <string name="editor_hidden">hidden</string>
     <string name="undo">Undo</string>
-    <string name="swipe_to_hide_hint">Swipe left to hide editors</string>
     <string name="title_custom_editor">Custom editor</string>
     <string name="title_editor_settings">Editor settings</string>
     <string name="summary_editor_settings">Configure editor visibility and custom links</string>
 
     <!-- Bonding -->
-    <string name="bonding_started">Bonding started</string>
-    <string name="bonding_succeeded">Bonding succeeded</string>
-    <string name="bonding_not_succeeded">Bonding not succeeded</string>
     <string name="button_retry">Retry</string>
 
     <!-- GATT errors (non-translatable) -->
@@ -257,8 +219,6 @@
     <string name="mini_version_1">1 or 2</string>
     <string name="mini_version_2">3</string>
     <string name="flashing_version_mismatch">Version mismatch. Flashing not possible!</string>
-    <string name="flashing_timeout_v1">Bluetooth available?\nPress AB + Reset.</string>
-    <string name="flashing_timeout_v2">Bluetooth available?\nPress three times Reset.</string>
     <string name="info_web">Instructions</string>
 
     <!-- Device errors -->
@@ -304,29 +264,17 @@
     <string name="error_failed_prepare_firmware_zip">Failed to prepare firmware ZIP</string>
 
     <!-- Camera errors -->
-    <string name="error_camera_permission_denied">Camera permission denied</string>
-    <string name="error_camera_no_app_found">No camera app found</string>
-    <string name="error_camera_failed_create_file">Failed to create image file</string>
-    <string name="error_camera_general">Error opening camera</string>
 
     <!-- Network errors -->
-    <string name="error_no_internet_connection">No internet connection. Please check your network settings.</string>
-    <string name="error_connection_refused">Connection refused. Please try again later.</string>
 
     <!-- Bluetooth Web API -->
-    <string name="bluetooth_permissions_granted">Bluetooth permissions granted</string>
-    <string name="bluetooth_permissions_required">Bluetooth permissions required for device connection</string>
 
     <!-- GATT status descriptions -->
-    <string name="gatt_connection_timeout">Connection Timeout</string>
-    <string name="gatt_insufficient_authentication">Insufficient Authentication</string>
-    <string name="gatt_read_not_permitted">Read Not Permitted</string>
 
     <!-- USB file copy messages -->
     <string name="usb_copy_access_denied">Access to directory denied</string>
     <string name="usb_copy_started">File copy started...</string>
     <string name="usb_copy_finished">File copy finished. You can disconnect the USB device.</string>
-    <string name="usb_copy_finished_warnings">File copy finished with warnings.</string>
     <string name="usb_copy_failed">File copy failed: %s</string>
     <string name="usb_copy_unexpected_error">Unexpected error: %s</string>
 
@@ -342,7 +290,6 @@
     <!-- Partial flashing fall-back reasons -->
     <string name="partial_flashing_declined_no_layout_table">Partial flash declined: device has no layout table</string>
     <string name="partial_flashing_declined_invalid_memory_map">Partial flash declined: invalid memory map</string>
-    <string name="partial_flashing_declined_no_runtime_hash">Partial flash declined: hex has no runtime hash</string>
     <string name="partial_flashing_declined_device_hash_unavailable">Partial flash declined: device hash unavailable</string>
     <string name="partial_flashing_declined_runtime_mismatch">Partial flash declined: runtime mismatch (file=%1$s device=%2$s)</string>
 

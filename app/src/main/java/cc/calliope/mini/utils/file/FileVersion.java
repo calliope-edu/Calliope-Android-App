@@ -23,8 +23,4 @@ public enum FileVersion {
     public String getPattern() {
         return pattern;
     }
-
-    public int getVersion() {
-        return version;
-    }
 }

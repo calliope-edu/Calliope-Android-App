@@ -108,10 +108,6 @@
     <!-- The brand monospace (Roboto Mono) is applied app-wide via the   -->
     <!-- fontFamily on the base theme above. This appearance is kept for  -->
     <!-- views that set android:textAppearance explicitly.               -->
-    <style name="TextAppearance.CalliopeMini.Mono" parent="TextAppearance.Material3.BodyMedium">
-        <item name="android:fontFamily">@font/roboto_mono_regular</item>
-        <item name="fontFamily">@font/roboto_mono_regular</item>
-    </style>
 
     <!-- ===================== Snackbar ===================== -->
     <!-- Background tint is set per-type in SnackbarHelper (aqua/yellow/  -->
@@ -144,8 +140,5 @@
     </style>
 
     <!-- ===================== Transparent dialog ===================== -->
-    <style name="TransparentAlertDialogTheme" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="android:windowBackground">@color/transparent</item>
-    </style>
 
 </resources>
