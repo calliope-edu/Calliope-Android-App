@@ -67,16 +67,21 @@ public class FlashingService extends LifecycleService {
     private String currentPath;
     private boolean forceFullDfu = false;
 
-    private State currentState = new State(State.STATE_IDLE);
+    // True while this instance is orchestrating a flash. Unlike the global
+    // state LiveData it cannot be stale: the started service is a process-wide
+    // singleton and every terminal path stops it, so the flag dies with the
+    // instance. Guarding the observers with it keeps sticky STATE_ERROR /
+    // PROGRESS_DISCONNECTING values replayed from a previous session from
+    // killing a freshly started service.
+    private boolean flashingJobActive = false;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private ExecutorService backgroundExecutor;
 
     private final Observer<State> stateObserver = state -> {
-        if (state == null) {
+        if (state == null || !flashingJobActive) {
             return;
         }
-        currentState = state;
         if (state.getType() == STATE_ERROR) {
             Error error = ApplicationStateHandler.getErrorLiveData().getValue();
             if (error != null) {
@@ -88,7 +93,7 @@ public class FlashingService extends LifecycleService {
     };
 
     private final Observer<Progress> progressObserver = progress -> {
-        if (progress == null) {
+        if (progress == null || !flashingJobActive) {
             return;
         }
 
@@ -105,12 +110,6 @@ public class FlashingService extends LifecycleService {
         super.onCreate();
         startForegroundWithNotification();
         backgroundExecutor = Executors.newSingleThreadExecutor();
-
-        // Get the current state
-        State value = ApplicationStateHandler.getStateLiveData().getValue();
-        if (value != null) {
-            currentState = value;
-        }
 
         // Observe the state and progress
         ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
@@ -173,7 +172,16 @@ public class FlashingService extends LifecycleService {
             return START_NOT_STICKY;
         }
 
-        if (!isBluetoothEnabled() || flashingInProgress()) {
+        // A duplicate start while a flash is running lands on this same
+        // instance; it stays alive to finish the active job, so no stopSelf.
+        if (flashingInProgress()) {
+            return START_NOT_STICKY;
+        }
+
+        // From here on every refusal goes through handleError(), which stops
+        // the service — otherwise the foreground service (started in
+        // onCreate) would leak with no work to do.
+        if (!isBluetoothEnabled()) {
             return START_NOT_STICKY;
         }
 
@@ -193,6 +201,7 @@ public class FlashingService extends LifecycleService {
         }
 
         forceFullDfu = intent.getBooleanExtra(EXTRA_FORCE_FULL_DFU, false);
+        flashingJobActive = true;
         initFlashing();
         return START_NOT_STICKY;
     }
@@ -207,7 +216,7 @@ public class FlashingService extends LifecycleService {
     }
 
     private boolean flashingInProgress() {
-        if (currentState.getType() == State.STATE_FLASHING) {
+        if (flashingJobActive) {
             Log.w(TAG, "Flashing is already in progress");
             return true;
         }
@@ -491,5 +500,8 @@ public class FlashingService extends LifecycleService {
     private void handleError(String message) {
         ApplicationStateHandler.updateNotification(ERROR, message);
         ApplicationStateHandler.updateState(STATE_ERROR);
+        // The state observer only reacts while a flash job is active, so a
+        // pre-flight failure must stop the service explicitly.
+        stopSelf();
     }
 }
