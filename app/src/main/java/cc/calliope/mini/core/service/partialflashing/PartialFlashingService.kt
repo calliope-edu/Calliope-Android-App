@@ -890,18 +890,13 @@ class PartialFlashingService : Service() {
                 return RESULT_ATTEMPT_DFU
             }
 
-            // Compare DAL hash
-            // TEMPORARY: partial flashing is disabled for hex files without a DAL
-            // hash (Open Roberta Lab). Open Roberta will add the hash on their side;
-            // once their hex carries a hash, fileHash is non-null and this falls
-            // through to the normal comparison below, re-enabling partial flashing
-            // automatically. To re-enable manually before then, replace the early
-            // return with just the "skipping hash verification" warning (fall through).
+            // Compare DAL hash. A hex without one cannot be verified, so it
+            // never partial-flashes. Open Roberta hexes carry no hash yet;
+            // once Roberta adds it on their side, fileHash becomes non-null
+            // and partial flashing re-enables automatically via the normal
+            // comparison below.
             if (fileHash == null) {
-                Log.w(TAG, "No DAL hash (partial hex / Open Roberta) — partial flashing temporarily disabled, falling back to DFU")
-                return RESULT_ATTEMPT_DFU
-            } else if (dalHash == null || fileHash != dalHash) {
-                Log.e(TAG, "Hash mismatch: file=$fileHash, device=$dalHash")
+                Log.w(TAG, "No DAL hash (partial hex / Open Roberta) — falling back to DFU")
                 return RESULT_ATTEMPT_DFU
             }
             if (dalHash == null) {
