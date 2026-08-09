@@ -123,9 +123,12 @@ public class DfuService extends DfuBaseService{
                     };
 
                     Log.e(TAG, "Error (" + code + "): " + message);
-                    ApplicationStateHandler.updateState(STATE_ERROR);
-                    ApplicationStateHandler.updateNotification(Notification.ERROR, R.string.error_connection_failed);
+                    // Publish the error before the state: state observers pull
+                    // the error via getValue() and would otherwise read the one
+                    // from a previous session.
                     ApplicationStateHandler.updateError(code, message);
+                    ApplicationStateHandler.updateNotification(Notification.ERROR, R.string.error_connection_failed);
+                    ApplicationStateHandler.updateState(STATE_ERROR);
                 }
             }
         }

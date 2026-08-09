@@ -267,8 +267,6 @@ class WebBleFragment : Fragment() {
                     dev.connectGatt(appCtx, false, gattCallback)
                 }
                 Log.d("WebBleFragment", "Initiating GATT connection to $deviceMac")
-                ApplicationStateHandler.updateNotification(INFO, R.string.flashing_device_connected)
-                ApplicationStateHandler.updateState(State.STATE_CONTROL)
             }
         }
         @JavascriptInterface
@@ -300,6 +298,10 @@ class WebBleFragment : Fragment() {
         override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
+                    // Report the control session only once the link is real,
+                    // not optimistically at connectGatt() time.
+                    ApplicationStateHandler.updateNotification(INFO, R.string.flashing_device_connected)
+                    ApplicationStateHandler.updateState(State.STATE_CONTROL)
                     try { g.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH) } catch (_: Exception) {}
                     g.requestMtu(247)
                 }
@@ -309,6 +311,9 @@ class WebBleFragment : Fragment() {
                     isWriting.set(false)
                     writeQueue.clear()
                     gatt = null
+                    // A dropped link ends the control session — without this the
+                    // FAB stayed orange and the Connect menu item stayed hidden.
+                    ApplicationStateHandler.updateState(State.STATE_IDLE)
                 }
             }
         }
