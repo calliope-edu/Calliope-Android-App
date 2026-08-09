@@ -6,7 +6,8 @@ buildscript {
         google()
     }
     dependencies {
-        def nav_version = "2.5.3"
+        // Keep in sync with the androidx.navigation runtime version in app/build.gradle
+        def nav_version = "2.9.7"
         classpath "androidx.navigation:navigation-safe-args-gradle-plugin:$nav_version"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
