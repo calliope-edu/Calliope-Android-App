@@ -296,8 +296,25 @@ public class MainActivity extends BaseActivity {
                             | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                             | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                             | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | lightSystemBarFlags()
             );
         }
+    }
+
+    /**
+     * Light status/navigation-bar flags for the theme, so raw
+     * setSystemUiVisibility() calls don't drop the dark-icon appearance the
+     * theme's windowLight*Bar sets (leaving white icons on the light bar).
+     */
+    private int lightSystemBarFlags() {
+        if (!getResources().getBoolean(R.bool.light_system_bars)) {
+            return 0;
+        }
+        int flags = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        }
+        return flags;
     }
 
     private void disableFullScreenMode() {
@@ -315,7 +332,7 @@ public class MainActivity extends BaseActivity {
             getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
             View decorView = getWindow().getDecorView();
-            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | lightSystemBarFlags());
         }
     }
 
