@@ -136,18 +136,21 @@ class PartialFlashingService : Service() {
     // Flashing state
     private var isNrf52 = false  // true = nRF52 (V3), false = nRF51 (V1/V2)
     private var isPython = false
-    private var dalHash: String? = null
+    // Written on the BLE binder thread (handleCharacteristicChanged) and read
+    // from the Dispatchers.IO worker — @Volatile plus writes under regionLock /
+    // packetLock keep them coherent across the two threads.
+    @Volatile private var dalHash: String? = null
     private var fileHash: String? = null
     /** DAL region bounds reported by the device. A zero range
      *  (start==0 && end==0) signals the firmware was built without
      *  `addlayouttable.py` — true for the blocks-runtime CODAL build —
      *  and means partial flash cannot work on this device regardless of
      *  what the hex carries. Must fall back to full DFU. */
-    private var dalStartAddress = 0L
-    private var dalEndAddress = 0L
-    private var codeStartAddress = 0L
-    private var codeEndAddress = 0L
-    private var packetState: Byte = PACKET_STATE_WAITING
+    @Volatile private var dalStartAddress = 0L
+    @Volatile private var dalEndAddress = 0L
+    @Volatile private var codeStartAddress = 0L
+    @Volatile private var codeEndAddress = 0L
+    private var packetState: Byte = PACKET_STATE_WAITING  // Guarded by packetLock
     @Volatile private var regionReceived = BooleanArray(3)  // Track which REGION_INFO responses arrived
 
     // Synchronization
@@ -171,6 +174,7 @@ class PartialFlashingService : Service() {
     @Volatile private var disconnectedByDevice = false  // Track if device initiated disconnect (reboot)
     @Volatile private var negotiatedMtu = 23  // Default BLE MTU
     @Volatile private var bondingComplete = false
+    @Volatile private var bondingResultReceived = false  // Set on BOND_BONDED and BOND_NONE alike
 
     // Handler for delayed operations (avoid blocking Bluetooth thread)
     private val bleHandler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -475,6 +479,7 @@ class PartialFlashingService : Service() {
 
         Log.w(TAG, "Device not bonded, initiating bonding...")
         bondingComplete = false
+        bondingResultReceived = false
 
         val bondReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
@@ -486,10 +491,12 @@ class PartialFlashingService : Service() {
                     BluetoothDevice.BOND_BONDED -> {
                         Log.d(TAG, "Bonding completed")
                         bondingComplete = true
+                        bondingResultReceived = true
                         synchronized(bondingLock) { bondingLock.notifyAll() }
                     }
                     BluetoothDevice.BOND_NONE -> {
                         Log.e(TAG, "Bonding failed")
+                        bondingResultReceived = true
                         synchronized(bondingLock) { bondingLock.notifyAll() }
                     }
                 }
@@ -505,11 +512,18 @@ class PartialFlashingService : Service() {
                 return false
             }
 
+            // Bonding can take time (user interaction); guarded wait so a
+            // result that lands before we start waiting is not lost.
             synchronized(bondingLock) {
-                try {
-                    bondingLock.wait(30_000) // Bonding can take time (user interaction)
-                } catch (_: InterruptedException) {
-                    return false
+                val deadline = SystemClock.elapsedRealtime() + 30_000
+                while (!bondingResultReceived) {
+                    val remaining = deadline - SystemClock.elapsedRealtime()
+                    if (remaining <= 0) break
+                    try {
+                        bondingLock.wait(remaining)
+                    } catch (_: InterruptedException) {
+                        return false
+                    }
                 }
             }
 
@@ -1086,12 +1100,19 @@ class PartialFlashingService : Service() {
                 return false
             }
 
-            // Wait for write callback even for NO_RESPONSE - Android requires this
+            // Wait for write callback even for NO_RESPONSE - Android requires this.
+            // Guarded wait: if the callback fires before we get here, the flag is
+            // already set and we don't sleep out the full timeout on a lost notify.
             synchronized(operationLock) {
-                try {
-                    operationLock.wait(1000)
-                } catch (e: InterruptedException) {
-                    return false
+                val deadline = SystemClock.elapsedRealtime() + 1000
+                while (!characteristicWritten) {
+                    val remaining = deadline - SystemClock.elapsedRealtime()
+                    if (remaining <= 0) break
+                    try {
+                        operationLock.wait(remaining)
+                    } catch (e: InterruptedException) {
+                        return false
+                    }
                 }
             }
 
@@ -1115,10 +1136,15 @@ class PartialFlashingService : Service() {
                 }
 
                 synchronized(regionLock) {
-                    try {
-                        regionLock.wait(2000)
-                    } catch (e: InterruptedException) {
-                        return false
+                    val deadline = SystemClock.elapsedRealtime() + 2000
+                    while (!regionReceived.getOrElse(i) { false }) {
+                        val remaining = deadline - SystemClock.elapsedRealtime()
+                        if (remaining <= 0) break
+                        try {
+                            regionLock.wait(remaining)
+                        } catch (e: InterruptedException) {
+                            return false
+                        }
                     }
                 }
 
@@ -1359,19 +1385,23 @@ class PartialFlashingService : Service() {
                                 "hash=$hash, " +
                                 "raw=[${value.joinToString(" ") { String.format("%02X", it) }}]")
 
-                        if (region in 0..2) {
-                            regionReceived[region] = true
-                        }
+                        // Publish the region data under the same lock the reader
+                        // waits on, so the IO worker never sees a torn update.
+                        synchronized(regionLock) {
+                            if (region in 0..2) {
+                                regionReceived[region] = true
+                            }
 
-                        if (region == REGION_MAKECODE) {
-                            codeStartAddress = startAddr
-                            codeEndAddress = endAddr
-                        }
+                            if (region == REGION_MAKECODE) {
+                                codeStartAddress = startAddr
+                                codeEndAddress = endAddr
+                            }
 
-                        if (region == REGION_DAL) {
-                            dalStartAddress = startAddr
-                            dalEndAddress = endAddr
-                            dalHash = hash
+                            if (region == REGION_DAL) {
+                                dalStartAddress = startAddr
+                                dalEndAddress = endAddr
+                                dalHash = hash
+                            }
                         }
                     }
 
@@ -1381,11 +1411,11 @@ class PartialFlashingService : Service() {
                 }
                 FLASH_COMMAND -> {
                     // Flash response - use packetLock for acknowledgments
-                    if (value.size >= 2) {
-                        packetState = value[1]
-                        Log.d(TAG, "Flash response: ${String.format("%02X", packetState)}")
-                    }
                     synchronized(packetLock) {
+                        if (value.size >= 2) {
+                            packetState = value[1]
+                            Log.d(TAG, "Flash response: ${String.format("%02X", packetState)}")
+                        }
                         packetLock.notifyAll()
                     }
                 }
@@ -1407,11 +1437,16 @@ class PartialFlashingService : Service() {
             gatt.disconnect()
 
             // Wait for onConnectionStateChange(STATE_DISCONNECTED) callback
-            if (isConnected) {
-                synchronized(disconnectLock) {
+            synchronized(disconnectLock) {
+                val deadline = SystemClock.elapsedRealtime() + 5000
+                while (isConnected) {
+                    val remaining = deadline - SystemClock.elapsedRealtime()
+                    if (remaining <= 0) break
                     try {
-                        disconnectLock.wait(5000)
-                    } catch (_: InterruptedException) {}
+                        disconnectLock.wait(remaining)
+                    } catch (_: InterruptedException) {
+                        break
+                    }
                 }
             }
 
