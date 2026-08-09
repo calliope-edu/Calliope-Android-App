@@ -412,11 +412,16 @@ class PartialFlashingService : Service() {
             return false
         }
 
-        // Ensure device is bonded (should already be paired during discovery)
-        if (!ensureBonded()) {
-            Log.e(TAG, "Bonding failed")
-            return false
-        }
+        // EXPERIMENT (2026-08-09): bonding disabled. On nRF51 createBond() here
+        // triggered the PIN dialog and the board rebooted itself right after
+        // BOND_BONDED to apply encryption, killing the session mid-memory-map
+        // (GATT error 8 / status 19 in logs) and leaving the fallback DFU in a
+        // broken state. micro:bit partial flashing implementations do not bond
+        // at all — the PF characteristic should not require encryption.
+        // if (!ensureBonded()) {
+        //     Log.e(TAG, "Bonding failed")
+        //     return false
+        // }
 
         // Enable Service Changed indications for proper GATT cache handling (Android P+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
