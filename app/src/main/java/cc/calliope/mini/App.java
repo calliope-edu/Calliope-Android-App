@@ -1,7 +1,6 @@
 package cc.calliope.mini;
 
 import android.app.Application;
-import android.content.Intent;
 import android.util.Log;
 
 import java.io.File;
@@ -9,7 +8,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import cc.calliope.mini.core.bluetooth.CheckService;
 
 public class App extends Application {
     private static final String BLOCKS_DIR = "BLOCKS";
@@ -41,8 +39,9 @@ public class App extends Application {
         migrateSnakeFromMakecodeToPython();
         copyFilesToInternalStorage();
 
-        // Start CheckService for device availability monitoring
-        startService(new Intent(this, CheckService.class));
+        // CheckService is started from BaseActivity.onResume — starting a
+        // background service here crashes on API 26+ when the process is
+        // spawned in the background (broadcast, content provider, etc.).
     }
 
     @Override

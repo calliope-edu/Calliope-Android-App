@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
@@ -30,17 +29,14 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.ViewCompat;
-import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Observer;
-import androidx.preference.PreferenceManager;
 
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import cc.calliope.mini.AppContext;
 import cc.calliope.mini.core.state.Event;
 import cc.calliope.mini.ui.SnackbarHelper;
 import cc.calliope.mini.ui.popup.PopupAdapter;
@@ -51,7 +47,6 @@ import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.Progress;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
-import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Permission;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.utils.WindowUtils;
@@ -102,8 +97,13 @@ public abstract class BaseActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Initialize the application state handler
-        ApplicationStateHandler.updateState(State.STATE_IDLE);
+        // Seed the state only on the very first activity of the process.
+        // Unconditional reset here used to wipe a live STATE_FLASHING /
+        // STATE_CONTROL on every rotation, deep link or OpenHexActivity
+        // launch, breaking the flash mutex and re-enabling scanning mid-DFU.
+        if (ApplicationStateHandler.getStateLiveData().getValue() == null) {
+            ApplicationStateHandler.updateState(State.STATE_IDLE);
+        }
         ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
         ApplicationStateHandler.getNotificationLiveData().observe(this, notificationObserver);
         ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);

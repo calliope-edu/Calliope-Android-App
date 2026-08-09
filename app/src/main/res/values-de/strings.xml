@@ -100,6 +100,7 @@
     <string name="flashing_aborted">Flashen abgebrochen</string>
     <string name="flashing_uploading">Hochladen…</string>
     <string name="flashing_error">Fehler (%d): %s</string>
+    <string name="flashing_notification_title">Flashen…</string>
     <string name="partial_flashing_starting">Partielles Flashen startet…</string>
     <string name="partial_flashing_failed">Partielles Flashen fehlgeschlagen, versuche vollständiges Flashen</string>
 

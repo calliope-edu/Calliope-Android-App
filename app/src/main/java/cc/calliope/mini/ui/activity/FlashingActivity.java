@@ -2,7 +2,6 @@ package cc.calliope.mini.ui.activity;
 
 import static cc.calliope.mini.core.state.Notification.ERROR;
 import static cc.calliope.mini.core.state.State.STATE_ERROR;
-import static cc.calliope.mini.core.state.State.STATE_FLASHING;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -151,7 +150,6 @@ public class FlashingActivity extends AppCompatActivity {
         flashingStarted = false;
         Log.d(TAG, "onCreate: flashingCompleted and flashingStarted reset to false");
 
-        ApplicationStateHandler.updateState(STATE_FLASHING);
         ApplicationStateHandler.getNotificationLiveData().observe(this, notificationObserver);
         ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
         ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
@@ -217,12 +215,11 @@ public class FlashingActivity extends AppCompatActivity {
         title.setText("");
         status.setText(R.string.flashing_process_starting);
 
-        // Reset state before starting FlashingService, otherwise it will
-        // observe STATE_ERROR and immediately call stopSelf()
-        ApplicationStateHandler.updateState(STATE_FLASHING);
-
+        // Retry repeats the flash with the user's configured mode (partial if
+        // enabled, otherwise full DFU) — same as a normal flash. The previous
+        // force-full-DFU was a workaround for the stopSelf race (fixed in
+        // FlashingService) and for unreliable partial flashing bonding.
         Intent serviceIntent = new Intent(this, FlashingService.class);
-        serviceIntent.putExtra(FlashingService.EXTRA_FORCE_FULL_DFU, true);
         startService(serviceIntent);
     }
 

@@ -240,19 +240,20 @@ open class LegacyDfuService : Service() {
     private fun startServiceDiscovery(gatt: BluetoothGatt) {
         BluetoothUtils.clearServicesCache(gatt)
 
-        var result = false
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
+            // Check the result inside the coroutine — reading it right after
+            // launch{} always saw the initial false on API 24.
             serviceScope.launch {
                 Log.d(TAG, "Wait for 1600 millis before service discovery")
                 delay(1600)
-                result = gatt.discoverServices()
+                if (!gatt.discoverServices()) {
+                    Log.e(TAG, "discoverServices failed to start")
+                }
             }
         } else {
-            result = gatt.discoverServices()
-        }
-
-        if (!result) {
-            Log.e(TAG, "discoverServices failed to start")
+            if (!gatt.discoverServices()) {
+                Log.e(TAG, "discoverServices failed to start")
+            }
         }
     }
 
