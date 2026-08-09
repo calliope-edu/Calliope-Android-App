@@ -15,7 +15,6 @@ android {
         targetSdk = 36
         versionCode = 27
         versionName = '2.0.9'
-        multiDexEnabled = true
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
