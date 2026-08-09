@@ -4,4 +4,10 @@
         <domain includeSubdomains="true">beta.editor.calliope.cc</domain>
         <domain includeSubdomains="true">192.168.0.9</domain>
     </domain-config>
+    <!-- Scratch-based editors reach the in-app Scratch Link server over
+         ws://127.0.0.1:20111 — loopback cleartext must stay permitted. -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
 </network-security-config>
