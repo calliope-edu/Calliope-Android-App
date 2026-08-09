@@ -49,12 +49,17 @@ dependencies {
     implementation 'commons-io:commons-io:2.21.0'
     implementation 'org.apache.commons:commons-lang3:3.20.0'
 
-    implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
+    // Explicit lifecycle artifacts (previously pulled transitively; the old
+    // lifecycle-extensions:2.2.0 is deprecated and frozen since 2019).
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.7'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7'
+    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.8.7'
+    implementation 'androidx.lifecycle:lifecycle-service:2.8.7'
+    implementation 'androidx.lifecycle:lifecycle-process:2.8.7'
     implementation 'androidx.navigation:navigation-fragment-ktx:2.9.7'
     implementation 'androidx.navigation:navigation-ui-ktx:2.9.7'
     implementation 'androidx.preference:preference-ktx:1.2.1'
 
-    implementation 'androidx.browser:browser:1.9.0'
     implementation 'androidx.documentfile:documentfile:1.1.0'
     implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
     implementation 'com.google.android.material:material:1.13.0'
