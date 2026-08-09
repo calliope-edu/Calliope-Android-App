@@ -13,7 +13,6 @@
     Connect to the network
     -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <!-- Request legacy Bluetooth permissions on older devices. -->
@@ -44,21 +43,18 @@
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
-    <!-- Camera permission for WebBleFragment2 -->
+    <!-- Camera: QR scanner and the Cardboard Face editor (WebBleFragment) -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28" />
 
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
 
     <application
         android:name=".App"
-        android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -104,10 +100,13 @@
         <activity
             android:name=".ui.activity.OpenHexActivity"
             android:exported="true" >
+            <!-- file:// intents from other apps are effectively dead since
+                 API 24 (FileUriExposedException on the sender side), so only
+                 content:// remains. text/plain stays: mail clients and some
+                 file managers still deliver .hex files with that type. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="file" />
                 <data android:scheme="content" />
                 <data android:mimeType="text/plain" />
                 <data android:mimeType="application/octet-stream" />
@@ -137,23 +136,29 @@
         <service
             android:name=".core.service.DfuService"
             android:enabled="true"
+            android:exported="false"
             android:foregroundServiceType="connectedDevice" />
         <service
             android:name=".core.service.FlashingService"
             android:enabled="true"
+            android:exported="false"
             android:foregroundServiceType="connectedDevice" />
         <service
             android:name=".core.service.BondingService"
-            android:enabled="true" />
+            android:enabled="true"
+            android:exported="false" />
         <service
             android:name=".core.service.LegacyDfuService"
-            android:enabled="true" />
+            android:enabled="true"
+            android:exported="false" />
         <service
             android:name=".core.service.partialflashing.PartialFlashingService"
             android:enabled="true"
+            android:exported="false"
             android:foregroundServiceType="connectedDevice" />
         <service
             android:name=".core.bluetooth.CheckService"
-            android:enabled="true" />
+            android:enabled="true"
+            android:exported="false" />
     </application>
 </manifest>
