@@ -56,6 +56,29 @@ class BridgeController(
      *  exact (service, char) pair — avoids leaking unrelated notifies. */
     private val notifySubs = ConcurrentHashMap.newKeySet<String>()
 
+    /**
+     * Whether we've told the app it's in a live-control session. Drives the
+     * native movable FAB colour via [ApplicationStateHandler], exactly like
+     * the cardboard editor and the Scratch Link bridge: STATE_CONTROL while
+     * the campus session holds a GATT connection, STATE_IDLE once it drops.
+     * Main-thread only.
+     */
+    private var controlReported = false
+
+    private fun reportControl() {
+        if (!controlReported) {
+            controlReported = true
+            ApplicationStateHandler.updateState(State.STATE_CONTROL)
+        }
+    }
+
+    private fun reportIdle() {
+        if (controlReported) {
+            controlReported = false
+            ApplicationStateHandler.updateState(State.STATE_IDLE)
+        }
+    }
+
     // ---- Lifecycle ---------------------------------------------------------
 
     /** Set once the host fragment tears the view down. After this, [post]
@@ -70,6 +93,9 @@ class BridgeController(
         // trigger an async onDisconnected -> emitState -> post() that would
         // otherwise race the WebView teardown.
         destroyed = true
+        // Runs on the main thread (fragment onDestroyView). Idempotent with
+        // the reportIdle() the disconnect callback will also fire.
+        reportIdle()
         // LifecycleOwner removes the observers automatically when its state
         // hits DESTROYED — no manual cleanup needed for them.
         session.disconnect()
@@ -228,6 +254,7 @@ class BridgeController(
             bleCanCommunicate = true,
             bleHasPermission = true,
         )
+        reportControl()
         // Auto-subscribe Nordic UART TX so REPL/console/live-data reaches the
         // widget as `serialData` without the web side requesting it. Best-effort:
         // fails silently on programs with no UART service (e.g. MicroPython).
@@ -239,6 +266,7 @@ class BridgeController(
     }
 
     private fun onDisconnectedMain(reason: String) {
+        reportIdle()
         notifySubs.clear()
         cancelConnectTimeout()
         emitState("ble", status = "disconnected", deviceName = "")
