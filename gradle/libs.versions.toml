@@ -1,0 +1,35 @@
+[versions]
+agp = "8.12.3"
+kotlin = "2.2.0"
+navigation = "2.9.7"
+lifecycle = "2.8.7"
+material = "1.13.0"
+preference = "1.2.1"
+documentfile = "1.1.0"
+localbroadcastmanager = "1.1.0"
+nordicScanner = "1.3.1"
+nordicDfu = "2.11.0"
+zxingEmbedded = "4.3.0"
+javaWebsocket = "1.6.0"
+
+[libraries]
+nordic-ble-scanner = { module = "no.nordicsemi.android.kotlin.ble:scanner", version.ref = "nordicScanner" }
+nordic-dfu = { module = "no.nordicsemi.android:dfu", version.ref = "nordicDfu" }
+lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
+lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycle" }
+lifecycle-service = { module = "androidx.lifecycle:lifecycle-service", version.ref = "lifecycle" }
+lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "lifecycle" }
+navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigation" }
+navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "navigation" }
+navigation-safeargs-plugin = { module = "androidx.navigation:navigation-safe-args-gradle-plugin", version.ref = "navigation" }
+preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preference" }
+documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }
+localbroadcastmanager = { module = "androidx.localbroadcastmanager:localbroadcastmanager", version.ref = "localbroadcastmanager" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
+zxing-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxingEmbedded" }
+java-websocket = { module = "org.java-websocket:Java-WebSocket", version.ref = "javaWebsocket" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

@@ -101,6 +101,14 @@
     <string name="flashing_notification_title">Прошивання…</string>
     <string name="partial_flashing_starting">Часткове прошивання розпочато…</string>
     <string name="partial_flashing_failed">Часткове прошивання не вдалося, спроба повного прошивання</string>
+    <string name="partial_flashing_declined_no_layout_table">Часткове прошивання відхилено: на платі немає таблиці розмітки</string>
+    <string name="partial_flashing_declined_invalid_memory_map">Часткове прошивання відхилено: некоректна карта пам\'яті</string>
+    <string name="partial_flashing_declined_device_hash_unavailable">Часткове прошивання відхилено: хеш плати недоступний</string>
+    <string name="partial_flashing_declined_runtime_mismatch">Часткове прошивання відхилено: несумісний рантайм (файл=%1$s, плата=%2$s)</string>
+    <string name="bridge_connect_timeout">Час очікування з\'єднання вичерпано</string>
+    <string name="bridge_no_paired_device">Немає підключеного Calliope mini — спочатку підключіть його в застосунку</string>
+    <string name="bridge_invalid_device_address">Некоректна адреса пристрою</string>
+    <string name="bridge_blocks_runtime_detected">Виявлено Blocks-рантайм — використовується повне прошивання замість часткового</string>
 
     <!-- Settings -->
     <string name="summary_auto_flashing_on">Прошиває після завантаження</string>

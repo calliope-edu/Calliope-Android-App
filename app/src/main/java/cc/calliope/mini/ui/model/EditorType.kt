@@ -20,8 +20,8 @@ enum class EditorType(
         infoResId = R.string.info_campus,
         // Cloudflare Pages preview of the feature/native-proxy branch.
         // Switch to https://campus.calliope.cc/ once the proxy ships.
-        urlV2 = "https://feature-native-proxy.calliope-campus.pages.dev/",
-        urlV3 = "https://feature-native-proxy.calliope-campus.pages.dev/",
+        urlV2 = "https://campus.calliope.cc/",
+        urlV3 = "https://campus.calliope.cc/",
         defaultOrder = 0
     ),
 
