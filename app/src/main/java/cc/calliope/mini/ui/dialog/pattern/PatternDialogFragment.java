@@ -124,7 +124,6 @@ public class PatternDialogFragment extends DialogFragment {
         scanViewModel.startScan();
 
         binding.buttonAction.setOnClickListener(this::onActionClick);
-        binding.buttonRemove.setOnClickListener(this::onRemoveClick);
     }
 
     @Override
@@ -218,18 +217,6 @@ public class PatternDialogFragment extends DialogFragment {
         dismiss();
     }
 
-    private void onRemoveClick(View view) {
-        String address = currentDevice == null ? currentAddress : currentDevice.getAddress();
-        if (deviceManager.removeBond(address)) {
-            String message = getString(R.string.pattern_removed, deviceManager.getCurrentPattern());
-            ApplicationStateHandler.updateNotification(Notification.INFO, message);
-            deviceManager.removeCurrentDevice(address);
-        } else {
-            String message = getString(R.string.pattern_remove_failed);
-            ApplicationStateHandler.updateNotification(Notification.ERROR, message);
-        }
-    }
-
     private void onPatternChange(String pattern) {
         binding.textTitle.setText(pattern);
         currentPattern = pattern;
@@ -258,9 +245,6 @@ public class PatternDialogFragment extends DialogFragment {
 
     private void setupButtons(boolean isBonded, boolean isActual){
         Button action = binding.buttonAction;
-        Button remove = binding.buttonRemove;
-
-        remove.setVisibility(isBonded?View.VISIBLE:View.GONE);
 
         if(isBonded){
             action.setText(R.string.button_select);

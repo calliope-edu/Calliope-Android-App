@@ -75,7 +75,6 @@
     <string name="button_ok">Ok</string>
     <string name="button_continue">Continue</string>
     <string name="button_enable">Enable</string>
-    <string name="button_remove">Remove</string>
     <string name="content_description_script_editor">Editor that created this script</string>
     <string name="info_dialog_delete">You will permanently delete \"%s\".</string>
     <string name="subject_dialog_share">Sharing File…</string>
@@ -231,8 +230,6 @@
     <string name="error_service_discovery">Service discovery failed</string>
     <string name="error_missing_characteristic">Cannot find DFU legacy characteristic</string>
     <string name="error_reading_characteristic">Failed to read DFU control characteristic</string>
-    <string name="pattern_removed">%s removed</string>
-    <string name="pattern_remove_failed">Failed to remove device</string>
     <string name="error_bluetooth_adapter_null">Bluetooth adapter is null or not enabled</string>
     <string name="error_missing_dfu_service">Cannot find DFU legacy service.</string>
     <string name="error_missing_dfu_characteristic">Cannot find DFU legacy characteristic.</string>

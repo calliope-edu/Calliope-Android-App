@@ -31,20 +31,6 @@ class ConnectedDevicesManager(private val context: Context) {
         }
     }
 
-    fun removeCurrentDevice(address: String) {
-        if (address.isEmpty()) return
-
-        preferences.edit {
-
-            remove(Constants.CURRENT_DEVICE_ADDRESS)
-            remove(Constants.CURRENT_DEVICE_PATTERN)
-
-            val newAddresses = getConnectedAddresses().filterNot { it == address }
-            putString(Constants.CONNECTED_DEVICE_ADDRESSES, newAddresses.joinToString(","))
-
-        }
-    }
-
     fun getCurrentAddress(): String {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         return preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
@@ -69,11 +55,5 @@ class ConnectedDevicesManager(private val context: Context) {
             remove(Constants.CURRENT_DEVICE_PATTERN)
             apply()
         }
-    }
-
-    fun removeBond(address: String): Boolean {
-        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter() ?: return false
-        val device = bluetoothAdapter.getRemoteDevice(address)
-        return BluetoothUtils.removeBond(device)
     }
 }

@@ -51,18 +51,6 @@
 
         <Button
             style="@style/Widget.AppCompat.Button"
-            android:id="@+id/button_remove"
-            android:layout_width="wrap_content"
-            android:layout_height="@dimen/button_height"
-            android:layout_marginHorizontal="4dp"
-            android:text="@string/button_remove"
-            android:textColor="@color/white"
-            android:background="@drawable/btn_grey"
-            android:visibility="gone"
-            app:backgroundTint="@null" />
-
-        <Button
-            style="@style/Widget.AppCompat.Button"
             android:id="@+id/button_action"
             android:layout_width="match_parent"
             android:layout_height="@dimen/button_height"
