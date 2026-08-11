@@ -360,7 +360,7 @@ public class MainActivity extends BaseActivity {
         State state = ApplicationStateHandler.getStateLiveData().getValue();
         boolean controlling = state != null && state.getType() == State.STATE_CONTROL;
         if (!controlling) {
-            popupItems.add(new PopupItem(R.string.menu_fab_scripts, R.drawable.ic_coding_black_24dp));
+            popupItems.add(new PopupItem(R.string.menu_fab_scripts, R.drawable.ic_coding_24dp));
             popupItems.add(new PopupItem(R.string.menu_fab_scan_qr, R.drawable.ic_qr_scan_24dp));
         }
         popupItems.add(new PopupItem(R.string.menu_fab_full_screen, fullScreen ?

@@ -82,7 +82,7 @@ class EditorsFragment : Fragment() {
                         isAntiAlias = true
                     }
                     val context = requireContext()
-                    val icon = AppCompatResources.getDrawable(context, R.drawable.delete_icon) as? VectorDrawable
+                    val icon = AppCompatResources.getDrawable(context, R.drawable.ic_delete) as? VectorDrawable
 
                     if (dX < 0) { // Swiping to the left
                         val rect = RectF(
