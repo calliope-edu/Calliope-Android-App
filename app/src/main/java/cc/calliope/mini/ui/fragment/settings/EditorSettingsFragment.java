@@ -13,6 +13,7 @@ import androidx.preference.PreferenceFragmentCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.FragmentEditorSettingsBinding;
+import cc.calliope.mini.ui.model.EditorType;
 import cc.calliope.mini.utils.settings.Settings;
 
 public class EditorSettingsFragment extends Fragment {
@@ -69,11 +70,11 @@ public class EditorSettingsFragment extends Fragment {
         }
         
         private void setupEditorVisibilityListeners() {
-            // Listen for changes in editor visibility preferences
-            String[] editorIds = {"makecode", "roberta", "blocks", "python", "custom", "cardboard_control", "cardboard_face"};
-            
-            for (String editorId : editorIds) {
-                String prefKey = Settings.getEditorVisibilityKey(editorId);
+            // Listen for changes in editor visibility preferences. Derived
+            // from EditorType so the list can never drift out of sync with
+            // the actual editors (a hardcoded copy used to miss "campus").
+            for (EditorType editorType : EditorType.values()) {
+                String prefKey = Settings.getEditorVisibilityKey(editorType.getId());
                 Preference preference = findPreference(prefKey);
                 if (preference != null) {
                     preference.setOnPreferenceChangeListener((pref, newValue) -> {
