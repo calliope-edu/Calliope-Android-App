@@ -21,6 +21,7 @@
 
         <ImageView
             android:id="@+id/hex_file_icon"
+            android:contentDescription="@string/content_description_script_editor"
             android:layout_width="@dimen/icon_size"
             android:layout_height="@dimen/icon_size"
             app:layout_constraintBottom_toBottomOf="parent"

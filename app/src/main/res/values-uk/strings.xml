@@ -63,6 +63,7 @@
     <string name="button_continue">Так</string>
     <string name="button_enable">Увімкнути</string>
     <string name="button_remove">Видалити</string>
+    <string name="content_description_script_editor">Редактор, у якому створено цей скрипт</string>
     <string name="button_retry">Повторити</string>
     <string name="info_dialog_delete">Ви назавжди видалите \"%s\".</string>
     <string name="subject_dialog_share">Поділитися файлом…</string>

@@ -76,6 +76,7 @@
     <string name="button_continue">Continue</string>
     <string name="button_enable">Enable</string>
     <string name="button_remove">Remove</string>
+    <string name="content_description_script_editor">Editor that created this script</string>
     <string name="info_dialog_delete">You will permanently delete \"%s\".</string>
     <string name="subject_dialog_share">Sharing File…</string>
     <string name="text_dialog_share">Calliope mini firmware</string>

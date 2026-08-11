@@ -12,6 +12,7 @@
 
     <ImageView
         android:id="@+id/icon_image_view"
+        android:importantForAccessibility="no"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:adjustViewBounds="true"

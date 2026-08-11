@@ -28,6 +28,7 @@
 
     <ImageView
         android:id="@+id/custom_menu_item_icon"
+        android:importantForAccessibility="no"
         android:layout_width="@dimen/icon_size"
         android:layout_height="@dimen/icon_size"
         android:layout_gravity="center"

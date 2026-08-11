@@ -64,6 +64,7 @@
     <string name="button_continue">fortsetzen</string>
     <string name="button_enable">aktivieren</string>
     <string name="button_remove">entfernen</string>
+    <string name="content_description_script_editor">Editor, mit dem dieses Skript erstellt wurde</string>
     <string name="button_retry">wiederholen</string>
     <string name="info_dialog_delete">\"%s\" wird entgültig gelöscht.</string>
     <string name="subject_dialog_share">Datei teilen…</string>
