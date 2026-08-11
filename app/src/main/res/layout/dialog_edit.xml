@@ -29,7 +29,7 @@
             android:layout_height="wrap_content"
             android:id="@+id/dialog_input"
             android:layout_marginStart="20dp"
-            android:layout_marginTop="18sp"
+            android:layout_marginTop="18dp"
             android:layout_marginEnd="20dp"
             android:layout_marginBottom="40dp"
             android:textColor="@color/ic_fill_primary"
@@ -39,7 +39,7 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
     <androidx.appcompat.widget.AppCompatButton
         android:layout_width="0dp"
-        android:layout_height="40dp"
+        android:layout_height="@dimen/button_height"
         android:id="@+id/dialog_cancel"
         android:layout_marginStart="40dp"
         android:layout_marginEnd="10dp"
@@ -53,7 +53,7 @@
         app:layout_constraintTop_toBottomOf="@id/layoutDialog"/>
     <androidx.appcompat.widget.AppCompatButton
         android:layout_width="0dp"
-        android:layout_height="40dp"
+        android:layout_height="@dimen/button_height"
         android:id="@+id/dialog_ok"
         android:layout_marginStart="10dp"
         android:layout_marginEnd="40dp"

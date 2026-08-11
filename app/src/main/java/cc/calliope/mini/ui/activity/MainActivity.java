@@ -321,7 +321,7 @@ public class MainActivity extends BaseActivity {
         fullScreen = false;
         binding.bottomNavigation.setVisibility(View.VISIBLE);
         binding.navFade.setVisibility(View.VISIBLE);
-        setWebViewBottomMargin((int) (70 * getResources().getDisplayMetrics().density));
+        setWebViewBottomMargin(getResources().getDimensionPixelSize(R.dimen.bottom_bar_clearance));
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             final WindowInsetsController insetsController = getWindow().getInsetsController();

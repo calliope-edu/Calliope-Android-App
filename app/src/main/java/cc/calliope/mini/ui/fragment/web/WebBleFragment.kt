@@ -124,7 +124,7 @@ class WebBleFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         webView = WebView(requireContext())
-        val marginBottom = (70 * resources.displayMetrics.density).toInt()
+        val marginBottom = resources.getDimensionPixelSize(R.dimen.bottom_bar_clearance)
         val params = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT

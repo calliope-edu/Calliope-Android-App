@@ -8,7 +8,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
-    android:padding="16dp">
+    android:padding="@dimen/padding">
 
     <ImageView
         android:id="@+id/icon_image_view"
