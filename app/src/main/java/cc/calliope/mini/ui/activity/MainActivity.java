@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -53,6 +54,8 @@ public class MainActivity extends BaseActivity {
     private ActivityMainBinding binding;
     private NavController navController;
     private boolean fullScreen = false;
+    /** Consumes Back to leave full-screen; enabled only while full-screen. */
+    private OnBackPressedCallback fullScreenBackCallback;
     private final ActivityResultLauncher<String> pushNotificationPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
@@ -80,6 +83,14 @@ public class MainActivity extends BaseActivity {
         setContentView(binding.getRoot());
 
         setPatternFab(binding.patternFab);
+
+        fullScreenBackCallback = new OnBackPressedCallback(false) {
+            @Override
+            public void handleOnBackPressed() {
+                disableFullScreenMode();
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, fullScreenBackCallback);
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
 
@@ -242,15 +253,6 @@ public class MainActivity extends BaseActivity {
         }
     }
 
-    @Override
-    public void onBackPressed() {
-        if (fullScreen) {
-            disableFullScreenMode();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
     public void onPopupMenuItemClick(AdapterView<?> parent, View view, int position, long id) {
         super.onPopupMenuItemClick(parent, view, position, id);
         if (!(parent.getItemAtPosition(position) instanceof PopupItem item)) {
@@ -274,6 +276,7 @@ public class MainActivity extends BaseActivity {
     @SuppressLint("InlinedApi")
     private void enableFullScreenMode() {
         fullScreen = true;
+        fullScreenBackCallback.setEnabled(true);
         binding.bottomNavigation.setVisibility(View.GONE);
         binding.navFade.setVisibility(View.GONE);
         setWebViewBottomMargin(0);
@@ -319,6 +322,7 @@ public class MainActivity extends BaseActivity {
 
     private void disableFullScreenMode() {
         fullScreen = false;
+        fullScreenBackCallback.setEnabled(false);
         binding.bottomNavigation.setVisibility(View.VISIBLE);
         binding.navFade.setVisibility(View.VISIBLE);
         setWebViewBottomMargin(getResources().getDimensionPixelSize(R.dimen.bottom_bar_clearance));

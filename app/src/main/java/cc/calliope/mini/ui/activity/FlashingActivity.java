@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import android.util.Log;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
 
@@ -147,6 +148,14 @@ public class FlashingActivity extends AppCompatActivity {
         title = binding.titleTextView;
         progressBar = binding.progressBar;
 
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                Log.d(TAG, "onBackPressed: this=" + FlashingActivity.this.hashCode());
+                finish();
+            }
+        });
+
         flashingCompleted = false;
         flashingStarted = false;
         Log.d(TAG, "onCreate: flashingCompleted and flashingStarted reset to false");
@@ -195,12 +204,6 @@ public class FlashingActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public void onBackPressed() {
-        Log.d(TAG, "onBackPressed: this=" + this.hashCode());
-        super.onBackPressed();
-        finish();
-    }
 
     private void onRetryClicked(View view) {
         Log.d(TAG, "onRetryClicked: this=" + this.hashCode());
