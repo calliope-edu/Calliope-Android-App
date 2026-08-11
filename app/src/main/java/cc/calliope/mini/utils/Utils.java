@@ -100,7 +100,10 @@ public class Utils {
      * @return A int value to represent px equivalent to dp depending on device density
      */
     public static int convertDpToPixel(Context context, int dp) {
-        return dp * (context.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT);
+        // Use the float density, not integer densityDpi/160: on hdpi (1.5),
+        // tvdpi (1.33) and similar non-integer densities the integer division
+        // truncated to 1, so every dp→px conversion came out ~33-50% short.
+        return Math.round(dp * context.getResources().getDisplayMetrics().density);
     }
 
     public static String dateFormat(long lastModified) {
