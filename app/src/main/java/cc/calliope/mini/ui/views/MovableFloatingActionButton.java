@@ -14,6 +14,9 @@ import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import android.view.ViewTreeObserver;
 
 import androidx.preference.PreferenceManager;
@@ -72,7 +75,16 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
             actionBarSize = TypedValue.complexToDimensionPixelSize(typedValue.data, getResources().getDisplayMetrics());
         }
 
-        setOnSystemUiVisibilityChangeListener(this::onFullscreenStateChanged);
+        // When the system bars reappear (leaving full-screen) the parent
+        // shrinks, so snap the button back inside the visible bounds. Uses the
+        // insets listener rather than the deprecated system-ui-visibility one,
+        // which no longer fires under WindowInsetsController.
+        ViewCompat.setOnApplyWindowInsetsListener(this, (v, insets) -> {
+            if (insets.isVisible(WindowInsetsCompat.Type.systemBars())) {
+                clampIntoParent();
+            }
+            return insets;
+        });
     }
 
     @Override
@@ -257,30 +269,30 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
         setY(y);
     }
 
-    private void onFullscreenStateChanged(int visibility) {
-        boolean fullScreen = (visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) != 0;
-        if (!fullScreen) {
-            ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) getLayoutParams();
-            View viewParent = (View) getParent();
-            int parentWidth = viewParent.getWidth();
-            int parentHeight = viewParent.getHeight();
-            int x = Math.round(getX());
-            int y = Math.round(getY());
+    /** Snap the button back inside its parent if it now sits outside the
+     *  visible bounds (e.g. after the system bars shrink the parent again). */
+    private void clampIntoParent() {
+        ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) getLayoutParams();
+        View viewParent = (View) getParent();
+        if (viewParent == null) return;
+        int parentWidth = viewParent.getWidth();
+        int parentHeight = viewParent.getHeight();
+        int x = Math.round(getX());
+        int y = Math.round(getY());
 
-            if (x + actionBarSize > parentWidth) {
-                animate()
-                        .x(parentWidth - actionBarSize - layoutParams.rightMargin)
-                        .y(y)
-                        .setDuration(0)
-                        .start();
-            }
-            if (y + actionBarSize > parentHeight) {
-                animate()
-                        .x(x)
-                        .y(parentHeight - actionBarSize - layoutParams.bottomMargin)
-                        .setDuration(0)
-                        .start();
-            }
+        if (x + actionBarSize > parentWidth) {
+            animate()
+                    .x(parentWidth - actionBarSize - layoutParams.rightMargin)
+                    .y(y)
+                    .setDuration(0)
+                    .start();
+        }
+        if (y + actionBarSize > parentHeight) {
+            animate()
+                    .x(x)
+                    .y(parentHeight - actionBarSize - layoutParams.bottomMargin)
+                    .setDuration(0)
+                    .start();
         }
     }
 }
