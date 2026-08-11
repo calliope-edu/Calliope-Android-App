@@ -70,6 +70,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingBottom="@dimen/bottom_bar_clearance"
+                android:paddingTop="@dimen/padding"
                 android:layout_marginHorizontal="@dimen/margin"
                 android:orientation="vertical">
 
