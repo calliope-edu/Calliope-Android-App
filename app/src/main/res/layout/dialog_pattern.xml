@@ -69,7 +69,7 @@
             android:layout_marginHorizontal="4dp"
             android:text="@string/button_cancel"
             android:textColor="@color/white"
-            android:background="@drawable/btn_aqua"
+            android:background="@drawable/btn_brand"
             app:backgroundTint="@null"/>
 
     </LinearLayout>

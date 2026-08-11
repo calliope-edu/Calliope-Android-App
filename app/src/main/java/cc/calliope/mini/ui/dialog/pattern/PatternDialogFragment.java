@@ -273,7 +273,7 @@ public class PatternDialogFragment extends DialogFragment {
         } else {
             action.setText(R.string.button_cancel);
             action.setOnClickListener(v -> dismiss());
-            action.setBackgroundResource(R.drawable.btn_aqua);
+            action.setBackgroundResource(R.drawable.btn_brand);
         }
     }
 }

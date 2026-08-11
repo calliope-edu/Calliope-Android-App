@@ -60,7 +60,7 @@
             android:id="@+id/hex_file_version_text_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/btn_aqua"
+            android:background="@drawable/btn_brand"
             android:paddingHorizontal="4dp"
             android:text="@string/placeholder_file_version"
             android:textSize="10sp"

@@ -2,7 +2,7 @@
 <!--
   Bottom navigation item color.
   Active item is the raw brand aqua (matches master, where the selected
-  icon was tinted with aqua_200); the active indicator is transparent so
+  icon was tinted with the brand aqua); the active indicator is transparent so
   the aqua icon reads on its own. Inactive items use the themed
   on-surface-variant so they track light/dark mode.
 -->

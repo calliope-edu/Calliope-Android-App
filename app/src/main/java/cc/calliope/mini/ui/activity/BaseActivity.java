@@ -173,21 +173,21 @@ public abstract class BaseActivity extends AppCompatActivity
 
             switch (state.getType()) {
                 case State.STATE_BUSY -> {
-                    patternFab.setColor(R.color.yellow_200);
+                    patternFab.setColor(R.color.state_busy);
                 }
                 case State.STATE_FLASHING -> {
-                    patternFab.setColor(R.color.blue_light);
+                    patternFab.setColor(R.color.state_control);
                 }
                 case State.STATE_CONTROL -> {
-                    patternFab.setColor(R.color.orange);
+                    patternFab.setColor(R.color.state_script);
                 }
                 case State.STATE_ERROR -> {
                     Boolean available = ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue();
-                    patternFab.setColor(Boolean.TRUE.equals(available) ? R.color.green : R.color.red);
+                    patternFab.setColor(Boolean.TRUE.equals(available) ? R.color.state_connected : R.color.status_error);
                 }
                 case State.STATE_IDLE -> {
                     Boolean isAvailable = ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue();
-                    patternFab.setColor(Boolean.TRUE.equals(isAvailable) ? R.color.green : R.color.aqua_200);
+                    patternFab.setColor(Boolean.TRUE.equals(isAvailable) ? R.color.state_connected : R.color.brand_accent);
                 }
             }
         }
@@ -219,7 +219,7 @@ public abstract class BaseActivity extends AppCompatActivity
     // DEVICE AVAILABILITY OBSERVER
     private final Observer<Boolean> deviceAvailabilityObserver = isAvailable -> {
         if (currentState.getType() == State.STATE_IDLE || currentState.getType() == State.STATE_ERROR) {
-            patternFab.setColor(isAvailable ? R.color.green : R.color.aqua_200);
+            patternFab.setColor(isAvailable ? R.color.state_connected : R.color.brand_accent);
         }
     };
 

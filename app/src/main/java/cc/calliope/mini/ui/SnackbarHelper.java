@@ -18,15 +18,15 @@ import cc.calliope.mini.utils.Utils;
 public class SnackbarHelper {
 
     public static Snackbar infoSnackbar(View view, @NotNull String message) {
-        return baseSnackbar(view, message, R.color.aqua_500);
+        return baseSnackbar(view, message, R.color.brand_accent_pressed);
     }
 
     public static Snackbar warningSnackbar(View view, @NotNull String message) {
-        return baseSnackbar(view, message, R.color.yellow_500);
+        return baseSnackbar(view, message, R.color.status_warning);
     }
 
     public static Snackbar errorSnackbar(View view, @NotNull String message) {
-        return baseSnackbar(view, message, R.color.red);
+        return baseSnackbar(view, message, R.color.status_error);
     }
 
     private static Snackbar baseSnackbar(View view, @NotNull String message, int color) {
