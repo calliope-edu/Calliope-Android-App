@@ -1,12 +1,25 @@
 package cc.calliope.mini.utils.bluetooth
 
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothManager
+import android.content.Context
 import android.util.Log
 
 class BluetoothUtils {
     companion object {
         const val TAG = "BluetoothUtils"
+
+        /**
+         * The device's Bluetooth adapter via [BluetoothManager], replacing the
+         * deprecated static [BluetoothAdapter.getDefaultAdapter]. Null only on
+         * devices without Bluetooth.
+         */
+        @JvmStatic
+        fun getAdapter(context: Context): BluetoothAdapter? =
+            (context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter
+
         @JvmStatic
         fun removeBond(device: BluetoothDevice): Boolean {
             Log.d(TAG, "Unpairing device...")

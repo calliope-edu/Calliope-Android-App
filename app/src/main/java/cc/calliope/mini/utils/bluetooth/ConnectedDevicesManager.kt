@@ -1,6 +1,5 @@
 package cc.calliope.mini.utils.bluetooth
 
-import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
@@ -42,7 +41,7 @@ class ConnectedDevicesManager(private val context: Context) {
     }
 
     fun removeAllDevices() {
-        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter() ?: return
+        val bluetoothAdapter = BluetoothUtils.getAdapter(context) ?: return
 
         getConnectedAddresses().forEach { address ->
             val device = bluetoothAdapter.getRemoteDevice(address)

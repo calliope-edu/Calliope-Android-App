@@ -324,7 +324,7 @@ public abstract class BaseActivity extends AppCompatActivity
     }
 
     private void checkServiceStatus() {
-        if (!Utils.isBluetoothEnabled()) {
+        if (!Utils.isBluetoothEnabled(this)) {
             showBluetoothDisabledWarning();
         } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S && !Utils.isLocationEnabled(this)) {
             showLocationDisabledWarning();
@@ -332,7 +332,7 @@ public abstract class BaseActivity extends AppCompatActivity
     }
 
     private void showPatternDialog(FobParams params) {
-        if (Utils.isBluetoothEnabled()) {
+        if (Utils.isBluetoothEnabled(this)) {
             FragmentManager fragmentManager = getSupportFragmentManager();
             PatternDialogFragment dialogFragment = PatternDialogFragment.newInstance(params);
             dialogFragment.show(fragmentManager, "fragment_pattern");
@@ -487,7 +487,7 @@ public abstract class BaseActivity extends AppCompatActivity
     }
 
     private void startFlashingActivity() {
-        if (Utils.isBluetoothEnabled()) {
+        if (Utils.isBluetoothEnabled(this)) {
             final Intent intent = new Intent(this, FlashingActivity.class);
             startActivity(intent);
         } else {

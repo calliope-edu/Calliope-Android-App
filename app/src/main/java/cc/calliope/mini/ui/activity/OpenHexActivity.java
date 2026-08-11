@@ -46,7 +46,7 @@ public class OpenHexActivity extends BaseActivity {
         setContentView(binding.getRoot());
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            // Запитуємо дозвіл на читання зовнішнього сховища
+            // Request permission to read external storage
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_CODE_PERMISSIONS);
         }
 
@@ -137,7 +137,7 @@ public class OpenHexActivity extends BaseActivity {
     }
 
     private void startDFUActivity(File file) {
-        if(!Utils.isBluetoothEnabled()){
+        if(!Utils.isBluetoothEnabled(this)){
             ApplicationStateHandler.updateNotification(ERROR, R.string.error_snackbar_bluetooth_disabled);
             return;
         }

@@ -59,7 +59,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         return super.onPreferenceTreeClick(preference);
     }
 
-    // TODO: показувати список підключених пристроїв, патернів?
+    // TODO: show a list of connected devices / patterns?
     private void removeAllDevices() {
         ConnectedDevicesManager manager = new ConnectedDevicesManager(requireContext());
         List<String> devices = manager.getConnectedAddresses();

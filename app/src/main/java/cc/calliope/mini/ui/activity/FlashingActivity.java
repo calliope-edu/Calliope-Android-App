@@ -6,6 +6,7 @@ import static cc.calliope.mini.core.state.State.STATE_ERROR;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.TextView;
 
@@ -33,7 +34,7 @@ public class FlashingActivity extends AppCompatActivity {
     private TextView title;
     private TextView status;
     private BoardProgressBar progressBar;
-    private final Handler timerHandler = new Handler();
+    private final Handler timerHandler = new Handler(Looper.getMainLooper());
     private final Runnable deferredFinish = () -> {
         Log.d(TAG, "deferredFinish: executing finish(), this=" + this.hashCode());
         finish();

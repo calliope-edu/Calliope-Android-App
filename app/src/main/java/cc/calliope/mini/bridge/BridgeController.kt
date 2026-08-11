@@ -1,7 +1,6 @@
 package cc.calliope.mini.bridge
 
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -21,6 +20,7 @@ import cc.calliope.mini.core.state.Notification
 import cc.calliope.mini.core.state.Progress
 import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.Constants
+import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -189,7 +189,7 @@ class BridgeController(
             return
         }
         emitState("ble", status = "connecting", errorMessage = "")
-        val adapter = BluetoothAdapter.getDefaultAdapter()
+        val adapter = BluetoothUtils.getAdapter(context)
         if (adapter == null || !adapter.isEnabled) {
             val msg = context.getString(R.string.error_bluetooth_not_enabled)
             replyError(id, msg)
