@@ -14,6 +14,7 @@
         android:layout_height="0dp"
         android:clipToPadding="false"
         android:paddingTop="@dimen/padding_half"
+        android:paddingHorizontal="@dimen/margin_half"
         android:paddingBottom="@dimen/bottom_bar_clearance"
         tools:listitem="@layout/item_menu"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
