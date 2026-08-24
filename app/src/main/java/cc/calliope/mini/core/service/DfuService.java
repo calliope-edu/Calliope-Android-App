@@ -47,6 +47,11 @@ public class DfuService extends DfuBaseService{
             DfuServiceInitiator.createDfuNotificationChannel(getApplicationContext());
         }
 
+        // The local broadcasts are DfuBaseService's only complete feed:
+        // the updateProgressNotification hook is throttled to one call per
+        // 250 ms (sentinel transitions like PROGRESS_DISCONNECTING can be
+        // swallowed), and errors expose their code/type via BROADCAST_ERROR
+        // only. So the receiver stays and republishes into the repository.
         IntentFilter filter = new IntentFilter();
         filter.addAction(BROADCAST_PROGRESS);
         filter.addAction(BROADCAST_ERROR);
@@ -86,51 +91,47 @@ public class DfuService extends DfuBaseService{
                 return;
             }
 
-            switch (action) {
-                case BROADCAST_PROGRESS -> {
-                    int extra = intent.getIntExtra(EXTRA_DATA, 0);
-                    AppStateRepository.updateProgress(extra);
-                    switch (extra) {
-                        case PROGRESS_UPLOADING -> {
-                            String message = getString(R.string.flashing_uploading);
-                            AppStateRepository.updateNotification(Notification.INFO, message);
-                            AppStateRepository.updateState(STATE_FLASHING);
-                        }
-                        case PROGRESS_COMPLETED -> {
-                            String message = getString(R.string.flashing_completed);
-                            AppStateRepository.updateNotification(Notification.INFO, message);
-                            AppStateRepository.updateState(STATE_IDLE);
-                        }
-                        case PROGRESS_ABORTED -> {
-                            String message = getString(R.string.flashing_aborted);
-                            AppStateRepository.updateNotification(Notification.INFO, message);
-                            AppStateRepository.updateState(STATE_IDLE);
-                        }
-                        default -> {
-                            AppStateRepository.updateState(STATE_FLASHING);
-                        }
+            if (BROADCAST_PROGRESS.equals(action)) {
+                int extra = intent.getIntExtra(EXTRA_DATA, 0);
+                AppStateRepository.updateProgress(extra);
+                switch (extra) {
+                    case PROGRESS_UPLOADING -> {
+                        AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_uploading));
+                        AppStateRepository.updateState(STATE_FLASHING);
                     }
+                    case PROGRESS_COMPLETED -> {
+                        AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_completed));
+                        AppStateRepository.updateState(STATE_IDLE);
+                    }
+                    case PROGRESS_ABORTED -> {
+                        AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_aborted));
+                        AppStateRepository.updateState(STATE_IDLE);
+                    }
+                    default -> AppStateRepository.updateState(STATE_FLASHING);
                 }
-                case BROADCAST_ERROR -> {
-                    int code = intent.getIntExtra(EXTRA_DATA, 0);
-                    int type = intent.getIntExtra(EXTRA_ERROR_TYPE, 0);
-                    String message = switch (type) {
-                        case ERROR_TYPE_COMMUNICATION_STATE ->
-                                GattError.parseConnectionError(code);
-                        case ERROR_TYPE_DFU_REMOTE ->
-                                GattError.parseDfuRemoteError(code);
-                        default -> GattError.parse(code);
-                    };
-
-                    Log.e(TAG, "Error (" + code + "): " + message);
-                    // Publish the error before the state: state observers pull
-                    // the error via getValue() and would otherwise read the one
-                    // from a previous session.
-                    AppStateRepository.updateError(code, message);
-                    AppStateRepository.updateNotification(Notification.ERROR, R.string.error_connection_failed);
-                    AppStateRepository.updateState(STATE_ERROR);
-                }
+                return;
             }
+
+            if (!BROADCAST_ERROR.equals(action)) {
+                return;
+            }
+            int code = intent.getIntExtra(EXTRA_DATA, 0);
+            int type = intent.getIntExtra(EXTRA_ERROR_TYPE, 0);
+            String message = switch (type) {
+                case ERROR_TYPE_COMMUNICATION_STATE ->
+                        GattError.parseConnectionError(code);
+                case ERROR_TYPE_DFU_REMOTE ->
+                        GattError.parseDfuRemoteError(code);
+                default -> GattError.parse(code);
+            };
+
+            Log.e(TAG, "Error (" + code + "): " + message);
+            // Publish the error before the state: state observers read the
+            // error at the STATE_ERROR edge and would otherwise see the one
+            // from a previous session.
+            AppStateRepository.updateError(code, message);
+            AppStateRepository.updateNotification(Notification.ERROR, R.string.error_connection_failed);
+            AppStateRepository.updateState(STATE_ERROR);
         }
     };
 }

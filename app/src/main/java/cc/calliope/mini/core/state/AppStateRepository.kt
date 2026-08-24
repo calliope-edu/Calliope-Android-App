@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Process-scoped application state (phase 2 replacement for the static
- * LiveData bus in [ApplicationStateHandler]).
+ * Process-scoped application state (the phase-2 replacement for the old
+ * static LiveData bus).
  *
  * Channel semantics are deliberate — they encode the split the old bus
  * lacked and that every downstream hack compensated for:
@@ -27,10 +27,6 @@ import kotlinx.coroutines.flow.asStateFlow
  * All mutators are safe to call from any thread ([MutableStateFlow.value]
  * is atomic; the shared flows use `tryEmit` with a drop-oldest buffer so
  * they never block a GATT binder thread or an IO worker).
- *
- * During the migration [ApplicationStateHandler] dual-writes into this
- * repository; once every reader collects from here, the writers move over
- * and the old handler is deleted.
  */
 object AppStateRepository {
 
