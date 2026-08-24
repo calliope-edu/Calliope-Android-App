@@ -685,15 +685,21 @@ class BridgeController(
      * Map the persisted chip class (BondingService writes
      * [Constants.CURRENT_DEVICE_VERSION]) to the widget's version strings, so
      * the web layer doesn't have to guess. Returns (boardVersion, calliopeVersion).
-     * MINI_V2 = V1-class silicon (Calliope Mini 1 & 2); MINI_V3 = V2-class
-     * (Mini 3 == micro:bit v2). Unidentified → (null, null).
+     *
+     * Campus semantics: boardVersion is the silicon class ("V1" = nRF51,
+     * "V2" = nRF52), calliopeVersion is the product generation ("V1" = mini 1,
+     * "V2" = mini 2, "V3" = mini 3). BLE can't tell a mini 1 from a mini 2
+     * (both nRF51), so the nRF51 class is reported as mini 2 — agreed with the
+     * campus team: mini 1 hardware is practically extinct, reporting "V1" made
+     * the campus Blocks banner reject every real mini 2, and campus keeps its
+     * own RAM-fit gate for a genuine mini 1. Unidentified → (null, null).
      */
     private fun versionStrings(): Pair<String?, String?> {
         val v = PreferenceManager.getDefaultSharedPreferences(context)
             .getInt(Constants.CURRENT_DEVICE_VERSION, Constants.UNIDENTIFIED)
         return when (v) {
             Constants.MINI_V3 -> "V2" to "V3"
-            Constants.MINI_V2 -> "V1" to "V1"
+            Constants.MINI_V2 -> "V1" to "V2"
             else -> null to null
         }
     }
