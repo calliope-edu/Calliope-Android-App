@@ -9,13 +9,15 @@ import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import android.webkit.WebView
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
 import androidx.preference.PreferenceManager
 import cc.calliope.mini.R
 import cc.calliope.mini.core.service.FlashingService
-import cc.calliope.mini.core.state.ApplicationStateHandler
-import cc.calliope.mini.core.state.Event
+import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.Notification
 import cc.calliope.mini.core.state.Progress
 import cc.calliope.mini.core.state.State
@@ -58,7 +60,7 @@ class BridgeController(
 
     /**
      * Whether we've told the app it's in a live-control session. Drives the
-     * native movable FAB colour via [ApplicationStateHandler], exactly like
+     * native movable FAB colour via [AppStateRepository], exactly like
      * the cardboard editor and the Scratch Link bridge: STATE_CONTROL while
      * the campus session holds a GATT connection, STATE_IDLE once it drops.
      * Main-thread only.
@@ -68,14 +70,14 @@ class BridgeController(
     private fun reportControl() {
         if (!controlReported) {
             controlReported = true
-            ApplicationStateHandler.updateState(State.STATE_CONTROL)
+            AppStateRepository.updateState(State.STATE_CONTROL)
         }
     }
 
     private fun reportIdle() {
         if (controlReported) {
             controlReported = false
-            ApplicationStateHandler.updateState(State.STATE_IDLE)
+            AppStateRepository.updateState(State.STATE_IDLE)
         }
     }
 
@@ -372,7 +374,7 @@ class BridgeController(
     private var pendingFlashReplyId: String? = null
     /** True from the moment we kick `FlashingService` until either a
      *  `STATE_IDLE` follow-up to `STATE_FLASHING` or a `STATE_ERROR`
-     *  arrives. Acts as the filter for the global `ApplicationStateHandler`
+     *  arrives. Acts as the filter for the global state
      *  observers so we don't react to flashes that started outside the
      *  proxy (legacy editors). */
     private var flashInFlight: Boolean = false
@@ -385,8 +387,8 @@ class BridgeController(
      *  the correct "Schnelles Flashen" vs "Vollständiges Flashen" label. */
     private var currentFlashMode: String = "partial"
 
-    private val progressObserver = Observer<Progress?> { p ->
-        if (!flashInFlight || p == null) return@Observer
+    private fun onProgress(p: Progress) {
+        if (!flashInFlight) return
         when (val pct = p.value) {
             Progress.PROGRESS_CONNECTING,
             Progress.PROGRESS_STARTING -> {
@@ -409,16 +411,23 @@ class BridgeController(
         }
     }
 
-    private val stateObserver = Observer<State?> { s ->
-        if (s == null) return@Observer
+    private fun onState(s: State?) {
+        if (s == null) return
         val type = s.type
         if (flashInFlight) {
             when (type) {
                 // STATE_ERROR can come from preflight (loadDeviceInfo /
                 // checkCompatibility — e.g. V2 hex on V3 board) before any
-                // progress fires, OR from a failed DFU step. Surface the
-                // most recent ERROR notification as the reason.
-                State.STATE_ERROR -> finishFlash(success = false, error = latestErrorMessage ?: "flash failed")
+                // progress fires, OR from a failed DFU step. Prefer the typed
+                // Error if THIS flash produced one (identity-compared against
+                // the snapshot taken at flash start — the sticky error channel
+                // may still hold one from an older session), else the most
+                // recent ERROR notification.
+                State.STATE_ERROR -> {
+                    val e = AppStateRepository.error.value
+                    val fresh = if (e !== errorAtFlashStart) e?.message else null
+                    finishFlash(success = false, error = fresh ?: latestErrorMessage ?: "flash failed")
+                }
                 // STATE_FLASHING → STATE_IDLE is the secondary "done" edge
                 // for paths that don't post a PROGRESS_COMPLETED.
                 State.STATE_IDLE -> if (lastStateType == State.STATE_FLASHING) {
@@ -436,8 +445,12 @@ class BridgeController(
      *  through this channel. */
     private var latestErrorMessage: String? = null
 
-    private val notificationObserver = Observer<Event<Notification>?> { ev ->
-        val n = ev?.peekContent() ?: return@Observer
+    /** Error value snapshotted at flash start; lets onState tell a fresh
+     *  error of this flash from a stale one still parked in the sticky
+     *  channel. */
+    private var errorAtFlashStart: cc.calliope.mini.core.state.Error? = null
+
+    private fun onNotification(n: Notification) {
         when (n.type) {
             Notification.ERROR -> {
                 latestErrorMessage = n.message
@@ -457,19 +470,20 @@ class BridgeController(
         }
     }
 
-    private val errorObserver = Observer<cc.calliope.mini.core.state.Error?> { e ->
-        if (!flashInFlight || e == null) return@Observer
-        finishFlash(success = false, error = e.message ?: "flash error ${e.code}")
-    }
-
     init {
-        // Observe the existing flash pipeline's progress/state once. Filtering
-        // by `flashInFlight` ensures we ignore flashes initiated outside the
-        // proxy (e.g. legacy WebFragment editors that share the same service).
-        ApplicationStateHandler.getProgressLiveData().observe(lifecycleOwner, progressObserver)
-        ApplicationStateHandler.getStateLiveData().observe(lifecycleOwner, stateObserver)
-        ApplicationStateHandler.getErrorLiveData().observe(lifecycleOwner, errorObserver)
-        ApplicationStateHandler.getNotificationLiveData().observe(lifecycleOwner, notificationObserver)
+        // Collect the flash pipeline's streams from the repository while the
+        // host is STARTED. Filtering by `flashInFlight` ignores flashes
+        // initiated outside the proxy (e.g. legacy WebFragment editors that
+        // share the same service). A typed-error observer is deliberately
+        // absent: errors are consumed at the STATE_ERROR edge (see onState),
+        // which the sticky error channel can't fire spuriously.
+        lifecycleOwner.lifecycleScope.launch {
+            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { AppStateRepository.progress.collect { onProgress(it) } }
+                launch { AppStateRepository.state.collect { onState(it) } }
+                launch { AppStateRepository.notifications.collect { onNotification(it) } }
+            }
+        }
     }
 
     private fun finishFlash(success: Boolean, error: String?) {
@@ -567,6 +581,7 @@ class BridgeController(
         pendingFlashReplyId = id
         flashInFlight = true
         latestErrorMessage = null
+        errorAtFlashStart = AppStateRepository.error.value
         lastStateType = State.STATE_IDLE
         // Optimistic default: partial. FlashingService runs partial first
         // unless EXTRA_FORCE_FULL_DFU is set. The progress observer flips

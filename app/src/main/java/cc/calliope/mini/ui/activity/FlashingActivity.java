@@ -14,13 +14,13 @@ import android.util.Log;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.Observer;
+import androidx.core.util.Consumer;
 
 import cc.calliope.mini.core.service.DfuService;
 import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.R;
-import cc.calliope.mini.core.state.ApplicationStateHandler;
-import cc.calliope.mini.core.state.Event;
+import cc.calliope.mini.core.state.AppStateRepository;
+import cc.calliope.mini.core.state.RepoObserve;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.Progress;
 import cc.calliope.mini.core.state.State;
@@ -41,40 +41,28 @@ public class FlashingActivity extends AppCompatActivity {
         finish();
     };
     private boolean flashingCompleted = false;
-    private boolean flashingStarted = false; // Track if real flashing has started
 
-    private final Observer<Event<Notification>> notificationObserver = event -> {
-        Notification notification = event.getContentIfNotHandled();
-        Log.d(TAG, "notificationObserver: event=" + event + ", notification=" + notification + ", handled=" + (notification == null));
-        if (notification == null) return;
-
+    private final Consumer<Notification> notificationObserver = notification -> {
         Log.d(TAG, "notificationObserver: setting status to: " + notification.getMessage());
         status.setText(notification.getMessage());
     };
 
-    private final Observer<Progress> progressObserver = new Observer<>() {
+    private final Consumer<Progress> progressObserver = new Consumer<>() {
         @Override
-        public void onChanged(Progress progress) {
+        public void accept(Progress progress) {
             Log.d(TAG, "progressObserver: progress=" + progress);
             if (progress == null) {
                 return;
             }
 
             int percent = progress.getValue();
-            Log.d(TAG, "progressObserver: percent=" + percent + ", flashingCompleted=" + flashingCompleted + ", flashingStarted=" + flashingStarted);
+            Log.d(TAG, "progressObserver: percent=" + percent + ", flashingCompleted=" + flashingCompleted);
 
-            // Mark flashing as started when we see real progress (0-100)
-            if (percent >= 0 && percent <= 100) {
-                flashingStarted = true;
-            }
-
+            // The repository's progress flow has replay = 0, so a recreated
+            // activity can no longer receive a stale PROGRESS_COMPLETED from
+            // a previous flash — the old flashingStarted guard is gone.
             switch (percent) {
                 case DfuService.PROGRESS_COMPLETED:
-                    // Ignore stale PROGRESS_COMPLETED from previous session
-                    if (!flashingStarted) {
-                        Log.d(TAG, "progressObserver: ignoring stale PROGRESS_COMPLETED (flashing not started yet)");
-                        return;
-                    }
                     Log.d(TAG, "progressObserver: PROGRESS_COMPLETED, calling finishActivity()");
                     status.setText(R.string.flashing_completed);
                     finishActivity();
@@ -118,7 +106,7 @@ public class FlashingActivity extends AppCompatActivity {
         }
     };
 
-    private final Observer<State> stateObserver = state -> {
+    private final Consumer<State> stateObserver = state -> {
         Log.d(TAG, "stateObserver: state=" + state);
         if (state == null) {
             return;
@@ -126,7 +114,7 @@ public class FlashingActivity extends AppCompatActivity {
 
         Log.d(TAG, "stateObserver: stateType=" + state.getType());
         if (state.getType() == STATE_ERROR) {
-            Error error = ApplicationStateHandler.getErrorLiveData().getValue();
+            Error error = AppStateRepository.getError().getValue();
             Log.d(TAG, "stateObserver: STATE_ERROR, error=" + error);
             if (error != null) {
                 status.setText(String.format(getString(R.string.flashing_error), error.getCode(), error.getMessage()));
@@ -157,12 +145,11 @@ public class FlashingActivity extends AppCompatActivity {
         });
 
         flashingCompleted = false;
-        flashingStarted = false;
-        Log.d(TAG, "onCreate: flashingCompleted and flashingStarted reset to false");
+        Log.d(TAG, "onCreate: flashingCompleted reset to false");
 
-        ApplicationStateHandler.getNotificationLiveData().observe(this, notificationObserver);
-        ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
-        ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
+        RepoObserve.notifications(this, notificationObserver);
+        RepoObserve.progress(this, progressObserver);
+        RepoObserve.state(this, stateObserver);
 
         binding.retryButton.setOnClickListener(this::onRetryClicked);
         Log.d(TAG, "onCreate: observers registered");
@@ -172,9 +159,6 @@ public class FlashingActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "onDestroy: this=" + this.hashCode() + ", flashingCompleted=" + flashingCompleted);
-        ApplicationStateHandler.getNotificationLiveData().removeObserver(notificationObserver);
-        ApplicationStateHandler.getProgressLiveData().removeObserver(progressObserver);
-        ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver);
         binding = null;
     }
 
@@ -207,13 +191,12 @@ public class FlashingActivity extends AppCompatActivity {
 
     private void onRetryClicked(View view) {
         Log.d(TAG, "onRetryClicked: this=" + this.hashCode());
-        if (!Boolean.TRUE.equals(ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue())) {
-            ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
+        if (!Boolean.TRUE.equals(AppStateRepository.getDeviceAvailable().getValue())) {
+            AppStateRepository.updateNotification(ERROR, R.string.error_no_connected);
             return;
         }
 
         view.setVisibility(View.INVISIBLE);
-        flashingStarted = false;
         flashingCompleted = false;
         progressBar.setProgress(0);
         title.setText("");

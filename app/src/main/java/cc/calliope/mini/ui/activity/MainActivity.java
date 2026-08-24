@@ -38,7 +38,7 @@ import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
 
 import cc.calliope.mini.bridge.CampusUrls;
-import cc.calliope.mini.core.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.ui.popup.PopupItem;
@@ -213,7 +213,7 @@ public class MainActivity extends BaseActivity {
         } else if (isMakeCodeUrl(Uri.parse(contents))) {
             navigateToMakeCode(contents);
         } else {
-            ApplicationStateHandler.updateNotification(Notification.ERROR, R.string.error_qr_unsupported);
+            AppStateRepository.updateNotification(Notification.ERROR, R.string.error_qr_unsupported);
         }
     }
 
@@ -333,7 +333,7 @@ public class MainActivity extends BaseActivity {
         // While controlling the mini (a live BLE session from an editor) leave
         // only full-screen: opening Scripts or the QR scanner would navigate
         // away from the editor and drop the connection the user is using.
-        State state = ApplicationStateHandler.getStateLiveData().getValue();
+        State state = AppStateRepository.getState().getValue();
         boolean controlling = state != null && state.getType() == State.STATE_CONTROL;
         if (!controlling) {
             popupItems.add(new PopupItem(R.string.menu_fab_scripts, R.drawable.ic_coding_24dp));

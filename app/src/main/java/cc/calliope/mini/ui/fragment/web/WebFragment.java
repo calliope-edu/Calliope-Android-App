@@ -18,7 +18,7 @@ import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.scratchlink.ScratchLinkServer;
 import cc.calliope.mini.ui.activity.FlashingActivity;
-import cc.calliope.mini.core.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.utils.settings.Settings;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.file.FileUtils;
@@ -786,12 +786,12 @@ public class WebFragment extends Fragment implements DownloadListener, HostAcces
         }
 
         if (!Utils.isBluetoothEnabled(requireContext())) {
-            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
+            AppStateRepository.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
             return;
         }
 
-        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()) {
-            ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
+        if (!AppStateRepository.getDeviceAvailable().getValue()) {
+            AppStateRepository.updateNotification(ERROR, R.string.error_no_connected);
             return;
         }
 

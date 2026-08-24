@@ -25,7 +25,7 @@ import android.util.Log;
 import androidx.core.app.NotificationCompat;
 import androidx.core.util.Consumer;
 import androidx.lifecycle.LifecycleService;
-import androidx.lifecycle.Observer;
+import androidx.core.util.Consumer;
 import androidx.preference.PreferenceManager;
 
 import java.io.File;
@@ -38,7 +38,8 @@ import cc.calliope.mini.utils.file.FirmwareZipCreator;
 import cc.calliope.mini.utils.hex.HexParser;
 import cc.calliope.mini.utils.hex.InitPacket;
 import cc.calliope.mini.R;
-import cc.calliope.mini.core.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.AppStateRepository;
+import cc.calliope.mini.core.state.RepoObserve;
 import cc.calliope.mini.core.state.Error;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.Progress;
@@ -78,12 +79,12 @@ public class FlashingService extends LifecycleService {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private ExecutorService backgroundExecutor;
 
-    private final Observer<State> stateObserver = state -> {
+    private final Consumer<State> stateObserver = state -> {
         if (state == null || !flashingJobActive) {
             return;
         }
         if (state.getType() == STATE_ERROR) {
-            Error error = ApplicationStateHandler.getErrorLiveData().getValue();
+            Error error = AppStateRepository.getError().getValue();
             if (error != null) {
                 Log.e(TAG, "ERROR: " + error.getCode() + " " + error.getMessage());
             }
@@ -92,7 +93,7 @@ public class FlashingService extends LifecycleService {
         }
     };
 
-    private final Observer<Progress> progressObserver = progress -> {
+    private final Consumer<Progress> progressObserver = progress -> {
         if (progress == null || !flashingJobActive) {
             return;
         }
@@ -111,9 +112,10 @@ public class FlashingService extends LifecycleService {
         startForegroundWithNotification();
         backgroundExecutor = Executors.newSingleThreadExecutor();
 
-        // Observe the state and progress
-        ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
-        ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
+        // Observe the state and progress from the repository. The started
+        // service is STARTED for its whole life, so collection spans it.
+        RepoObserve.state(this, stateObserver);
+        RepoObserve.progress(this, progressObserver);
     }
 
     @Override
@@ -124,8 +126,6 @@ public class FlashingService extends LifecycleService {
         if (backgroundExecutor != null) {
             backgroundExecutor.shutdownNow();
         }
-        ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver);
-        ApplicationStateHandler.getProgressLiveData().removeObserver(progressObserver);
     }
 
     private void startForegroundWithNotification() {
@@ -186,7 +186,7 @@ public class FlashingService extends LifecycleService {
         }
 
         String message = getString(R.string.flashing_process_starting);
-        ApplicationStateHandler.updateNotification(Notification.INFO, message);
+        AppStateRepository.updateNotification(Notification.INFO, message);
 
         if (!loadDeviceInfo()) {
             return START_NOT_STICKY;
@@ -498,8 +498,8 @@ public class FlashingService extends LifecycleService {
     }
 
     private void handleError(String message) {
-        ApplicationStateHandler.updateNotification(ERROR, message);
-        ApplicationStateHandler.updateState(STATE_ERROR);
+        AppStateRepository.updateNotification(ERROR, message);
+        AppStateRepository.updateState(STATE_ERROR);
         // The state observer only reacts while a flash job is active, so a
         // pre-flight failure must stop the service explicitly.
         stopSelf();
