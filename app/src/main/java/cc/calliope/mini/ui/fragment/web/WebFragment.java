@@ -18,6 +18,7 @@ import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.scratchlink.ScratchLinkServer;
 import cc.calliope.mini.ui.activity.FlashingActivity;
+import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.settings.Settings;
 import cc.calliope.mini.utils.Constants;
@@ -790,7 +791,7 @@ public class WebFragment extends Fragment implements DownloadListener, HostAcces
             return;
         }
 
-        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()) {
+        if (!AppStateRepository.getDeviceAvailable().getValue()) {
             ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
             return;
         }

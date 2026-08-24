@@ -8,9 +8,9 @@ import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.preference.PreferenceManager
+import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.Constants
@@ -52,7 +52,11 @@ class CheckService : Service() {
     private val canScan: Boolean
         get() = isAppInForeground && isStateIdle && macAddress.isNotEmpty()
 
-    private val stateObserver = Observer<State> { state ->
+    private var stateJob: Job? = null
+
+    private fun onStateChanged(state: State?) {
+        // null = repository not seeded yet; the default (idle) applies.
+        if (state == null) return
         val wasIdle = isStateIdle
         isStateIdle = state.type == State.STATE_IDLE || state.type == State.STATE_ERROR
 
@@ -102,7 +106,9 @@ class CheckService : Service() {
 
         // Observe application state and lifecycle on main thread
         mainHandler.post {
-            ApplicationStateHandler.getStateLiveData().observeForever(stateObserver)
+            stateJob = serviceScope.launch {
+                AppStateRepository.state.collect { onStateChanged(it) }
+            }
             ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleObserver)
 
             // Check current lifecycle state — if app is already in foreground
@@ -223,9 +229,9 @@ class CheckService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         mainHandler.post {
-            ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver)
             ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleObserver)
         }
+        stateJob?.cancel()
         scanJob?.cancel()
         statusCheckJob?.cancel()
         job.cancel()

@@ -30,14 +30,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.ViewCompat;
 import androidx.fragment.app.FragmentManager;
-import androidx.lifecycle.Observer;
+import androidx.core.util.Consumer;
 
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import cc.calliope.mini.core.state.Event;
+import cc.calliope.mini.core.state.AppStateRepository;
+import cc.calliope.mini.core.state.RepoObserve;
 import cc.calliope.mini.ui.SnackbarHelper;
 import cc.calliope.mini.ui.popup.PopupAdapter;
 import cc.calliope.mini.ui.popup.PopupItem;
@@ -101,13 +102,13 @@ public abstract class BaseActivity extends AppCompatActivity
         // Unconditional reset here used to wipe a live STATE_FLASHING /
         // STATE_CONTROL on every rotation, deep link or OpenHexActivity
         // launch, breaking the flash mutex and re-enabling scanning mid-DFU.
-        if (ApplicationStateHandler.getStateLiveData().getValue() == null) {
+        if (AppStateRepository.getState().getValue() == null) {
             ApplicationStateHandler.updateState(State.STATE_IDLE);
         }
-        ApplicationStateHandler.getStateLiveData().observe(this, stateObserver);
-        ApplicationStateHandler.getNotificationLiveData().observe(this, notificationObserver);
-        ApplicationStateHandler.getProgressLiveData().observe(this, progressObserver);
-        ApplicationStateHandler.getDeviceAvailabilityLiveData().observe(this, deviceAvailabilityObserver);
+        RepoObserve.state(this, stateObserver);
+        RepoObserve.notifications(this, notificationObserver);
+        RepoObserve.progress(this, progressObserver);
+        RepoObserve.deviceAvailable(this, deviceAvailabilityObserver);
 
         // ------------- SENSOR INITIALIZATION (SHAKE DETECTION) -------------
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -153,9 +154,9 @@ public abstract class BaseActivity extends AppCompatActivity
     // -------------------------------------------------
 
     // STATE OBSERVER
-    private final Observer<State> stateObserver = new Observer<>() {
+    private final Consumer<State> stateObserver = new Consumer<>() {
         @Override
-        public void onChanged(State state) {
+        public void accept(State state) {
             if (state == null) {
                 return;
             }
@@ -182,11 +183,11 @@ public abstract class BaseActivity extends AppCompatActivity
                     patternFab.setColor(R.color.state_script);
                 }
                 case State.STATE_ERROR -> {
-                    Boolean available = ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue();
+                    Boolean available = AppStateRepository.getDeviceAvailable().getValue();
                     patternFab.setColor(Boolean.TRUE.equals(available) ? R.color.state_connected : R.color.status_error);
                 }
                 case State.STATE_IDLE -> {
-                    Boolean isAvailable = ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue();
+                    Boolean isAvailable = AppStateRepository.getDeviceAvailable().getValue();
                     patternFab.setColor(Boolean.TRUE.equals(isAvailable) ? R.color.state_connected : R.color.brand_accent);
                 }
             }
@@ -194,10 +195,7 @@ public abstract class BaseActivity extends AppCompatActivity
     };
 
     // NOTIFICATION OBSERVER
-    private final Observer<Event<Notification>> notificationObserver = event -> {
-        Notification notification = event.getContentIfNotHandled();
-        if (notification == null) return;
-
+    private final Consumer<Notification> notificationObserver = notification -> {
         int type = notification.getType();
         String message = notification.getMessage();
 
@@ -209,28 +207,16 @@ public abstract class BaseActivity extends AppCompatActivity
     };
 
     // PROGRESS OBSERVER
-    private final Observer<Progress> progressObserver = new Observer<>() {
-        @Override
-        public void onChanged(Progress progress) {
-            patternFab.setProgress(progress.getValue());
-        }
-    };
+    private final Consumer<Progress> progressObserver =
+            progress -> patternFab.setProgress(progress.getValue());
 
     // DEVICE AVAILABILITY OBSERVER
-    private final Observer<Boolean> deviceAvailabilityObserver = isAvailable -> {
+    private final Consumer<Boolean> deviceAvailabilityObserver = isAvailable -> {
         if (currentState.getType() == State.STATE_IDLE || currentState.getType() == State.STATE_ERROR) {
             patternFab.setColor(isAvailable ? R.color.state_connected : R.color.brand_accent);
         }
     };
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        ApplicationStateHandler.getNotificationLiveData().removeObserver(notificationObserver);
-        ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver);
-        ApplicationStateHandler.getProgressLiveData().removeObserver(progressObserver);
-        ApplicationStateHandler.getDeviceAvailabilityLiveData().removeObserver(deviceAvailabilityObserver);
-    }
 
     // -------------------------------------------------
     // REGISTER/UNREGISTER SENSOR IN onResume/onPause
@@ -364,7 +350,7 @@ public abstract class BaseActivity extends AppCompatActivity
     }
 
     public void onFabClick(View view) {
-        State state = ApplicationStateHandler.getStateLiveData().getValue();
+        State state = AppStateRepository.getState().getValue();
         if (state == null) {
             return;
         }
@@ -415,7 +401,7 @@ public abstract class BaseActivity extends AppCompatActivity
     public void addPopupMenuItems(List<PopupItem> popupItems) {
         // While controlling the mini (STATE_CONTROL) we're already linked to it,
         // so pairing to another device makes no sense — hide the connect item.
-        State state = ApplicationStateHandler.getStateLiveData().getValue();
+        State state = AppStateRepository.getState().getValue();
         if (state == null || state.getType() != State.STATE_CONTROL) {
             popupItems.add(new PopupItem(R.string.menu_fab_connect, R.drawable.ic_connect));
         }

@@ -27,6 +27,7 @@ import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityHexBinding;
 import cc.calliope.mini.ui.model.EditorType;
+import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.file.FileUtils;
 import cc.calliope.mini.utils.Constants;
@@ -142,7 +143,7 @@ public class OpenHexActivity extends BaseActivity {
             return;
         }
 
-        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()){
+        if (!AppStateRepository.getDeviceAvailable().getValue()){
             ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
             return;
         }

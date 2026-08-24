@@ -50,6 +50,7 @@ import cc.calliope.mini.utils.file.FileWrapper;
 import cc.calliope.mini.R;
 import cc.calliope.mini.ui.activity.FlashingActivity;
 import cc.calliope.mini.ui.dialog.DialogUtils;
+import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.databinding.FragmentScriptsBinding;
@@ -166,8 +167,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
             dismiss();
             return;
         }
-        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null
-                || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()) {
+        if (!AppStateRepository.getDeviceAvailable().getValue()) {
             ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
             return;
         }
