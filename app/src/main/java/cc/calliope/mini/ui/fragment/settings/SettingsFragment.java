@@ -29,7 +29,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         RecyclerView recyclerView = getListView();
-        int paddingBottom = (int) (70 * getResources().getDisplayMetrics().density);
+        int paddingBottom = getResources().getDimensionPixelSize(R.dimen.bottom_bar_clearance);
         recyclerView.setPadding(recyclerView.getPaddingLeft(), recyclerView.getPaddingTop(),
                 recyclerView.getPaddingRight(), paddingBottom);
         recyclerView.setClipToPadding(false);
@@ -59,7 +59,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         return super.onPreferenceTreeClick(preference);
     }
 
-    // TODO: показувати список підключених пристроїв, патернів?
+    // TODO: show a list of connected devices / patterns?
     private void removeAllDevices() {
         ConnectedDevicesManager manager = new ConnectedDevicesManager(requireContext());
         List<String> devices = manager.getConnectedAddresses();

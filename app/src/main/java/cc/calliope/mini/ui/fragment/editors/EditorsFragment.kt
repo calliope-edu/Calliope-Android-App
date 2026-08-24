@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import cc.calliope.mini.R
 import cc.calliope.mini.bridge.CampusUrls
@@ -33,10 +34,31 @@ class EditorsFragment : Fragment() {
     private var _binding: FragmentEditorsBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: MenuViewModel by viewModels { 
-        MenuViewModel.Factory(requireContext()) 
+    private val viewModel: MenuViewModel by viewModels {
+        MenuViewModel.Factory(requireContext())
     }
     private lateinit var adapter: MenuAdapter
+
+    /** Current column count; 2 on tablet landscape, 1 otherwise. */
+    private var columns = 1
+
+    /** (Re)applies the layout manager for the current configuration.
+     *  MainActivity handles orientation configChanges itself (the WebView
+     *  editors must survive rotation), so the fragment is NOT recreated on
+     *  rotate — onConfigurationChanged re-runs this instead. */
+    private fun applyLayoutManager() {
+        columns = resources.getInteger(R.integer.editors_columns)
+        binding.recyclerView.layoutManager = if (columns > 1) {
+            GridLayoutManager(requireContext(), columns)
+        } else {
+            LinearLayoutManager(requireContext())
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (_binding != null) applyLayoutManager()
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -58,13 +80,26 @@ class EditorsFragment : Fragment() {
             }
         )
 
-        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        applyLayoutManager()
         binding.recyclerView.adapter = adapter
 
         val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
-            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
+            0, // drag dirs are provided dynamically via getDragDirs below
             ItemTouchHelper.LEFT
         ) {
+            // In a grid, long-press drag must also move sideways across
+            // columns; queried per gesture so an in-place rotation (the
+            // activity handles orientation configChanges itself) is enough.
+            override fun getDragDirs(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder
+            ): Int = if (columns > 1) {
+                ItemTouchHelper.UP or ItemTouchHelper.DOWN or
+                        ItemTouchHelper.START or ItemTouchHelper.END
+            } else {
+                ItemTouchHelper.UP or ItemTouchHelper.DOWN
+            }
+
             override fun onChildDraw(
                 c: Canvas,
                 recyclerView: RecyclerView,
@@ -82,7 +117,7 @@ class EditorsFragment : Fragment() {
                         isAntiAlias = true
                     }
                     val context = requireContext()
-                    val icon = AppCompatResources.getDrawable(context, R.drawable.delete_icon) as? VectorDrawable
+                    val icon = AppCompatResources.getDrawable(context, R.drawable.ic_delete) as? VectorDrawable
 
                     if (dX < 0) { // Swiping to the left
                         val rect = RectF(

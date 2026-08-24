@@ -785,7 +785,7 @@ public class WebFragment extends Fragment implements DownloadListener, HostAcces
             return;
         }
 
-        if (!Utils.isBluetoothEnabled()) {
+        if (!Utils.isBluetoothEnabled(requireContext())) {
             ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
             return;
         }

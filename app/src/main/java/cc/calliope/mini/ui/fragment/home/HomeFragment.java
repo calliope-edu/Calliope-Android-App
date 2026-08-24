@@ -51,7 +51,7 @@ public class HomeFragment extends Fragment {
         ImageView imageView = binding.openWebButton.findViewById(R.id.icon_image_view);
         TextView textView = binding.openWebButton.findViewById(R.id.title_text_view);
 
-        imageView.setImageResource(R.drawable.document_ic_inverted);
+        imageView.setImageResource(R.drawable.ic_document_inverted);
         textView.setText(R.string.info_web);
 
         return binding.getRoot();

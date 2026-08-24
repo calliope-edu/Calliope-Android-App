@@ -14,4 +14,10 @@
     <dimen name="text_size_default">16sp</dimen>
     <dimen name="text_size_title">18sp</dimen>
     <dimen name="text_size_status">40sp</dimen>
+    <!-- Fixed geometry (no sw600dp override on purpose). -->
+    <dimen name="card_corner_radius">16dp</dimen>
+    <dimen name="icon_size">40dp</dimen>
+    <dimen name="button_height">40dp</dimen>
+    <!-- Clearance content must keep above the floating bottom bar / FAB. -->
+    <dimen name="bottom_bar_clearance">70dp</dimen>
 </resources>

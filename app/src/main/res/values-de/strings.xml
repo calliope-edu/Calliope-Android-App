@@ -63,7 +63,7 @@
     <string name="button_ok">Ok</string>
     <string name="button_continue">fortsetzen</string>
     <string name="button_enable">aktivieren</string>
-    <string name="button_remove">entfernen</string>
+    <string name="content_description_script_editor">Editor, mit dem dieses Skript erstellt wurde</string>
     <string name="button_retry">wiederholen</string>
     <string name="info_dialog_delete">\"%s\" wird entgültig gelöscht.</string>
     <string name="subject_dialog_share">Datei teilen…</string>
@@ -158,8 +158,6 @@
     <string name="error_service_discovery">Service-Erkennung fehlgeschlagen</string>
     <string name="error_missing_characteristic">DFU-Legacy-Charakteristik nicht gefunden</string>
     <string name="error_reading_characteristic">Fehler beim Lesen der DFU-Steuerungscharakteristik</string>
-    <string name="pattern_removed">%s entfernt</string>
-    <string name="pattern_remove_failed">Gerät konnte nicht entfernt werden</string>
     <string name="error_bluetooth_adapter_null">Bluetooth-Adapter ist null oder nicht aktiviert</string>
     <string name="error_device_null">Gerät ist null</string>
     <string name="error_missing_dfu_service">DFU-Legacy-Service nicht gefunden.</string>

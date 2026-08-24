@@ -2,7 +2,6 @@ package cc.calliope.mini.ui.fragment.web
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
@@ -106,7 +105,7 @@ class WebBleFragment : Fragment() {
         Log.d("WebBleFragment", "Bluetooth device MAC: $deviceMac")
         Log.d("WebBleFragment", "Camera permission available: ${has(Manifest.permission.CAMERA)}")
         
-        // Логуємо тип редактора
+        // Log the editor type
         when (editorName) {
             EditorType.CARDBOARD_CONTROL.directoryName -> Log.d("WebBleFragment", "Editor type: CARDBOARD_CONTROL (BLE + basic features)")
             EditorType.CARDBOARD_FACE.directoryName -> Log.d("WebBleFragment", "Editor type: CARDBOARD_FACE (BLE + camera support)")
@@ -124,7 +123,7 @@ class WebBleFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         webView = WebView(requireContext())
-        val marginBottom = (70 * resources.displayMetrics.density).toInt()
+        val marginBottom = resources.getDimensionPixelSize(R.dimen.bottom_bar_clearance)
         val params = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
@@ -259,7 +258,7 @@ class WebBleFragment : Fragment() {
             runOnUi {
                 if (!ensureBleReady()) return@runOnUi
                 if (gatt != null) return@runOnUi
-                val adapter = BluetoothAdapter.getDefaultAdapter()
+                val adapter = BluetoothUtils.getAdapter(requireContext()) ?: return@runOnUi
                 val dev = try { adapter.getRemoteDevice(deviceMac) } catch (_: Exception) { null } ?: return@runOnUi
                 gatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     dev.connectGatt(appCtx, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
@@ -391,7 +390,7 @@ class WebBleFragment : Fragment() {
     }
 
     private fun ensureBleReady(): Boolean {
-        val adapter = BluetoothAdapter.getDefaultAdapter()
+        val adapter = BluetoothUtils.getAdapter(requireContext())
         if (adapter == null || !adapter.isEnabled) return false
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             has(Manifest.permission.BLUETOOTH_CONNECT) && has(Manifest.permission.BLUETOOTH_SCAN)

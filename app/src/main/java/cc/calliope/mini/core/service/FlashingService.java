@@ -207,7 +207,7 @@ public class FlashingService extends LifecycleService {
     }
 
     private boolean isBluetoothEnabled() {
-        if (!Utils.isBluetoothEnabled()) {
+        if (!Utils.isBluetoothEnabled(this)) {
             Log.e(TAG, "Bluetooth is not enabled");
             handleError(getString(R.string.error_bluetooth_not_enabled_service));
             return false;

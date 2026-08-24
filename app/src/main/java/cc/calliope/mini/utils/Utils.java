@@ -2,6 +2,7 @@ package cc.calliope.mini.utils;
 
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
+import cc.calliope.mini.utils.bluetooth.BluetoothUtils;
 import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.text.format.DateFormat;
@@ -61,8 +62,8 @@ public class Utils {
      *
      * @return true if Bluetooth is enabled, false otherwise.
      */
-    public static boolean isBluetoothEnabled() {
-        final BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+    public static boolean isBluetoothEnabled(Context context) {
+        final BluetoothAdapter adapter = BluetoothUtils.getAdapter(context);
         return adapter != null && adapter.isEnabled();
     }
 
@@ -100,7 +101,10 @@ public class Utils {
      * @return A int value to represent px equivalent to dp depending on device density
      */
     public static int convertDpToPixel(Context context, int dp) {
-        return dp * (context.getResources().getDisplayMetrics().densityDpi / DisplayMetrics.DENSITY_DEFAULT);
+        // Use the float density, not integer densityDpi/160: on hdpi (1.5),
+        // tvdpi (1.33) and similar non-integer densities the integer division
+        // truncated to 1, so every dp→px conversion came out ~33-50% short.
+        return Math.round(dp * context.getResources().getDisplayMetrics().density);
     }
 
     public static String dateFormat(long lastModified) {

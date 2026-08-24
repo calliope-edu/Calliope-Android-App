@@ -6,11 +6,13 @@ import static cc.calliope.mini.core.state.State.STATE_ERROR;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.TextView;
 
 import android.util.Log;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.Observer;
 
@@ -33,7 +35,7 @@ public class FlashingActivity extends AppCompatActivity {
     private TextView title;
     private TextView status;
     private BoardProgressBar progressBar;
-    private final Handler timerHandler = new Handler();
+    private final Handler timerHandler = new Handler(Looper.getMainLooper());
     private final Runnable deferredFinish = () -> {
         Log.d(TAG, "deferredFinish: executing finish(), this=" + this.hashCode());
         finish();
@@ -146,6 +148,14 @@ public class FlashingActivity extends AppCompatActivity {
         title = binding.titleTextView;
         progressBar = binding.progressBar;
 
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                Log.d(TAG, "onBackPressed: this=" + FlashingActivity.this.hashCode());
+                finish();
+            }
+        });
+
         flashingCompleted = false;
         flashingStarted = false;
         Log.d(TAG, "onCreate: flashingCompleted and flashingStarted reset to false");
@@ -194,12 +204,6 @@ public class FlashingActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public void onBackPressed() {
-        Log.d(TAG, "onBackPressed: this=" + this.hashCode());
-        super.onBackPressed();
-        finish();
-    }
 
     private void onRetryClicked(View view) {
         Log.d(TAG, "onRetryClicked: this=" + this.hashCode());

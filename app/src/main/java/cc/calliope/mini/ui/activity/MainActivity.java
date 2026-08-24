@@ -12,9 +12,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.WindowInsets;
-import android.view.WindowInsetsController;
-import android.view.WindowManager;
 import android.widget.AdapterView;
 
 import java.io.File;
@@ -23,8 +20,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
@@ -53,6 +54,8 @@ public class MainActivity extends BaseActivity {
     private ActivityMainBinding binding;
     private NavController navController;
     private boolean fullScreen = false;
+    /** Consumes Back to leave full-screen; enabled only while full-screen. */
+    private OnBackPressedCallback fullScreenBackCallback;
     private final ActivityResultLauncher<String> pushNotificationPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
@@ -80,6 +83,14 @@ public class MainActivity extends BaseActivity {
         setContentView(binding.getRoot());
 
         setPatternFab(binding.patternFab);
+
+        fullScreenBackCallback = new OnBackPressedCallback(false) {
+            @Override
+            public void handleOnBackPressed() {
+                disableFullScreenMode();
+            }
+        };
+        getOnBackPressedDispatcher().addCallback(this, fullScreenBackCallback);
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
 
@@ -242,15 +253,6 @@ public class MainActivity extends BaseActivity {
         }
     }
 
-    @Override
-    public void onBackPressed() {
-        if (fullScreen) {
-            disableFullScreenMode();
-        } else {
-            super.onBackPressed();
-        }
-    }
-
     public void onPopupMenuItemClick(AdapterView<?> parent, View view, int position, long id) {
         super.onPopupMenuItemClick(parent, view, position, id);
         if (!(parent.getItemAtPosition(position) instanceof PopupItem item)) {
@@ -274,66 +276,40 @@ public class MainActivity extends BaseActivity {
     @SuppressLint("InlinedApi")
     private void enableFullScreenMode() {
         fullScreen = true;
+        fullScreenBackCallback.setEnabled(true);
         binding.bottomNavigation.setVisibility(View.GONE);
         binding.navFade.setVisibility(View.GONE);
         setWebViewBottomMargin(0);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            final WindowInsetsController insetsController = getWindow().getInsetsController();
-            if (insetsController != null) {
-                insetsController.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-                insetsController.setSystemBarsBehavior(
-                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                );
-            }
-        } else {
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
-            View decorView = getWindow().getDecorView();
-            decorView.setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                            | View.SYSTEM_UI_FLAG_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                            | lightSystemBarFlags()
-            );
-        }
-    }
-
-    /**
-     * Light status/navigation-bar flags for the theme, so raw
-     * setSystemUiVisibility() calls don't drop the dark-icon appearance the
-     * theme's windowLight*Bar sets (leaving white icons on the light bar).
-     */
-    private int lightSystemBarFlags() {
-        if (!getResources().getBoolean(R.bool.light_system_bars)) {
-            return 0;
-        }
-        int flags = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-        }
-        return flags;
+        WindowInsetsControllerCompat controller = systemBarsController();
+        controller.setSystemBarsBehavior(
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        controller.hide(WindowInsetsCompat.Type.systemBars());
     }
 
     private void disableFullScreenMode() {
         fullScreen = false;
+        fullScreenBackCallback.setEnabled(false);
         binding.bottomNavigation.setVisibility(View.VISIBLE);
         binding.navFade.setVisibility(View.VISIBLE);
-        setWebViewBottomMargin((int) (70 * getResources().getDisplayMetrics().density));
+        setWebViewBottomMargin(getResources().getDimensionPixelSize(R.dimen.bottom_bar_clearance));
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            final WindowInsetsController insetsController = getWindow().getInsetsController();
-            if (insetsController != null) {
-                insetsController.show(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-            }
-        } else {
-            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        systemBarsController().show(WindowInsetsCompat.Type.systemBars());
+    }
 
-            View decorView = getWindow().getDecorView();
-            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | lightSystemBarFlags());
-        }
+    /**
+     * System-bars controller with the theme's light-bar appearance re-applied
+     * each time. Hiding/showing the bars must not drop the dark-icon
+     * appearance the theme sets — the old raw setSystemUiVisibility() path did,
+     * leaving white icons on the light bar (see B15).
+     */
+    private WindowInsetsControllerCompat systemBarsController() {
+        WindowInsetsControllerCompat controller =
+                WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        boolean light = getResources().getBoolean(R.bool.light_system_bars);
+        controller.setAppearanceLightStatusBars(light);
+        controller.setAppearanceLightNavigationBars(light);
+        return controller;
     }
 
     private void setWebViewBottomMargin(int margin) {
@@ -360,7 +336,7 @@ public class MainActivity extends BaseActivity {
         State state = ApplicationStateHandler.getStateLiveData().getValue();
         boolean controlling = state != null && state.getType() == State.STATE_CONTROL;
         if (!controlling) {
-            popupItems.add(new PopupItem(R.string.menu_fab_scripts, R.drawable.ic_coding_black_24dp));
+            popupItems.add(new PopupItem(R.string.menu_fab_scripts, R.drawable.ic_coding_24dp));
             popupItems.add(new PopupItem(R.string.menu_fab_scan_qr, R.drawable.ic_qr_scan_24dp));
         }
         popupItems.add(new PopupItem(R.string.menu_fab_full_screen, fullScreen ?

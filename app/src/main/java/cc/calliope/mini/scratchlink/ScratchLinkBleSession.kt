@@ -189,7 +189,7 @@ class ScratchLinkBleSession(
             sendError(id, -32500, "Bluetooth permission not granted")
             return
         }
-        if (!Utils.isBluetoothEnabled()) {
+        if (!Utils.isBluetoothEnabled(appCtx)) {
             sendError(id, -32500, "Bluetooth is disabled")
             return
         }

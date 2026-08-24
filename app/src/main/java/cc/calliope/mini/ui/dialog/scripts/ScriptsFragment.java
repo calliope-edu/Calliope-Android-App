@@ -161,7 +161,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     }
 
     private void openDfuActivity(FileWrapper file) {
-        if (!Utils.isBluetoothEnabled()) {
+        if (!Utils.isBluetoothEnabled(requireContext())) {
             ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
             dismiss();
             return;
