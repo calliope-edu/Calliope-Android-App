@@ -39,7 +39,6 @@ import com.journeyapps.barcodescanner.ScanOptions;
 
 import cc.calliope.mini.bridge.CampusUrls;
 import cc.calliope.mini.core.state.AppStateRepository;
-import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.ui.popup.PopupItem;
@@ -214,7 +213,7 @@ public class MainActivity extends BaseActivity {
         } else if (isMakeCodeUrl(Uri.parse(contents))) {
             navigateToMakeCode(contents);
         } else {
-            ApplicationStateHandler.updateNotification(Notification.ERROR, R.string.error_qr_unsupported);
+            AppStateRepository.updateNotification(Notification.ERROR, R.string.error_qr_unsupported);
         }
     }
 

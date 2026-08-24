@@ -20,7 +20,6 @@ import cc.calliope.mini.core.service.DfuService;
 import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.R;
 import cc.calliope.mini.core.state.AppStateRepository;
-import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.core.state.RepoObserve;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.Progress;
@@ -193,7 +192,7 @@ public class FlashingActivity extends AppCompatActivity {
     private void onRetryClicked(View view) {
         Log.d(TAG, "onRetryClicked: this=" + this.hashCode());
         if (!Boolean.TRUE.equals(AppStateRepository.getDeviceAvailable().getValue())) {
-            ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
+            AppStateRepository.updateNotification(ERROR, R.string.error_no_connected);
             return;
         }
 

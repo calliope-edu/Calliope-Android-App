@@ -13,7 +13,7 @@ import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import cc.calliope.mini.bridge.BridgeBleSession
-import cc.calliope.mini.core.state.ApplicationStateHandler
+import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.Permission
 import cc.calliope.mini.utils.Utils
@@ -66,7 +66,7 @@ class ScratchLinkBleSession(
 
     /**
      * Whether we've told the app it's in a live-control session. Drives the
-     * native movable FAB colour via [ApplicationStateHandler], exactly like
+     * native movable FAB colour via [AppStateRepository], exactly like
      * the cardboard editor (WebBleFragment): STATE_CONTROL while a peripheral
      * is connected, STATE_IDLE once it drops or the editor closes.
      */
@@ -75,14 +75,14 @@ class ScratchLinkBleSession(
     private fun reportControl() {
         if (!controlReported) {
             controlReported = true
-            ApplicationStateHandler.updateState(State.STATE_CONTROL)
+            AppStateRepository.updateState(State.STATE_CONTROL)
         }
     }
 
     private fun reportIdle() {
         if (controlReported) {
             controlReported = false
-            ApplicationStateHandler.updateState(State.STATE_IDLE)
+            AppStateRepository.updateState(State.STATE_IDLE)
         }
     }
 

@@ -51,7 +51,6 @@ import cc.calliope.mini.R;
 import cc.calliope.mini.ui.activity.FlashingActivity;
 import cc.calliope.mini.ui.dialog.DialogUtils;
 import cc.calliope.mini.core.state.AppStateRepository;
-import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.databinding.FragmentScriptsBinding;
 import cc.calliope.mini.ui.model.EditorType;
@@ -163,12 +162,12 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
 
     private void openDfuActivity(FileWrapper file) {
         if (!Utils.isBluetoothEnabled(requireContext())) {
-            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
+            AppStateRepository.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
             dismiss();
             return;
         }
         if (!AppStateRepository.getDeviceAvailable().getValue()) {
-            ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
+            AppStateRepository.updateNotification(ERROR, R.string.error_no_connected);
             return;
         }
         if (!Settings.isBackgroundFlashingEnable(activity)) {
@@ -219,8 +218,8 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                         scriptsRecyclerAdapter.change(file, dest);
                     } else {
                         activity.runOnUiThread(() -> {
-                            ApplicationStateHandler.updateNotification(ERROR, R.string.error_snackbar_name_exists);
-                            ApplicationStateHandler.updateState(State.STATE_ERROR);
+                            AppStateRepository.updateNotification(ERROR, R.string.error_snackbar_name_exists);
+                            AppStateRepository.updateState(State.STATE_ERROR);
                         });
                     }
                 }
@@ -292,8 +291,8 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                     } catch (SecurityException e) {
                         Log.e(TAG, "Persistable URI permission failed", e);
                         activity.runOnUiThread(() -> {
-                            ApplicationStateHandler.updateNotification(ERROR, R.string.usb_copy_access_denied);
-                            ApplicationStateHandler.updateState(State.STATE_ERROR);
+                            AppStateRepository.updateNotification(ERROR, R.string.usb_copy_access_denied);
+                            AppStateRepository.updateState(State.STATE_ERROR);
                         });
                     }
                 }
@@ -313,8 +312,8 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                 FileOutputStream outputStream = new FileOutputStream(pfd.getFileDescriptor());
 
                 activity.runOnUiThread(() -> {
-                    ApplicationStateHandler.updateNotification(INFO, R.string.usb_copy_started);
-                    ApplicationStateHandler.updateState(State.STATE_BUSY);
+                    AppStateRepository.updateNotification(INFO, R.string.usb_copy_started);
+                    AppStateRepository.updateState(State.STATE_BUSY);
                 });
 
                 byte[] buffer = new byte[8192];
@@ -338,20 +337,20 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                 outputStream.close();
 
                 activity.runOnUiThread(() -> {
-                    ApplicationStateHandler.updateNotification(INFO, R.string.usb_copy_finished);
-                    ApplicationStateHandler.updateState(State.STATE_IDLE);
+                    AppStateRepository.updateNotification(INFO, R.string.usb_copy_finished);
+                    AppStateRepository.updateState(State.STATE_IDLE);
                 });
             } catch (IOException e) {
                 Log.e(TAG, "File copy error", e);
                 activity.runOnUiThread(() -> {
-                    ApplicationStateHandler.updateNotification(ERROR, R.string.usb_copy_failed);
-                    ApplicationStateHandler.updateState(State.STATE_ERROR);
+                    AppStateRepository.updateNotification(ERROR, R.string.usb_copy_failed);
+                    AppStateRepository.updateState(State.STATE_ERROR);
                 });
             } catch (Exception e) {
                 Log.e(TAG, "Unexpected error", e);
                 activity.runOnUiThread(() -> {
-                    ApplicationStateHandler.updateNotification(ERROR, R.string.usb_copy_unexpected_error);
-                    ApplicationStateHandler.updateState(State.STATE_ERROR);
+                    AppStateRepository.updateNotification(ERROR, R.string.usb_copy_unexpected_error);
+                    AppStateRepository.updateState(State.STATE_ERROR);
                 });
             }
         }).start();

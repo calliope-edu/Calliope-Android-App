@@ -22,7 +22,7 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import cc.calliope.mini.BuildConfig;
 import cc.calliope.mini.R;
 import cc.calliope.mini.ui.activity.NotificationActivity;
-import cc.calliope.mini.core.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.core.state.Notification;
 import no.nordicsemi.android.dfu.DfuBaseService;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
@@ -40,8 +40,8 @@ public class DfuService extends DfuBaseService{
     public void onCreate() {
         super.onCreate();
 
-        ApplicationStateHandler.updateState(STATE_BUSY);
-        ApplicationStateHandler.updateNotification(Notification.WARNING, getString(R.string.flashing_device_connecting));
+        AppStateRepository.updateState(STATE_BUSY);
+        AppStateRepository.updateNotification(Notification.WARNING, getString(R.string.flashing_device_connecting));
         // Enable Notification Channel for Android OREO
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             DfuServiceInitiator.createDfuNotificationChannel(getApplicationContext());
@@ -89,25 +89,25 @@ public class DfuService extends DfuBaseService{
             switch (action) {
                 case BROADCAST_PROGRESS -> {
                     int extra = intent.getIntExtra(EXTRA_DATA, 0);
-                    ApplicationStateHandler.updateProgress(extra);
+                    AppStateRepository.updateProgress(extra);
                     switch (extra) {
                         case PROGRESS_UPLOADING -> {
                             String message = getString(R.string.flashing_uploading);
-                            ApplicationStateHandler.updateNotification(Notification.INFO, message);
-                            ApplicationStateHandler.updateState(STATE_FLASHING);
+                            AppStateRepository.updateNotification(Notification.INFO, message);
+                            AppStateRepository.updateState(STATE_FLASHING);
                         }
                         case PROGRESS_COMPLETED -> {
                             String message = getString(R.string.flashing_completed);
-                            ApplicationStateHandler.updateNotification(Notification.INFO, message);
-                            ApplicationStateHandler.updateState(STATE_IDLE);
+                            AppStateRepository.updateNotification(Notification.INFO, message);
+                            AppStateRepository.updateState(STATE_IDLE);
                         }
                         case PROGRESS_ABORTED -> {
                             String message = getString(R.string.flashing_aborted);
-                            ApplicationStateHandler.updateNotification(Notification.INFO, message);
-                            ApplicationStateHandler.updateState(STATE_IDLE);
+                            AppStateRepository.updateNotification(Notification.INFO, message);
+                            AppStateRepository.updateState(STATE_IDLE);
                         }
                         default -> {
-                            ApplicationStateHandler.updateState(STATE_FLASHING);
+                            AppStateRepository.updateState(STATE_FLASHING);
                         }
                     }
                 }
@@ -126,9 +126,9 @@ public class DfuService extends DfuBaseService{
                     // Publish the error before the state: state observers pull
                     // the error via getValue() and would otherwise read the one
                     // from a previous session.
-                    ApplicationStateHandler.updateError(code, message);
-                    ApplicationStateHandler.updateNotification(Notification.ERROR, R.string.error_connection_failed);
-                    ApplicationStateHandler.updateState(STATE_ERROR);
+                    AppStateRepository.updateError(code, message);
+                    AppStateRepository.updateNotification(Notification.ERROR, R.string.error_connection_failed);
+                    AppStateRepository.updateState(STATE_ERROR);
                 }
             }
         }

@@ -22,7 +22,7 @@ import androidx.core.app.NotificationCompat
 import cc.calliope.mini.R
 import cc.calliope.mini.ui.activity.NotificationActivity
 import cc.calliope.mini.core.service.GattStatus
-import cc.calliope.mini.core.state.ApplicationStateHandler
+import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.Notification
 import cc.calliope.mini.core.state.Progress
 import cc.calliope.mini.core.state.State
@@ -185,7 +185,7 @@ class PartialFlashingService : Service() {
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "Service created")
-        ApplicationStateHandler.updateState(State.STATE_BUSY)
+        AppStateRepository.updateState(State.STATE_BUSY)
         startForegroundWithNotification()
     }
 
@@ -264,7 +264,7 @@ class PartialFlashingService : Service() {
     }
 
     private suspend fun startPartialFlashing() {
-        ApplicationStateHandler.updateNotification(Notification.INFO, getString(R.string.flashing_device_connecting))
+        AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_device_connecting))
 
         val result = withContext(Dispatchers.IO) {
             try {
@@ -278,18 +278,18 @@ class PartialFlashingService : Service() {
         when (result) {
             RESULT_SUCCESS -> {
                 Log.i(TAG, "Partial flashing completed successfully")
-                ApplicationStateHandler.updateProgress(Progress.PROGRESS_COMPLETED)
-                ApplicationStateHandler.updateNotification(Notification.INFO, getString(R.string.flashing_completed))
+                AppStateRepository.updateProgress(Progress.PROGRESS_COMPLETED)
+                AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_completed))
                 finishWithResult(true)
             }
             RESULT_ATTEMPT_DFU -> {
                 Log.w(TAG, "Partial flashing not available, fallback to DFU")
-                ApplicationStateHandler.updateNotification(Notification.WARNING, getString(R.string.partial_flashing_failed))
+                AppStateRepository.updateNotification(Notification.WARNING, getString(R.string.partial_flashing_failed))
                 finishWithResult(false)
             }
             else -> {
                 Log.e(TAG, "Partial flashing failed")
-                ApplicationStateHandler.updateNotification(Notification.ERROR, getString(R.string.partial_flashing_failed))
+                AppStateRepository.updateNotification(Notification.ERROR, getString(R.string.partial_flashing_failed))
                 finishWithResult(false)
             }
         }
@@ -316,7 +316,7 @@ class PartialFlashingService : Service() {
         }
 
         // Step 2: Check device mode and prepare for flashing
-        ApplicationStateHandler.updateNotification(Notification.INFO, getString(R.string.flashing_process_starting))
+        AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_process_starting))
         if (!prepareDeviceForFlashing()) {
             Log.e(TAG, "Failed to prepare device")
             return RESULT_ATTEMPT_DFU
@@ -826,8 +826,8 @@ class PartialFlashingService : Service() {
 
         val startTime = SystemClock.elapsedRealtime()
 
-        ApplicationStateHandler.updateState(State.STATE_FLASHING)
-        ApplicationStateHandler.updateNotification(Notification.INFO, getString(R.string.flashing_uploading))
+        AppStateRepository.updateState(State.STATE_FLASHING)
+        AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_uploading))
 
         try {
             val hex = HexUtils(filePath!!)
@@ -851,7 +851,7 @@ class PartialFlashingService : Service() {
             Log.d(TAG, "Found data at line ${dataPos.line}, offset ${dataPos.part}")
 
             // Read memory map from device
-            ApplicationStateHandler.updateNotification(Notification.INFO, getString(R.string.flashing_firmware_validating))
+            AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_firmware_validating))
             codeStartAddress = 0
             codeEndAddress = 0
             dalStartAddress = 0
@@ -874,7 +874,7 @@ class PartialFlashingService : Service() {
             // partial flash and falls back to full DFU.
             if (dalStartAddress == 0L && dalEndAddress == 0L) {
                 Log.w(TAG, "DAL region reports zero range — device has no partial-flash layout table (likely blocks-runtime), falling back to full DFU")
-                ApplicationStateHandler.updateNotification(
+                AppStateRepository.updateNotification(
                     Notification.INFO,
                     getString(R.string.partial_flashing_declined_no_layout_table)
                 )
@@ -883,7 +883,7 @@ class PartialFlashingService : Service() {
 
             if (codeStartAddress == 0L || codeEndAddress <= codeStartAddress) {
                 Log.w(TAG, "MakeCode region zero/invalid — partial-flash layout malformed, falling back to full DFU")
-                ApplicationStateHandler.updateNotification(
+                AppStateRepository.updateNotification(
                     Notification.INFO,
                     getString(R.string.partial_flashing_declined_invalid_memory_map)
                 )
@@ -901,7 +901,7 @@ class PartialFlashingService : Service() {
             }
             if (dalHash == null) {
                 Log.w(TAG, "Device DAL hash missing — cannot verify runtime compatibility, falling back to full DFU")
-                ApplicationStateHandler.updateNotification(
+                AppStateRepository.updateNotification(
                     Notification.INFO,
                     getString(R.string.partial_flashing_declined_device_hash_unavailable)
                 )
@@ -909,7 +909,7 @@ class PartialFlashingService : Service() {
             }
             if (fileHash != dalHash) {
                 Log.e(TAG, "Hash mismatch: file=$fileHash, device=$dalHash — falling back to full DFU")
-                ApplicationStateHandler.updateNotification(
+                AppStateRepository.updateNotification(
                     Notification.INFO,
                     getString(R.string.partial_flashing_declined_runtime_mismatch, fileHash, dalHash)
                 )
@@ -1019,7 +1019,7 @@ class PartialFlashingService : Service() {
 
                 // Update progress
                 val percent = (100 * lineCount / numOfLines.coerceAtLeast(1))
-                ApplicationStateHandler.updateProgress(percent)
+                AppStateRepository.updateProgress(percent)
 
                 // Wait for acknowledgment from device (uses separate lock)
                 synchronized(packetLock) {
@@ -1069,7 +1069,7 @@ class PartialFlashingService : Service() {
         // V2 is slower and needs more time before we disconnect
         Thread.sleep(if (isNrf52) 100 else 500)
 
-        ApplicationStateHandler.updateProgress(100)
+        AppStateRepository.updateProgress(100)
         return RESULT_SUCCESS
     }
 
@@ -1475,7 +1475,7 @@ class PartialFlashingService : Service() {
         }
         resultReceiver?.send(RESULT_OK, bundle)
 
-        ApplicationStateHandler.updateState(if (success) State.STATE_IDLE else State.STATE_BUSY)
+        AppStateRepository.updateState(if (success) State.STATE_IDLE else State.STATE_BUSY)
         stopSelf()
     }
 

@@ -47,7 +47,6 @@ import cc.calliope.mini.ui.dialog.pattern.PatternDialogFragment;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.Progress;
 import cc.calliope.mini.core.state.State;
-import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.Permission;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.utils.WindowUtils;
@@ -103,7 +102,7 @@ public abstract class BaseActivity extends AppCompatActivity
         // STATE_CONTROL on every rotation, deep link or OpenHexActivity
         // launch, breaking the flash mutex and re-enabling scanning mid-DFU.
         if (AppStateRepository.getState().getValue() == null) {
-            ApplicationStateHandler.updateState(State.STATE_IDLE);
+            AppStateRepository.updateState(State.STATE_IDLE);
         }
         RepoObserve.state(this, stateObserver);
         RepoObserve.notifications(this, notificationObserver);

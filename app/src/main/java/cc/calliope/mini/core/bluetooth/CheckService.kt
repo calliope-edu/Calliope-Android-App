@@ -11,7 +11,6 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.preference.PreferenceManager
 import cc.calliope.mini.core.state.AppStateRepository
-import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Permission
@@ -222,7 +221,7 @@ class CheckService : Service() {
     private fun updateAvailability(available: Boolean) {
         if (isDeviceAvailable != available) {
             isDeviceAvailable = available
-            ApplicationStateHandler.updateDeviceAvailability(available)
+            AppStateRepository.updateDeviceAvailability(available)
         }
     }
 

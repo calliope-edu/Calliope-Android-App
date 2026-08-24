@@ -18,7 +18,6 @@ import androidx.preference.PreferenceManager
 import cc.calliope.mini.R
 import cc.calliope.mini.core.service.FlashingService
 import cc.calliope.mini.core.state.AppStateRepository
-import cc.calliope.mini.core.state.ApplicationStateHandler
 import cc.calliope.mini.core.state.Notification
 import cc.calliope.mini.core.state.Progress
 import cc.calliope.mini.core.state.State
@@ -61,7 +60,7 @@ class BridgeController(
 
     /**
      * Whether we've told the app it's in a live-control session. Drives the
-     * native movable FAB colour via [ApplicationStateHandler], exactly like
+     * native movable FAB colour via [AppStateRepository], exactly like
      * the cardboard editor and the Scratch Link bridge: STATE_CONTROL while
      * the campus session holds a GATT connection, STATE_IDLE once it drops.
      * Main-thread only.
@@ -71,14 +70,14 @@ class BridgeController(
     private fun reportControl() {
         if (!controlReported) {
             controlReported = true
-            ApplicationStateHandler.updateState(State.STATE_CONTROL)
+            AppStateRepository.updateState(State.STATE_CONTROL)
         }
     }
 
     private fun reportIdle() {
         if (controlReported) {
             controlReported = false
-            ApplicationStateHandler.updateState(State.STATE_IDLE)
+            AppStateRepository.updateState(State.STATE_IDLE)
         }
     }
 
@@ -375,7 +374,7 @@ class BridgeController(
     private var pendingFlashReplyId: String? = null
     /** True from the moment we kick `FlashingService` until either a
      *  `STATE_IDLE` follow-up to `STATE_FLASHING` or a `STATE_ERROR`
-     *  arrives. Acts as the filter for the global `ApplicationStateHandler`
+     *  arrives. Acts as the filter for the global state
      *  observers so we don't react to flashes that started outside the
      *  proxy (legacy editors). */
     private var flashInFlight: Boolean = false

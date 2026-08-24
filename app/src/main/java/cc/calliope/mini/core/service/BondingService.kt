@@ -17,7 +17,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import cc.calliope.mini.R
-import cc.calliope.mini.core.state.ApplicationStateHandler
+import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.Notification
 import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.bluetooth.BluetoothUtils
@@ -216,7 +216,7 @@ open class BondingService : Service() {
         Log.d(TAG, "Bonding Service destroyed")
         if(errorCounter == 0) {
             Log.d(TAG, "Device version: $deviceVersion")
-            ApplicationStateHandler.updateState(State.STATE_IDLE)
+            AppStateRepository.updateState(State.STATE_IDLE)
             val versionString = when (deviceVersion) {
                 MINI_V2 -> getString(R.string.mini_version_1)  // Use R.string.mini_version_1 for version 1
                 MINI_V3 -> getString(R.string.mini_version_2)  // Use R.string.mini_version_2 for version 2
@@ -225,7 +225,7 @@ open class BondingService : Service() {
 
             // Get the full message string from resources
             val message = getString(R.string.info_mini_conected, versionString)
-            ApplicationStateHandler.updateNotification(Notification.INFO, message)
+            AppStateRepository.updateNotification(Notification.INFO, message)
 
             Preference.putInt(applicationContext, Constants.CURRENT_DEVICE_VERSION, deviceVersion)
         } else {
@@ -470,7 +470,7 @@ open class BondingService : Service() {
     }
 
     private fun notifyError(message: Int) {
-        ApplicationStateHandler.updateNotification(Notification.ERROR, message)
-        ApplicationStateHandler.updateState(State.STATE_ERROR)
+        AppStateRepository.updateNotification(Notification.ERROR, message)
+        AppStateRepository.updateState(State.STATE_ERROR)
     }
 }

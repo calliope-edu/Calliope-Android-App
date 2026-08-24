@@ -29,7 +29,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
 import cc.calliope.mini.R
-import cc.calliope.mini.core.state.ApplicationStateHandler
+import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.Notification.INFO
 import cc.calliope.mini.core.state.State
 import cc.calliope.mini.ui.activity.CameraPermissionActivity
@@ -299,8 +299,8 @@ class WebBleFragment : Fragment() {
                 BluetoothProfile.STATE_CONNECTED -> {
                     // Report the control session only once the link is real,
                     // not optimistically at connectGatt() time.
-                    ApplicationStateHandler.updateNotification(INFO, R.string.flashing_device_connected)
-                    ApplicationStateHandler.updateState(State.STATE_CONTROL)
+                    AppStateRepository.updateNotification(INFO, R.string.flashing_device_connected)
+                    AppStateRepository.updateState(State.STATE_CONTROL)
                     try { g.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH) } catch (_: Exception) {}
                     g.requestMtu(247)
                 }
@@ -312,7 +312,7 @@ class WebBleFragment : Fragment() {
                     gatt = null
                     // A dropped link ends the control session — without this the
                     // FAB stayed orange and the Connect menu item stayed hidden.
-                    ApplicationStateHandler.updateState(State.STATE_IDLE)
+                    AppStateRepository.updateState(State.STATE_IDLE)
                 }
             }
         }
@@ -429,6 +429,6 @@ class WebBleFragment : Fragment() {
         closeGatt("onDestroyView")
         try { (webView.parent as? ViewGroup)?.removeView(webView) } catch (_: Throwable) {}
         webView.destroy()
-        ApplicationStateHandler.updateState(State.STATE_IDLE)
+        AppStateRepository.updateState(State.STATE_IDLE)
     }
 }
