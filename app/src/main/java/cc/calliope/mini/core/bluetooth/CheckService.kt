@@ -51,6 +51,10 @@ class CheckService : Service() {
     private val canScan: Boolean
         get() = isAppInForeground && isStateIdle && macAddress.isNotEmpty()
 
+    /** Last logged canScan value — the gate is re-evaluated far more often
+     *  than it changes, so log transitions only. */
+    private var lastLoggedCanScan: Boolean? = null
+
     private var stateJob: Job? = null
 
     private fun onStateChanged(state: State?) {
@@ -131,8 +135,11 @@ class CheckService : Service() {
         val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
         macAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
 
-        Log.d(TAG, "updateScanningState: canScan=$canScan " +
-                "(foreground=$isAppInForeground, idle=$isStateIdle, mac='$macAddress', scanJob=${scanJob != null})")
+        if (lastLoggedCanScan != canScan) {
+            lastLoggedCanScan = canScan
+            Log.d(TAG, "scan gate: canScan=$canScan " +
+                    "(foreground=$isAppInForeground, idle=$isStateIdle, mac='$macAddress')")
+        }
 
         if (canScan) {
             startScan()

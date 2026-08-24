@@ -1329,7 +1329,7 @@ class PartialFlashingService : Service() {
         }
 
         override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
-            Log.d(TAG, "onCharacteristicWrite: status=$status")
+            if (status != BluetoothGatt.GATT_SUCCESS) Log.w(TAG, "onCharacteristicWrite: status=$status")
             characteristicWritten = status == BluetoothGatt.GATT_SUCCESS
 
             synchronized(operationLock) {
@@ -1350,7 +1350,6 @@ class PartialFlashingService : Service() {
         private fun handleCharacteristicChanged(value: ByteArray) {
             if (value.isEmpty()) return
 
-            Log.d(TAG, "Notification received: ${bytesToHex(value)}")
 
             when (value[0]) {
                 STATUS_REQUEST -> {
@@ -1414,7 +1413,7 @@ class PartialFlashingService : Service() {
                     synchronized(packetLock) {
                         if (value.size >= 2) {
                             packetState = value[1]
-                            Log.d(TAG, "Flash response: ${String.format("%02X", packetState)}")
+                            if (packetState != 0xFF.toByte()) Log.d(TAG, "Flash response: ${String.format("%02X", packetState)}")
                         }
                         packetLock.notifyAll()
                     }

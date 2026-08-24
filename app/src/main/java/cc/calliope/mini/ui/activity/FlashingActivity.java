@@ -37,26 +37,23 @@ public class FlashingActivity extends AppCompatActivity {
     private BoardProgressBar progressBar;
     private final Handler timerHandler = new Handler(Looper.getMainLooper());
     private final Runnable deferredFinish = () -> {
-        Log.d(TAG, "deferredFinish: executing finish(), this=" + this.hashCode());
+        Log.d(TAG, "deferredFinish: executing finish()");
         finish();
     };
     private boolean flashingCompleted = false;
 
     private final Consumer<Notification> notificationObserver = notification -> {
-        Log.d(TAG, "notificationObserver: setting status to: " + notification.getMessage());
         status.setText(notification.getMessage());
     };
 
     private final Consumer<Progress> progressObserver = new Consumer<>() {
         @Override
         public void accept(Progress progress) {
-            Log.d(TAG, "progressObserver: progress=" + progress);
             if (progress == null) {
                 return;
             }
 
             int percent = progress.getValue();
-            Log.d(TAG, "progressObserver: percent=" + percent + ", flashingCompleted=" + flashingCompleted);
 
             // The repository's progress flow has replay = 0, so a recreated
             // activity can no longer receive a stale PROGRESS_COMPLETED from
@@ -93,26 +90,22 @@ public class FlashingActivity extends AppCompatActivity {
                     break;
                 default:
                     if (percent >= 0 && percent <= 100) {
-                        Log.d(TAG, "progressObserver: uploading percent=" + percent);
                         status.setText(R.string.flashing_uploading);
                         title.setText(String.format(getString(R.string.flashing_percent), percent));
                     } else {
-                        Log.d(TAG, "progressObserver: unknown percent=" + percent);
+                        Log.w(TAG, "unknown progress value: " + percent);
                     }
                     break;
             }
-            Log.d(TAG, "progressObserver: setting progressBar to " + percent);
             progressBar.setProgress(percent);
         }
     };
 
     private final Consumer<State> stateObserver = state -> {
-        Log.d(TAG, "stateObserver: state=" + state);
         if (state == null) {
             return;
         }
 
-        Log.d(TAG, "stateObserver: stateType=" + state.getType());
         if (state.getType() == STATE_ERROR) {
             Error error = AppStateRepository.getError().getValue();
             Log.d(TAG, "stateObserver: STATE_ERROR, error=" + error);
@@ -127,7 +120,7 @@ public class FlashingActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(TAG, "onCreate: savedInstanceState=" + savedInstanceState + ", this=" + this.hashCode());
+        Log.d(TAG, "onCreate" + (savedInstanceState != null ? " (recreated)" : ""));
 
         binding = ActivityDfuBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -139,50 +132,34 @@ public class FlashingActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                Log.d(TAG, "onBackPressed: this=" + FlashingActivity.this.hashCode());
+                
                 finish();
             }
         });
 
         flashingCompleted = false;
-        Log.d(TAG, "onCreate: flashingCompleted reset to false");
 
         RepoObserve.notifications(this, notificationObserver);
         RepoObserve.progress(this, progressObserver);
         RepoObserve.state(this, stateObserver);
 
         binding.retryButton.setOnClickListener(this::onRetryClicked);
-        Log.d(TAG, "onCreate: observers registered");
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Log.d(TAG, "onDestroy: this=" + this.hashCode() + ", flashingCompleted=" + flashingCompleted);
+        Log.d(TAG, "onDestroy: flashingCompleted=" + flashingCompleted);
         binding = null;
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        Log.d(TAG, "onResume: this=" + this.hashCode() + ", flashingCompleted=" + flashingCompleted);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        Log.d(TAG, "onPause: this=" + this.hashCode() + ", flashingCompleted=" + flashingCompleted);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        Log.d(TAG, "onStop: this=" + this.hashCode() + ", flashingCompleted=" + flashingCompleted);
-
         // If flashing completed and activity goes to background, finish immediately
         // User can't see the success message anyway, so no point keeping it open
         if (flashingCompleted) {
-            Log.d(TAG, "onStop: flashingCompleted=true, finishing immediately");
+            Log.d(TAG, "backgrounded after completion, finishing immediately");
             timerHandler.removeCallbacks(deferredFinish);
             finish();
         }
@@ -190,7 +167,7 @@ public class FlashingActivity extends AppCompatActivity {
 
 
     private void onRetryClicked(View view) {
-        Log.d(TAG, "onRetryClicked: this=" + this.hashCode());
+        Log.d(TAG, "retry requested");
         if (!Boolean.TRUE.equals(AppStateRepository.getDeviceAvailable().getValue())) {
             AppStateRepository.updateNotification(ERROR, R.string.error_no_connected);
             return;
@@ -211,9 +188,8 @@ public class FlashingActivity extends AppCompatActivity {
     }
 
     private void finishActivity() {
-        Log.d(TAG, "finishActivity: this=" + this.hashCode() + ", setting flashingCompleted=true");
+        Log.d(TAG, "flashing completed, deferred finish in " + DELAY_TO_FINISH_ACTIVITY + "ms");
         flashingCompleted = true;
         timerHandler.postDelayed(deferredFinish, DELAY_TO_FINISH_ACTIVITY);
-        Log.d(TAG, "finishActivity: timer scheduled for " + DELAY_TO_FINISH_ACTIVITY + "ms");
     }
 }
