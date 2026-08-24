@@ -36,6 +36,7 @@ public class App extends Application {
         // colors.xml is pinned so the dark theme always shows the classic Calliope
         // navy (#131720) used on the official sites, instead of the wallpaper tint.
         AppContext.initialize(this);
+        cc.calliope.mini.core.state.AppStateRepository.initialize(this);
         migrateSnakeFromMakecodeToPython();
         copyFilesToInternalStorage();
 
