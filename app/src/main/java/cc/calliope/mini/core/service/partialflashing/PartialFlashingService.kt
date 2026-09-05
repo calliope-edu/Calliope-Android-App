@@ -24,8 +24,8 @@ import cc.calliope.mini.ui.activity.NotificationActivity
 import cc.calliope.mini.core.service.GattStatus
 import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.Notification
-import cc.calliope.mini.core.state.Progress
-import cc.calliope.mini.core.state.State
+import cc.calliope.mini.core.state.FlashPhase
+import cc.calliope.mini.core.state.FlashResult
 import cc.calliope.mini.utils.Permission
 import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import kotlinx.coroutines.*
@@ -185,7 +185,6 @@ class PartialFlashingService : Service() {
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "Service created")
-        AppStateRepository.updateState(State.STATE_BUSY)
         startForegroundWithNotification()
     }
 
@@ -264,6 +263,7 @@ class PartialFlashingService : Service() {
     }
 
     private suspend fun startPartialFlashing() {
+        AppStateRepository.flashPhase(FlashPhase.CONNECTING)
         AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_device_connecting))
 
         val result = withContext(Dispatchers.IO) {
@@ -278,8 +278,8 @@ class PartialFlashingService : Service() {
         when (result) {
             RESULT_SUCCESS -> {
                 Log.i(TAG, "Partial flashing completed successfully")
-                AppStateRepository.updateProgress(Progress.PROGRESS_COMPLETED)
                 AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_completed))
+                AppStateRepository.finishFlash(FlashResult.Success)
                 finishWithResult(true)
             }
             RESULT_ATTEMPT_DFU -> {
@@ -316,6 +316,7 @@ class PartialFlashingService : Service() {
         }
 
         // Step 2: Check device mode and prepare for flashing
+        AppStateRepository.flashPhase(FlashPhase.PREPARING)
         AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_process_starting))
         if (!prepareDeviceForFlashing()) {
             Log.e(TAG, "Failed to prepare device")
@@ -746,6 +747,7 @@ class PartialFlashingService : Service() {
         if (currentMode == MODE_APPLICATION) {
             // Need to reboot device into pairing mode
             Log.d(TAG, "Sending reset command to enter pairing mode")
+            AppStateRepository.flashPhase(FlashPhase.REBOOTING)
 
             // Reset disconnect tracking
             disconnectedByDevice = false
@@ -826,7 +828,7 @@ class PartialFlashingService : Service() {
 
         val startTime = SystemClock.elapsedRealtime()
 
-        AppStateRepository.updateState(State.STATE_FLASHING)
+        AppStateRepository.flashPhase(FlashPhase.UPLOADING)
         AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_uploading))
 
         try {
@@ -1019,7 +1021,7 @@ class PartialFlashingService : Service() {
 
                 // Update progress
                 val percent = (100 * lineCount / numOfLines.coerceAtLeast(1))
-                AppStateRepository.updateProgress(percent)
+                AppStateRepository.flashProgress(percent)
 
                 // Wait for acknowledgment from device (uses separate lock)
                 synchronized(packetLock) {
@@ -1069,7 +1071,7 @@ class PartialFlashingService : Service() {
         // V2 is slower and needs more time before we disconnect
         Thread.sleep(if (isNrf52) 100 else 500)
 
-        AppStateRepository.updateProgress(100)
+        AppStateRepository.flashProgress(100)
         return RESULT_SUCCESS
     }
 
@@ -1473,8 +1475,8 @@ class PartialFlashingService : Service() {
             putBoolean("result", success)
         }
         resultReceiver?.send(RESULT_OK, bundle)
-
-        AppStateRepository.updateState(if (success) State.STATE_IDLE else State.STATE_BUSY)
+        // Session state is owned by FlashingService / finishFlash: a failure
+        // here is not terminal (FlashingService falls back to full DFU).
         stopSelf()
     }
 

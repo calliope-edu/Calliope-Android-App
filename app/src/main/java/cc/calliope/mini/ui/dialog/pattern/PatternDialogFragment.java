@@ -36,7 +36,6 @@ import cc.calliope.mini.core.service.BondingService;
 import cc.calliope.mini.ui.views.PatternMatrixView;
 import cc.calliope.mini.core.bluetooth.ScanViewModel;
 import cc.calliope.mini.core.state.Notification;
-import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.utils.bluetooth.BluetoothUtils;
 import cc.calliope.mini.utils.bluetooth.ConnectedDevicesManager;
@@ -199,7 +198,7 @@ public class PatternDialogFragment extends DialogFragment {
 
     private void onActionClick(View view){
         if(currentDevice != null && currentDevice.isActual()){
-            AppStateRepository.updateState(State.STATE_BUSY);
+            AppStateRepository.setBusy();
             AppStateRepository.updateNotification(Notification.WARNING, R.string.flashing_device_connecting);
 
             //removeBond(currentDevice.getAddress());

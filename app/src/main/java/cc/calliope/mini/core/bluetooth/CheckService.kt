@@ -10,8 +10,8 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.preference.PreferenceManager
+import cc.calliope.mini.core.state.AppMode
 import cc.calliope.mini.core.state.AppStateRepository
-import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Permission
 import kotlinx.coroutines.CoroutineScope
@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -57,14 +58,14 @@ class CheckService : Service() {
 
     private var stateJob: Job? = null
 
-    private fun onStateChanged(state: State?) {
-        // null = repository not seeded yet; the default (idle) applies.
-        if (state == null) return
+    /** Scanning is allowed only when nothing is running (no flash, no
+     *  bonding) and no editor holds a live BLE session with the board. */
+    private fun onStateChanged(mode: AppMode, control: Boolean) {
         val wasIdle = isStateIdle
-        isStateIdle = state.type == State.STATE_IDLE || state.type == State.STATE_ERROR
+        isStateIdle = (mode is AppMode.Idle || mode is AppMode.Error) && !control
 
         if (isStateIdle != wasIdle) {
-            Log.d(TAG, "State changed: ${if (isStateIdle) "IDLE/ERROR" else "BUSY/FLASHING"}")
+            Log.d(TAG, "State changed: ${if (isStateIdle) "idle" else "busy (mode=$mode, control=$control)"}")
             updateScanningState()
         }
     }
@@ -110,7 +111,9 @@ class CheckService : Service() {
         // Observe application state and lifecycle on main thread
         mainHandler.post {
             stateJob = serviceScope.launch {
-                AppStateRepository.state.collect { onStateChanged(it) }
+                combine(AppStateRepository.mode, AppStateRepository.control) { mode, control ->
+                    mode to control
+                }.collect { (mode, control) -> onStateChanged(mode, control) }
             }
             ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleObserver)
 

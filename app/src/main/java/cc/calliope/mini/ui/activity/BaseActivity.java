@@ -1,6 +1,5 @@
 package cc.calliope.mini.ui.activity;
 
-import static cc.calliope.mini.core.state.State.STATE_IDLE;
 
 import android.animation.ObjectAnimator;
 import android.bluetooth.BluetoothAdapter;
@@ -44,9 +43,10 @@ import cc.calliope.mini.ui.popup.PopupAdapter;
 import cc.calliope.mini.ui.popup.PopupItem;
 import cc.calliope.mini.R;
 import cc.calliope.mini.ui.dialog.pattern.PatternDialogFragment;
+import cc.calliope.mini.core.state.AppMode;
+import cc.calliope.mini.core.state.FlashEvent;
+import cc.calliope.mini.core.state.FlashPhase;
 import cc.calliope.mini.core.state.Notification;
-import cc.calliope.mini.core.state.Progress;
-import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.utils.Permission;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.utils.WindowUtils;
@@ -71,7 +71,9 @@ public abstract class BaseActivity extends AppCompatActivity
     private int popupMenuHeight;
     private ObjectAnimator rotationAnimator;
 
-    private State currentState = new State(STATE_IDLE);
+    private AppMode currentMode = AppMode.Idle.INSTANCE;
+    private boolean controlActive = false;
+    private boolean deviceAvailable = false;
 
     // Store a reference to our SnowfallView so we can access it in onShakeDetected()
     protected SnowfallView snowfallView;
@@ -97,16 +99,12 @@ public abstract class BaseActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Seed the state only on the very first activity of the process.
-        // Unconditional reset here used to wipe a live STATE_FLASHING /
-        // STATE_CONTROL on every rotation, deep link or OpenHexActivity
-        // launch, breaking the flash mutex and re-enabling scanning mid-DFU.
-        if (AppStateRepository.getState().getValue() == null) {
-            AppStateRepository.updateState(State.STATE_IDLE);
-        }
-        RepoObserve.state(this, stateObserver);
+        // The repository owns state transitions; an activity only renders
+        // them (the FAB colour, spinner, progress ring and snackbars).
+        RepoObserve.mode(this, modeObserver);
+        RepoObserve.control(this, controlObserver);
         RepoObserve.notifications(this, notificationObserver);
-        RepoObserve.progress(this, progressObserver);
+        RepoObserve.flashEvents(this, flashEventObserver);
         RepoObserve.deviceAvailable(this, deviceAvailabilityObserver);
 
         // ------------- SENSOR INITIALIZATION (SHAKE DETECTION) -------------
@@ -133,7 +131,7 @@ public abstract class BaseActivity extends AppCompatActivity
     }
 
     // -------------------------------------------------
-    // Button rotation animation (when STATE_BUSY)
+    // Button rotation animation (bonding, pre-upload flash phases)
     private void startRotationAnimation(final View view) {
         rotationAnimator = ObjectAnimator.ofFloat(view, "rotation", 0f, 360f);
         rotationAnimator.setDuration(2000);
@@ -152,46 +150,44 @@ public abstract class BaseActivity extends AppCompatActivity
     }
     // -------------------------------------------------
 
-    // STATE OBSERVER
-    private final Consumer<State> stateObserver = new Consumer<>() {
-        @Override
-        public void accept(State state) {
-            if (state == null) {
-                return;
-            }
-
-            if (currentState.getType() != state.getType()) {
-                if (currentState.getType() == State.STATE_BUSY) {
-                    // Leaving STATE_BUSY
-                    stopRotationAnimation(patternFab);
-                } else if (state.getType() == State.STATE_BUSY) {
-                    // Entering STATE_BUSY
-                    startRotationAnimation(patternFab);
-                }
-            }
-            currentState = state;
-
-            switch (state.getType()) {
-                case State.STATE_BUSY -> {
-                    patternFab.setColor(R.color.state_busy);
-                }
-                case State.STATE_FLASHING -> {
-                    patternFab.setColor(R.color.state_control);
-                }
-                case State.STATE_CONTROL -> {
-                    patternFab.setColor(R.color.state_script);
-                }
-                case State.STATE_ERROR -> {
-                    Boolean available = AppStateRepository.getDeviceAvailable().getValue();
-                    patternFab.setColor(Boolean.TRUE.equals(available) ? R.color.state_connected : R.color.status_error);
-                }
-                case State.STATE_IDLE -> {
-                    Boolean isAvailable = AppStateRepository.getDeviceAvailable().getValue();
-                    patternFab.setColor(Boolean.TRUE.equals(isAvailable) ? R.color.state_connected : R.color.brand_accent);
-                }
-            }
+    // MODE OBSERVER
+    private final Consumer<AppMode> modeObserver = mode -> {
+        boolean wasSpinning = AppMode.isSpinning(currentMode);
+        boolean spinning = AppMode.isSpinning(mode);
+        if (wasSpinning && !spinning) {
+            stopRotationAnimation(patternFab);
+        } else if (!wasSpinning && spinning) {
+            startRotationAnimation(patternFab);
         }
+        currentMode = mode;
+        renderFab();
     };
+
+    // CONTROL OBSERVER (live editor BLE session)
+    private final Consumer<Boolean> controlObserver = active -> {
+        controlActive = active;
+        renderFab();
+    };
+
+    /**
+     * FAB colour from (mode, control, device availability). A running flash
+     * or bonding wins over a control session; the rest is idle/error tinted
+     * by whether the board is in range.
+     */
+    private void renderFab() {
+        if (currentMode instanceof AppMode.Flashing flashing
+                && flashing.getPhase().compareTo(FlashPhase.UPLOADING) >= 0) {
+            patternFab.setColor(R.color.state_control);
+        } else if (AppMode.isSpinning(currentMode)) {
+            patternFab.setColor(R.color.state_busy);
+        } else if (controlActive) {
+            patternFab.setColor(R.color.state_script);
+        } else if (currentMode instanceof AppMode.Error) {
+            patternFab.setColor(deviceAvailable ? R.color.state_connected : R.color.status_error);
+        } else {
+            patternFab.setColor(deviceAvailable ? R.color.state_connected : R.color.brand_accent);
+        }
+    }
 
     // NOTIFICATION OBSERVER
     private final Consumer<Notification> notificationObserver = notification -> {
@@ -205,15 +201,19 @@ public abstract class BaseActivity extends AppCompatActivity
         }
     };
 
-    // PROGRESS OBSERVER
-    private final Consumer<Progress> progressObserver =
-            progress -> patternFab.setProgress(progress.getValue());
+    // FLASH EVENT OBSERVER — the progress ring around the FAB
+    private final Consumer<FlashEvent> flashEventObserver = event -> {
+        if (event instanceof FlashEvent.Progress progress) {
+            patternFab.setProgress(progress.getPercent());
+        } else if (event instanceof FlashEvent.Done) {
+            patternFab.setProgress(0);
+        }
+    };
 
     // DEVICE AVAILABILITY OBSERVER
     private final Consumer<Boolean> deviceAvailabilityObserver = isAvailable -> {
-        if (currentState.getType() == State.STATE_IDLE || currentState.getType() == State.STATE_ERROR) {
-            patternFab.setColor(isAvailable ? R.color.state_connected : R.color.brand_accent);
-        }
+        deviceAvailable = isAvailable;
+        renderFab();
     };
 
 
@@ -349,12 +349,8 @@ public abstract class BaseActivity extends AppCompatActivity
     }
 
     public void onFabClick(View view) {
-        State state = AppStateRepository.getState().getValue();
-        if (state == null) {
-            return;
-        }
-
-        if (state.getType() == State.STATE_FLASHING || state.getType() == State.STATE_BUSY) {
+        AppMode mode = AppStateRepository.getMode().getValue();
+        if (mode instanceof AppMode.Flashing || mode instanceof AppMode.Busy) {
             startFlashingActivity();
         } else {
             createPopupMenu(view);
@@ -398,17 +394,17 @@ public abstract class BaseActivity extends AppCompatActivity
     }
 
     public void addPopupMenuItems(List<PopupItem> popupItems) {
-        // While controlling the mini (STATE_CONTROL) we're already linked to it,
-        // so pairing to another device makes no sense — hide the connect item.
-        State state = AppStateRepository.getState().getValue();
-        if (state == null || state.getType() != State.STATE_CONTROL) {
+        // While controlling the mini (a live editor session) we're already
+        // linked to it, so pairing to another device makes no sense — hide
+        // the connect item.
+        if (!AppStateRepository.getControl().getValue()) {
             popupItems.add(new PopupItem(R.string.menu_fab_connect, R.drawable.ic_connect));
         }
     }
 
     public void onPopupMenuItemClick(AdapterView<?> parent, View view, int position, long id) {
         // Dispatch by item identity, not position: the connect item is hidden
-        // in STATE_CONTROL, which shifts the remaining items' positions.
+        // during a control session, which shifts the remaining items' positions.
         popupWindow.dismiss();
         if (!(parent.getItemAtPosition(position) instanceof PopupItem item)) {
             return;

@@ -31,7 +31,6 @@ import androidx.preference.PreferenceManager
 import cc.calliope.mini.R
 import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.Notification.INFO
-import cc.calliope.mini.core.state.State
 import cc.calliope.mini.ui.activity.CameraPermissionActivity
 import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import cc.calliope.mini.ui.model.EditorType
@@ -300,7 +299,7 @@ class WebBleFragment : Fragment() {
                     // Report the control session only once the link is real,
                     // not optimistically at connectGatt() time.
                     AppStateRepository.updateNotification(INFO, R.string.flashing_device_connected)
-                    AppStateRepository.updateState(State.STATE_CONTROL)
+                    AppStateRepository.setControl(true)
                     try { g.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH) } catch (_: Exception) {}
                     g.requestMtu(247)
                 }
@@ -312,7 +311,7 @@ class WebBleFragment : Fragment() {
                     gatt = null
                     // A dropped link ends the control session — without this the
                     // FAB stayed orange and the Connect menu item stayed hidden.
-                    AppStateRepository.updateState(State.STATE_IDLE)
+                    AppStateRepository.setControl(false)
                 }
             }
         }
@@ -429,6 +428,6 @@ class WebBleFragment : Fragment() {
         closeGatt("onDestroyView")
         try { (webView.parent as? ViewGroup)?.removeView(webView) } catch (_: Throwable) {}
         webView.destroy()
-        AppStateRepository.updateState(State.STATE_IDLE)
+        AppStateRepository.setControl(false)
     }
 }
