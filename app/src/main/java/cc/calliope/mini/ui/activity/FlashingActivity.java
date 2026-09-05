@@ -19,6 +19,7 @@ import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.core.state.AppMode;
 import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.core.state.FlashEvent;
+import cc.calliope.mini.core.state.FlashMode;
 import cc.calliope.mini.core.state.FlashResult;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.RepoObserve;
@@ -71,7 +72,11 @@ public class FlashingActivity extends AppCompatActivity {
                     status.setText(R.string.flashing_device_connecting);
                     progressBar.showConnecting();
                 }
-                case REBOOTING -> status.setText(R.string.flashing_enabling_dfu_mode);
+                // Same phase, different mechanism: partial flashing resets the
+                // board into its pairing mode, Nordic DFU into the bootloader.
+                case REBOOTING -> status.setText(flashing.getMode() == FlashMode.PARTIAL
+                        ? R.string.flashing_rebooting_partial
+                        : R.string.flashing_enabling_dfu_mode);
                 case UPLOADING -> status.setText(R.string.flashing_uploading);
                 case FINALIZING -> status.setText(R.string.flashing_firmware_validating);
                 case DISCONNECTING -> status.setText(R.string.flashing_device_disconnecting);

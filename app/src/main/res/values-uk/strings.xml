@@ -92,6 +92,7 @@
     <string name="flashing_device_connected">Пристрій під\'єднано</string>
     <string name="flashing_process_starting">Розпочинаємо процес…</string>
     <string name="flashing_enabling_dfu_mode">Увімкнення режиму DFU…</string>
+    <string name="flashing_rebooting_partial">Перезапуск плати для часткової прошивки…</string>
     <string name="flashing_firmware_validating">Перевірка прошивки…</string>
     <string name="flashing_device_disconnecting">Від\'єднання пристрою…</string>
     <string name="flashing_completed">Прошивку завершено</string>

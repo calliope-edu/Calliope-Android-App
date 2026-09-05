@@ -94,6 +94,7 @@
     <string name="flashing_device_connected">Gerät verbunden</string>
     <string name="flashing_process_starting">Prozess startet…</string>
     <string name="flashing_enabling_dfu_mode">DFU-Modus aktivieren…</string>
+    <string name="flashing_rebooting_partial">Board wird für das schnelle Flashen neu gestartet…</string>
     <string name="flashing_firmware_validating">Firmware validieren…</string>
     <string name="flashing_device_disconnecting">Gerät trennt sich…</string>
     <string name="flashing_completed">Flashen abgeschlossen</string>
