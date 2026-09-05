@@ -11,8 +11,10 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile.STATE_CONNECTED
 import android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -49,6 +51,45 @@ open class BondingService : Service() {
 
     private var attempts = 0
     private var numbAttempts = DEFAULT_NUMB_ATTEMPTS
+    /** Reconnects after the board dropped the link itself (status 19 / 8). */
+    private var deviceDisconnects = 0
+    /** The live connection, kept so a bond-state broadcast can continue on it. */
+    private var gatt: BluetoothGatt? = null
+    private var waitingForBond = false
+
+    /**
+     * Firmware that requests pairing on connect (e.g. the Cardboard demos)
+     * puts the link into BOND_BONDING before we see STATE_CONNECTED. The
+     * old code then just waited for the board to drop the link and
+     * reconnected — with firmware that pairs without bonding that is an
+     * endless loop of system pairing dialogs. Continue on the same link the
+     * moment the bond completes instead, and give up on a failed pairing.
+     */
+    private val bondReceiver = object : BroadcastReceiver() {
+        @SuppressWarnings("MissingPermission")
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action != BluetoothDevice.ACTION_BOND_STATE_CHANGED) return
+            val g = gatt ?: return
+            val device: BluetoothDevice? = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+            if (device?.address != g.device.address || !waitingForBond) return
+            when (intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.BOND_NONE)) {
+                BluetoothDevice.BOND_BONDED -> {
+                    Log.i(TAG, "Bonded — continuing with service discovery")
+                    waitingForBond = false
+                    // No extra settle delay here: some firmware drops the link
+                    // ~2.5 s after pairing, and discovery itself takes ~300 ms.
+                    startServiceDiscovery(g)
+                }
+                BluetoothDevice.BOND_NONE -> {
+                    Log.e(TAG, "Pairing failed or was cancelled")
+                    waitingForBond = false
+                    errorCounter++
+                    notifyError(R.string.error_connection_failed)
+                    g.disconnect()
+                }
+            }
+        }
+    }
     private val serviceJob = SupervisorJob()
     private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
     private var deviceVersion: Int = UNIDENTIFIED
@@ -85,13 +126,27 @@ open class BondingService : Service() {
         }
 
         private fun handleDeviceDisconnection(gatt: BluetoothGatt) {
-            Log.w(TAG, "Disconnected by device. Will wait for 2 seconds before attempting to reconnect.")
-            reConnect(gatt.device.address)
+            reconnectAfterDrop(gatt, "Disconnected by device")
         }
 
         private fun handleInsufficientAuthorization(gatt: BluetoothGatt) {
-            Log.w(TAG, "Insufficient authorization")
-            reConnect(gatt.device.address)
+            reconnectAfterDrop(gatt, "Insufficient authorization")
+        }
+
+        /** Bounded: a board that keeps dropping the link must not spin the FAB forever. */
+        private fun reconnectAfterDrop(gatt: BluetoothGatt, why: String) {
+            this@BondingService.gatt = null
+            waitingForBond = false
+            if (deviceDisconnects < numbAttempts) {
+                deviceDisconnects++
+                Log.w(TAG, "$why. Reconnect $deviceDisconnects of $numbAttempts in 2 seconds.")
+                reConnect(gatt.device.address)
+            } else {
+                Log.e(TAG, "$why. Giving up after $deviceDisconnects reconnects.")
+                errorCounter++
+                notifyError(R.string.error_connection_failed)
+                stopService(gatt)
+            }
         }
 
         private fun handleGattError(gatt: BluetoothGatt, status: Int) {
@@ -159,6 +214,7 @@ open class BondingService : Service() {
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "Service created")
+        registerReceiver(bondReceiver, IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED))
     }
 
     override fun onBind(intent: Intent): IBinder? {
@@ -213,6 +269,8 @@ open class BondingService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "Bonding Service destroyed")
+        try { unregisterReceiver(bondReceiver) } catch (_: Exception) {}
+        gatt = null
         if(errorCounter == 0) {
             Log.d(TAG, "Device version: $deviceVersion")
             AppStateRepository.setIdle()
@@ -337,9 +395,11 @@ open class BondingService : Service() {
 
     @SuppressWarnings("MissingPermission")
     private fun handleConnectedState(gatt: BluetoothGatt) {
+        this.gatt = gatt
         val bondState = gatt.device.bondState
         if (bondState == BluetoothDevice.BOND_BONDING) {
             Log.w(TAG, "Waiting for bonding to complete")
+            waitingForBond = true
         } else {
             BluetoothUtils.clearServicesCache(gatt)
             Log.d(TAG, "Wait for 2000 millis before service discovery")
@@ -465,6 +525,7 @@ open class BondingService : Service() {
     private fun stopService(gatt: BluetoothGatt) {
         BluetoothUtils.clearServicesCache(gatt)
         gatt.close()
+        this.gatt = null
         stopSelf()
     }
 
