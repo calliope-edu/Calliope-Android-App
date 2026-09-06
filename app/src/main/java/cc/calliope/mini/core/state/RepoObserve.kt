@@ -27,20 +27,20 @@ object RepoObserve {
         }
 
     @JvmStatic
-    fun state(owner: LifecycleOwner, consumer: Consumer<State?>): Job =
-        collect(owner, AppStateRepository.state, consumer)
+    fun mode(owner: LifecycleOwner, consumer: Consumer<AppMode>): Job =
+        collect(owner, AppStateRepository.mode, consumer)
 
     @JvmStatic
-    fun progress(owner: LifecycleOwner, consumer: Consumer<Progress>): Job =
-        collect(owner, AppStateRepository.progress, consumer)
+    fun control(owner: LifecycleOwner, consumer: Consumer<Boolean>): Job =
+        collect(owner, AppStateRepository.control, consumer)
+
+    @JvmStatic
+    fun flashEvents(owner: LifecycleOwner, consumer: Consumer<FlashEvent>): Job =
+        collect(owner, AppStateRepository.flashEvents, consumer)
 
     @JvmStatic
     fun notifications(owner: LifecycleOwner, consumer: Consumer<Notification>): Job =
         collect(owner, AppStateRepository.notifications, consumer)
-
-    @JvmStatic
-    fun error(owner: LifecycleOwner, consumer: Consumer<Error?>): Job =
-        collect(owner, AppStateRepository.error, consumer)
 
     @JvmStatic
     fun deviceAvailable(owner: LifecycleOwner, consumer: Consumer<Boolean>): Job =

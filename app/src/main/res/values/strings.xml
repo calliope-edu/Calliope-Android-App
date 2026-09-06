@@ -106,6 +106,7 @@
     <string name="flashing_device_connected">Device connected</string>
     <string name="flashing_process_starting">Process starting…</string>
     <string name="flashing_enabling_dfu_mode">Enabling DFU mode…</string>
+    <string name="flashing_rebooting_partial">Restarting board for partial flashing…</string>
     <string name="flashing_firmware_validating">Firmware validating…</string>
     <string name="flashing_device_disconnecting">Device disconnecting…</string>
     <string name="flashing_completed">Flashing completed</string>
@@ -258,6 +259,7 @@
     <string name="error_device_version_incorrect">Device version is incorrect. Service will stop.</string>
     <string name="error_file_path_missing">File path is missing. Service will stop.</string>
     <string name="error_dfu_failed">DFU failed. Service will stop.</string>
+    <string name="error_flashing_in_progress">Flashing is already in progress</string>
     <string name="error_unsupported_board_version">Unsupported board version: %d</string>
     <string name="error_failed_prepare_firmware_zip">Failed to prepare firmware ZIP</string>
 

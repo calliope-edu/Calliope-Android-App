@@ -92,6 +92,7 @@
     <string name="flashing_device_connected">Пристрій під\'єднано</string>
     <string name="flashing_process_starting">Розпочинаємо процес…</string>
     <string name="flashing_enabling_dfu_mode">Увімкнення режиму DFU…</string>
+    <string name="flashing_rebooting_partial">Перезапуск плати для часткової прошивки…</string>
     <string name="flashing_firmware_validating">Перевірка прошивки…</string>
     <string name="flashing_device_disconnecting">Від\'єднання пристрою…</string>
     <string name="flashing_completed">Прошивку завершено</string>
@@ -193,6 +194,7 @@
     <string name="error_device_version_incorrect">Версія пристрою неправильна. Сервіс буде зупинено.</string>
     <string name="error_file_path_missing">Шлях до файлу відсутній. Сервіс буде зупинено.</string>
     <string name="error_dfu_failed">DFU не вдався. Сервіс буде зупинено.</string>
+    <string name="error_flashing_in_progress">Прошивка вже виконується</string>
     <string name="error_unsupported_board_version">Непідтримувана версія плати: %d</string>
     <string name="error_failed_prepare_firmware_zip">Не вдалося підготувати ZIP файл прошивки</string>
 

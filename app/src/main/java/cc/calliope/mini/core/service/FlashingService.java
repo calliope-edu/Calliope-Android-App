@@ -2,7 +2,6 @@ package cc.calliope.mini.core.service;
 
 import static android.app.Activity.RESULT_OK;
 import static cc.calliope.mini.core.state.Notification.ERROR;
-import static cc.calliope.mini.core.state.State.STATE_ERROR;
 import static cc.calliope.mini.utils.Constants.MINI_V2;
 import static cc.calliope.mini.utils.Constants.MINI_V3;
 import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
@@ -25,7 +24,6 @@ import android.util.Log;
 import androidx.core.app.NotificationCompat;
 import androidx.core.util.Consumer;
 import androidx.lifecycle.LifecycleService;
-import androidx.core.util.Consumer;
 import androidx.preference.PreferenceManager;
 
 import java.io.File;
@@ -38,12 +36,13 @@ import cc.calliope.mini.utils.file.FirmwareZipCreator;
 import cc.calliope.mini.utils.hex.HexParser;
 import cc.calliope.mini.utils.hex.InitPacket;
 import cc.calliope.mini.R;
+import cc.calliope.mini.core.state.AppMode;
 import cc.calliope.mini.core.state.AppStateRepository;
-import cc.calliope.mini.core.state.RepoObserve;
-import cc.calliope.mini.core.state.Error;
+import cc.calliope.mini.core.state.FlashEvent;
+import cc.calliope.mini.core.state.FlashMode;
+import cc.calliope.mini.core.state.FlashResult;
 import cc.calliope.mini.core.state.Notification;
-import cc.calliope.mini.core.state.Progress;
-import cc.calliope.mini.core.state.State;
+import cc.calliope.mini.core.state.RepoObserve;
 import cc.calliope.mini.utils.file.FileUtils;
 import cc.calliope.mini.utils.file.FileVersion;
 import cc.calliope.mini.utils.settings.Preference;
@@ -68,41 +67,29 @@ public class FlashingService extends LifecycleService {
     private String currentPath;
     private boolean forceFullDfu = false;
 
-    // True while this instance is orchestrating a flash. Unlike the global
-    // state LiveData it cannot be stale: the started service is a process-wide
+    // True while this instance owns the flash session (claimed through
+    // AppStateRepository.beginFlash). The started service is a process-wide
     // singleton and every terminal path stops it, so the flag dies with the
-    // instance. Guarding the observers with it keeps sticky STATE_ERROR /
-    // PROGRESS_DISCONNECTING values replayed from a previous session from
-    // killing a freshly started service.
+    // instance; it also rejects duplicate starts while a job is running.
     private boolean flashingJobActive = false;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private ExecutorService backgroundExecutor;
 
-    private final Consumer<State> stateObserver = state -> {
-        if (state == null || !flashingJobActive) {
+    // The session's single terminal event. Whoever finishes the flash
+    // (DfuService, PartialFlashingService or handleError here) posts it;
+    // this service's job ends with it.
+    private final Consumer<FlashEvent> flashEventObserver = event -> {
+        if (!flashingJobActive || !(event instanceof FlashEvent.Done done)) {
             return;
         }
-        if (state.getType() == STATE_ERROR) {
-            Error error = AppStateRepository.getError().getValue();
-            if (error != null) {
-                Log.e(TAG, "ERROR: " + error.getCode() + " " + error.getMessage());
-            }
-            Log.e(TAG, "FlashingService stopped");
-            stopSelf();
+        if (done.getResult() instanceof FlashResult.Failure failure) {
+            Log.e(TAG, "Flash failed: " + failure.getCode() + " " + failure.getMessage());
+        } else {
+            Log.d(TAG, "Flash completed");
         }
-    };
-
-    private final Consumer<Progress> progressObserver = progress -> {
-        if (progress == null || !flashingJobActive) {
-            return;
-        }
-
-        int value = progress.getValue();
-
-        if (value == Progress.PROGRESS_DISCONNECTING) {
-            stopSelf();
-        }
+        flashingJobActive = false;
+        stopSelf();
     };
 
     @SuppressWarnings("MissingPermission")
@@ -112,10 +99,9 @@ public class FlashingService extends LifecycleService {
         startForegroundWithNotification();
         backgroundExecutor = Executors.newSingleThreadExecutor();
 
-        // Observe the state and progress from the repository. The started
-        // service is STARTED for its whole life, so collection spans it.
-        RepoObserve.state(this, stateObserver);
-        RepoObserve.progress(this, progressObserver);
+        // The started service is STARTED for its whole life, so collection
+        // spans it.
+        RepoObserve.flashEvents(this, flashEventObserver);
     }
 
     @Override
@@ -178,9 +164,21 @@ public class FlashingService extends LifecycleService {
             return START_NOT_STICKY;
         }
 
-        // From here on every refusal goes through handleError(), which stops
-        // the service — otherwise the foreground service (started in
-        // onCreate) would leak with no work to do.
+        // Claim the process-wide flash mutex. Refused only if another flash
+        // session is live (e.g. a DfuService still winding down).
+        forceFullDfu = intent.getBooleanExtra(EXTRA_FORCE_FULL_DFU, false);
+        FlashMode initialMode = !forceFullDfu && Settings.isPartialFlashingEnable(this)
+                ? FlashMode.PARTIAL : FlashMode.FULL_DFU;
+        if (!AppStateRepository.beginFlash(initialMode)) {
+            AppStateRepository.updateNotification(ERROR, R.string.error_flashing_in_progress);
+            stopSelf();
+            return START_NOT_STICKY;
+        }
+        flashingJobActive = true;
+
+        // From here on every refusal goes through handleError(), which ends
+        // the session and stops the service — otherwise the foreground
+        // service (started in onCreate) would leak with no work to do.
         if (!isBluetoothEnabled()) {
             return START_NOT_STICKY;
         }
@@ -200,8 +198,6 @@ public class FlashingService extends LifecycleService {
             return START_NOT_STICKY;
         }
 
-        forceFullDfu = intent.getBooleanExtra(EXTRA_FORCE_FULL_DFU, false);
-        flashingJobActive = true;
         initFlashing();
         return START_NOT_STICKY;
     }
@@ -345,8 +341,9 @@ public class FlashingService extends LifecycleService {
             if (resultCode == RESULT_OK) {
                 boolean isSuccess = resultData.getBoolean("result");
                 if (isSuccess) {
+                    // PartialFlashingService already finished the session;
+                    // the Done event stops this service.
                     Log.d(TAG, "Partial flashing completed");
-                    stopSelf();
                 } else {
                     Log.w(TAG, "Partial flashing failed, falling back to DFU");
                     handleFullFlashing();
@@ -375,6 +372,9 @@ public class FlashingService extends LifecycleService {
     }
 
     private void handleFullFlashing() {
+        // Either the configured mode or the partial-flash fallback: from here
+        // on the session is full DFU (legacy trigger + Nordic, or Nordic only).
+        AppStateRepository.flashMode(FlashMode.FULL_DFU);
         if (boardVersion == MINI_V2) {
             startDfuControlService();
         } else if (boardVersion == MINI_V3) {
@@ -499,9 +499,7 @@ public class FlashingService extends LifecycleService {
 
     private void handleError(String message) {
         AppStateRepository.updateNotification(ERROR, message);
-        AppStateRepository.updateState(STATE_ERROR);
-        // The state observer only reacts while a flash job is active, so a
-        // pre-flight failure must stop the service explicitly.
-        stopSelf();
+        // Ends the session: the resulting Done event stops this service.
+        AppStateRepository.finishFlash(new FlashResult.Failure(AppMode.Error.NO_CODE, message));
     }
 }

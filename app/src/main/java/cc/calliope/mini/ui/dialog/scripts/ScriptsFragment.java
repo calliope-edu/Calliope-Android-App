@@ -43,7 +43,6 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import cc.calliope.mini.core.state.State;
 import cc.calliope.mini.core.service.FlashingService;
 import cc.calliope.mini.utils.file.FileUtils;
 import cc.calliope.mini.utils.file.FileWrapper;
@@ -219,7 +218,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                     } else {
                         activity.runOnUiThread(() -> {
                             AppStateRepository.updateNotification(ERROR, R.string.error_snackbar_name_exists);
-                            AppStateRepository.updateState(State.STATE_ERROR);
+                            AppStateRepository.setError(getString(R.string.error_snackbar_name_exists));
                         });
                     }
                 }
@@ -292,7 +291,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                         Log.e(TAG, "Persistable URI permission failed", e);
                         activity.runOnUiThread(() -> {
                             AppStateRepository.updateNotification(ERROR, R.string.usb_copy_access_denied);
-                            AppStateRepository.updateState(State.STATE_ERROR);
+                            AppStateRepository.setError(getString(R.string.usb_copy_access_denied));
                         });
                     }
                 }
@@ -303,54 +302,56 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
         new Thread(() -> {
             try {
                 DocumentFile directory = DocumentFile.fromTreeUri(activity, uri);
-                DocumentFile file = directory.createFile("application/octet-stream", "firmware.hex");
-
-                FileInputStream inputStream = new FileInputStream(sourceFilePath);
-                long sourceFileSize = new File(sourceFilePath).length();
-
-                ParcelFileDescriptor pfd = activity.getContentResolver().openFileDescriptor(file.getUri(), "w");
-                FileOutputStream outputStream = new FileOutputStream(pfd.getFileDescriptor());
+                DocumentFile file = directory == null ? null
+                        : directory.createFile("application/octet-stream", "firmware.hex");
+                if (file == null) {
+                    throw new IOException("Could not create firmware.hex in " + uri);
+                }
 
                 activity.runOnUiThread(() -> {
                     AppStateRepository.updateNotification(INFO, R.string.usb_copy_started);
-                    AppStateRepository.updateState(State.STATE_BUSY);
+                    AppStateRepository.setBusy();
                 });
 
-                byte[] buffer = new byte[8192];
-                int bytesRead;
-                long totalBytesWritten = 0;
+                // Every descriptor on the USB volume must be closed before the
+                // board is unplugged: vold kills any process still holding a
+                // file on a volume it unmounts (SIGINT — seen as an app "crash"
+                // right after detaching the mini). A FileOutputStream built from
+                // pfd.getFileDescriptor() does not own the fd, so closing it
+                // left the ParcelFileDescriptor open until GC. AutoCloseOutputStream
+                // owns the pfd; try-with-resources covers the failure paths too.
+                try (FileInputStream inputStream = new FileInputStream(sourceFilePath);
+                     ParcelFileDescriptor pfd = activity.getContentResolver().openFileDescriptor(file.getUri(), "w");
+                     FileOutputStream outputStream = new ParcelFileDescriptor.AutoCloseOutputStream(pfd)) {
 
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
-                    totalBytesWritten += bytesRead;
-                }
+                    byte[] buffer = new byte[8192];
+                    int bytesRead;
+                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+                        outputStream.write(buffer, 0, bytesRead);
+                    }
 
-                outputStream.flush();
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    outputStream.flush();
                     try {
                         outputStream.getFD().sync();
                     } catch (Exception ignored) {
                     }
                 }
 
-                inputStream.close();
-                outputStream.close();
-
                 activity.runOnUiThread(() -> {
                     AppStateRepository.updateNotification(INFO, R.string.usb_copy_finished);
-                    AppStateRepository.updateState(State.STATE_IDLE);
+                    AppStateRepository.setIdle();
                 });
             } catch (IOException e) {
                 Log.e(TAG, "File copy error", e);
                 activity.runOnUiThread(() -> {
                     AppStateRepository.updateNotification(ERROR, R.string.usb_copy_failed);
-                    AppStateRepository.updateState(State.STATE_ERROR);
+                    AppStateRepository.setError(getString(R.string.usb_copy_failed));
                 });
             } catch (Exception e) {
                 Log.e(TAG, "Unexpected error", e);
                 activity.runOnUiThread(() -> {
                     AppStateRepository.updateNotification(ERROR, R.string.usb_copy_unexpected_error);
-                    AppStateRepository.updateState(State.STATE_ERROR);
+                    AppStateRepository.setError(getString(R.string.usb_copy_unexpected_error));
                 });
             }
         }).start();

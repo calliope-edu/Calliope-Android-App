@@ -17,10 +17,13 @@ import kotlinx.coroutines.launch
 import androidx.preference.PreferenceManager
 import cc.calliope.mini.R
 import cc.calliope.mini.core.service.FlashingService
+import cc.calliope.mini.core.state.AppMode
 import cc.calliope.mini.core.state.AppStateRepository
+import cc.calliope.mini.core.state.FlashEvent
+import cc.calliope.mini.core.state.FlashMode
+import cc.calliope.mini.core.state.FlashPhase
+import cc.calliope.mini.core.state.FlashResult
 import cc.calliope.mini.core.state.Notification
-import cc.calliope.mini.core.state.Progress
-import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import org.json.JSONArray
@@ -61,8 +64,8 @@ class BridgeController(
     /**
      * Whether we've told the app it's in a live-control session. Drives the
      * native movable FAB colour via [AppStateRepository], exactly like
-     * the cardboard editor and the Scratch Link bridge: STATE_CONTROL while
-     * the campus session holds a GATT connection, STATE_IDLE once it drops.
+     * the cardboard editor and the Scratch Link bridge: control = true while
+     * the campus session holds a GATT connection, false once it drops.
      * Main-thread only.
      */
     private var controlReported = false
@@ -70,14 +73,14 @@ class BridgeController(
     private fun reportControl() {
         if (!controlReported) {
             controlReported = true
-            AppStateRepository.updateState(State.STATE_CONTROL)
+            AppStateRepository.setControl(true)
         }
     }
 
     private fun reportIdle() {
         if (controlReported) {
             controlReported = false
-            AppStateRepository.updateState(State.STATE_IDLE)
+            AppStateRepository.setControl(false)
         }
     }
 
@@ -372,88 +375,47 @@ class BridgeController(
     // ---- Flash -------------------------------------------------------------
 
     private var pendingFlashReplyId: String? = null
-    /** True from the moment we kick `FlashingService` until either a
-     *  `STATE_IDLE` follow-up to `STATE_FLASHING` or a `STATE_ERROR`
-     *  arrives. Acts as the filter for the global state
+    /** True from the moment we kick `FlashingService` until the session's
+     *  `FlashEvent.Done` arrives. Acts as the filter for the global state
      *  observers so we don't react to flashes that started outside the
      *  proxy (legacy editors). */
     private var flashInFlight: Boolean = false
-    private var lastStateType: Int = State.STATE_IDLE
-    /** Tracks whether the current flash is going down the partial-flash
-     *  path or the full Nordic DFU path. Starts as "partial" (matches the
-     *  FlashingService default) and flips to "dfu" when a Nordic-DFU-only
-     *  progress code arrives — those don't fire during partial flash.
-     *  Forwarded to the widget as `partial: true/false` so the UI shows
-     *  the correct "Schnelles Flashen" vs "Vollständiges Flashen" label. */
-    private var currentFlashMode: String = "partial"
+    /** Partial-flash vs full-DFU, mirrored from the session's
+     *  [AppMode.Flashing.mode]. Forwarded to the widget as
+     *  `partial: true/false` so the UI shows the correct "Schnelles
+     *  Flashen" vs "Vollständiges Flashen" label. */
+    private var currentFlashMode: FlashMode = FlashMode.PARTIAL
+    private var lastPhase: FlashPhase? = null
 
-    private fun onProgress(p: Progress) {
+    private fun onFlashEvent(event: FlashEvent) {
         if (!flashInFlight) return
-        when (val pct = p.value) {
-            Progress.PROGRESS_CONNECTING,
-            Progress.PROGRESS_STARTING -> {
-                // These codes only fire from the Nordic DFU library. Their
-                // arrival means PartialFlashingService either declined the
-                // hex (RESULT_ATTEMPT_DFU) or wasn't started at all
-                // (forceFullDfu) — either way we're now in full DFU.
-                currentFlashMode = "dfu"
-                emitFlashProgress("prepare", 0)
+        when (event) {
+            is FlashEvent.Progress -> emitFlashProgress("flashing", event.percent)
+            is FlashEvent.Done -> when (val r = event.result) {
+                is FlashResult.Success -> finishFlash(success = true, error = null)
+                is FlashResult.Failure -> finishFlash(success = false, error = r.message ?: "flash failed")
             }
-            Progress.PROGRESS_ENABLING_DFU_MODE -> {
-                currentFlashMode = "dfu"
-                emitFlashProgress("reboot", 0)
-            }
-            Progress.PROGRESS_VALIDATING -> emitFlashProgress("finalising", 100)
-            Progress.PROGRESS_DISCONNECTING -> { /* swallowed; finalised by state-idle */ }
-            Progress.PROGRESS_COMPLETED -> finishFlash(success = true, error = null)
-            Progress.PROGRESS_ABORTED -> finishFlash(success = false, error = "flash aborted")
-            else -> if (pct in 0..100) emitFlashProgress("flashing", pct)
         }
     }
 
-    private fun onState(s: State?) {
-        if (s == null) return
-        val type = s.type
-        if (flashInFlight) {
-            when (type) {
-                // STATE_ERROR can come from preflight (loadDeviceInfo /
-                // checkCompatibility — e.g. V2 hex on V3 board) before any
-                // progress fires, OR from a failed DFU step. Prefer the typed
-                // Error if THIS flash produced one (identity-compared against
-                // the snapshot taken at flash start — the sticky error channel
-                // may still hold one from an older session), else the most
-                // recent ERROR notification.
-                State.STATE_ERROR -> {
-                    val e = AppStateRepository.error.value
-                    val fresh = if (e !== errorAtFlashStart) e?.message else null
-                    finishFlash(success = false, error = fresh ?: latestErrorMessage ?: "flash failed")
-                }
-                // STATE_FLASHING → STATE_IDLE is the secondary "done" edge
-                // for paths that don't post a PROGRESS_COMPLETED.
-                State.STATE_IDLE -> if (lastStateType == State.STATE_FLASHING) {
-                    finishFlash(success = true, error = null)
-                }
-                else -> { /* STATE_BUSY / STATE_CONTROL — uninteresting */ }
-            }
+    private fun onMode(mode: AppMode) {
+        if (!flashInFlight || mode !is AppMode.Flashing) return
+        currentFlashMode = mode.mode
+        if (mode.phase == lastPhase) return
+        lastPhase = mode.phase
+        when (mode.phase) {
+            FlashPhase.PREPARING,
+            FlashPhase.CONNECTING -> emitFlashProgress("prepare", 0)
+            FlashPhase.REBOOTING -> emitFlashProgress("reboot", 0)
+            FlashPhase.UPLOADING -> { /* percent arrives via FlashEvent.Progress */ }
+            FlashPhase.FINALIZING -> emitFlashProgress("finalising", 100)
+            FlashPhase.DISCONNECTING -> { /* swallowed; finalised by Done */ }
         }
-        lastStateType = type
     }
-
-    /** Last ERROR-level notification text seen. `FlashingService.handleError`
-     *  fires `updateNotification(ERROR, …) + updateState(STATE_ERROR)` but
-     *  never `updateError(…)`, so the user-readable reason only reaches us
-     *  through this channel. */
-    private var latestErrorMessage: String? = null
-
-    /** Error value snapshotted at flash start; lets onState tell a fresh
-     *  error of this flash from a stale one still parked in the sticky
-     *  channel. */
-    private var errorAtFlashStart: cc.calliope.mini.core.state.Error? = null
 
     private fun onNotification(n: Notification) {
         when (n.type) {
             Notification.ERROR -> {
-                latestErrorMessage = n.message
                 if (flashInFlight) {
                     sendEvent("log", JSONObject().put("direction", "error").put("text", n.message ?: ""))
                 }
@@ -474,13 +436,12 @@ class BridgeController(
         // Collect the flash pipeline's streams from the repository while the
         // host is STARTED. Filtering by `flashInFlight` ignores flashes
         // initiated outside the proxy (e.g. legacy WebFragment editors that
-        // share the same service). A typed-error observer is deliberately
-        // absent: errors are consumed at the STATE_ERROR edge (see onState),
-        // which the sticky error channel can't fire spuriously.
+        // share the same service). The failure reason travels inside
+        // FlashResult.Failure, so no separate error channel is needed.
         lifecycleOwner.lifecycleScope.launch {
             lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch { AppStateRepository.progress.collect { onProgress(it) } }
-                launch { AppStateRepository.state.collect { onState(it) } }
+                launch { AppStateRepository.flashEvents.collect { onFlashEvent(it) } }
+                launch { AppStateRepository.mode.collect { onMode(it) } }
                 launch { AppStateRepository.notifications.collect { onNotification(it) } }
             }
         }
@@ -580,14 +541,11 @@ class BridgeController(
 
         pendingFlashReplyId = id
         flashInFlight = true
-        latestErrorMessage = null
-        errorAtFlashStart = AppStateRepository.error.value
-        lastStateType = State.STATE_IDLE
-        // Optimistic default: partial. FlashingService runs partial first
-        // unless EXTRA_FORCE_FULL_DFU is set. The progress observer flips
-        // to "dfu" the moment a DFU-only progress code arrives — that
-        // covers both forceFullDfu=true and partial→full fallback.
-        currentFlashMode = if (forceFullDfu) "dfu" else "partial"
+        lastPhase = null
+        // Optimistic default until FlashingService publishes the session's
+        // real mode (it may still be starting); the mode observer then
+        // tracks partial→full fallback as well.
+        currentFlashMode = if (forceFullDfu) FlashMode.FULL_DFU else FlashMode.PARTIAL
         emitFlashProgress(phase = "prepare", progress = 0)
 
         session.disconnect(onClosed = {
@@ -734,7 +692,7 @@ class BridgeController(
                 .put("transport", "ble")
                 .put("phase", phase)
                 .put("progress", progress)
-                .put("partial", currentFlashMode == "partial"),
+                .put("partial", currentFlashMode == FlashMode.PARTIAL),
         )
     }
 

@@ -20,8 +20,8 @@ import android.os.ResultReceiver
 import android.util.Log
 import cc.calliope.mini.R
 import cc.calliope.mini.core.state.AppStateRepository
+import cc.calliope.mini.core.state.FlashPhase
 import cc.calliope.mini.core.state.Notification.ERROR
-import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Permission
@@ -116,6 +116,9 @@ open class LegacyDfuService : Service() {
             if (status == GATT_SUCCESS) {
                 Log.d(TAG, "Flash command written successfully")
                 isComplete = true
+                // The board now reboots into its DFU bootloader; FlashingService
+                // waits for it and hands over to Nordic DFU.
+                AppStateRepository.flashPhase(FlashPhase.REBOOTING)
                 // Remove bond so Nordic DFU library won't wait for Service Changed indication
                 // V2 DFU bootloader doesn't send Service Changed, causing timeout on DFU 2.7.0+
                 if (gatt.device.bondState == BluetoothDevice.BOND_BONDED) {
@@ -193,8 +196,7 @@ open class LegacyDfuService : Service() {
         val adapter: BluetoothAdapter? = bluetoothManager.adapter
 
         if (adapter == null || !adapter.isEnabled || !BluetoothUtils.isValidBluetoothMAC(address)) {
-            AppStateRepository.updateNotification(ERROR, getString(R.string.error_bluetooth_adapter_null));
-            AppStateRepository.updateState(State.STATE_IDLE)
+            AppStateRepository.updateNotification(ERROR, getString(R.string.error_bluetooth_adapter_null))
             stopSelf()
             return
         }
@@ -202,12 +204,12 @@ open class LegacyDfuService : Service() {
         val device = adapter.getRemoteDevice(address)
         if (device == null) {
             Log.e(TAG, "Device is null")
-            AppStateRepository.updateNotification(ERROR, getString(R.string.error_device_null));
+            AppStateRepository.updateNotification(ERROR, getString(R.string.error_device_null))
             stopSelf()
             return
         }
 
-        AppStateRepository.updateState(State.STATE_BUSY)
+        AppStateRepository.flashPhase(FlashPhase.CONNECTING)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             device.connectGatt(this, false,
@@ -268,8 +270,7 @@ open class LegacyDfuService : Service() {
                 return
             }
             Log.e(TAG, "Cannot find DFU legacy service. Attempts: $attempts")
-            AppStateRepository.updateNotification(ERROR, getString(R.string.error_missing_dfu_service));
-            AppStateRepository.updateState(State.STATE_IDLE)
+            AppStateRepository.updateNotification(ERROR, getString(R.string.error_missing_dfu_service))
             gatt.disconnect()
             return
         }
@@ -279,8 +280,7 @@ open class LegacyDfuService : Service() {
         )
         if (dfuControlCharacteristic == null) {
             Log.e(TAG, "Cannot find DFU legacy characteristic")
-            AppStateRepository.updateNotification(ERROR, getString(R.string.error_missing_dfu_characteristic));
-            AppStateRepository.updateState(State.STATE_IDLE)
+            AppStateRepository.updateNotification(ERROR, getString(R.string.error_missing_dfu_characteristic))
             gatt.disconnect()
             return
         }

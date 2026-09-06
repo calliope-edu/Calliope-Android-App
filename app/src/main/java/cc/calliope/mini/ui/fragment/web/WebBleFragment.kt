@@ -13,6 +13,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -27,11 +29,13 @@ import android.widget.FrameLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.PreferenceManager
 import cc.calliope.mini.R
 import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.Notification.INFO
-import cc.calliope.mini.core.state.State
 import cc.calliope.mini.ui.activity.CameraPermissionActivity
 import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import cc.calliope.mini.ui.model.EditorType
@@ -40,7 +44,19 @@ import java.nio.charset.StandardCharsets
 import java.util.UUID
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlinx.coroutines.launch
 
+/**
+ * Hosts the Cardboard editors (control / face) and bridges their UART calls
+ * to a native GATT link with the current board.
+ *
+ * Connection follows the same pattern as the Blocks editor: connect
+ * silently in the background as soon as the page is up and the board is in
+ * range, reconnect after a drop, and keep the page's own robot button as a
+ * manual (re)connect. The page's connected indicator (`robotShow_connected`
+ * on `#robotShow`) is mirrored from the native link state, since the page's
+ * own Web Bluetooth code — which used to toggle it — never runs here.
+ */
 class WebBleFragment : Fragment() {
 
     private var pageUrl: String = "https://cardboard.lofirobot.com/control-calliope/"
@@ -49,8 +65,17 @@ class WebBleFragment : Fragment() {
     private var editorName: String? = null
 
     companion object {
+        private const val TAG = "WebBleFragment"
         private const val TARGET_URL = "editorUrl"
         private const val TARGET_NAME = "editorName"
+        /** First reconnect delay after a drop; doubles up to [RECONNECT_MAX_MS]. */
+        private const val RECONNECT_BASE_MS = 1500L
+        private const val RECONNECT_MAX_MS = 10_000L
+        /** Consecutive attempts without a ready UART link before auto-connect
+         *  gives up (until the board leaves and re-enters range). Firmware that
+         *  demands pairing on every connect raises a system dialog per attempt,
+         *  so this must stay small. */
+        private const val MAX_RECONNECT_ATTEMPTS = 3
         fun newInstance(url: String, editorName: String): WebBleFragment {
             val f = WebBleFragment()
             val args = Bundle()
@@ -76,16 +101,25 @@ class WebBleFragment : Fragment() {
     private val writeQueue = ConcurrentLinkedQueue<ByteArray>()
     private val isWriting = AtomicBoolean(false)
 
+    // ---- Auto-connect driver ----------------------------------------------
+    private val mainHandler = Handler(Looper.getMainLooper())
+    /** The page has loaded once: its hooks exist, so the link may be reported to it. */
+    private var pageReady = false
+    /** Cleared by an explicit JS disconnect(); set again by connect(). */
+    private var autoConnectEnabled = true
+    private var reconnectAttempts = 0
+    private val reconnectRunnable = Runnable { tryAutoConnect("retry") }
+
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { }
+    ) { tryAutoConnect("permissions granted") }
 
     private var cameraPermissionCallback: ((Boolean) -> Unit)? = null
     private val cameraPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         val granted = result.resultCode == android.app.Activity.RESULT_OK
-        Log.d("WebBleFragment", "Camera permission result: $granted")
+        Log.d(TAG, "Camera permission result: $granted")
         cameraPermissionCallback?.invoke(granted)
         cameraPermissionCallback = null
     }
@@ -101,15 +135,15 @@ class WebBleFragment : Fragment() {
         val preferences = PreferenceManager.getDefaultSharedPreferences(requireContext())
         deviceMac = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
 
-        Log.d("WebBleFragment", "WebBleFragment created for editor: $editorName, URL: $pageUrl")
-        Log.d("WebBleFragment", "Bluetooth device MAC: $deviceMac")
-        Log.d("WebBleFragment", "Camera permission available: ${has(Manifest.permission.CAMERA)}")
+        Log.d(TAG, "WebBleFragment created for editor: $editorName, URL: $pageUrl")
+        Log.d(TAG, "Bluetooth device MAC: $deviceMac")
+        Log.d(TAG, "Camera permission available: ${has(Manifest.permission.CAMERA)}")
         
         // Log the editor type
         when (editorName) {
-            EditorType.CARDBOARD_CONTROL.directoryName -> Log.d("WebBleFragment", "Editor type: CARDBOARD_CONTROL (BLE + basic features)")
-            EditorType.CARDBOARD_FACE.directoryName -> Log.d("WebBleFragment", "Editor type: CARDBOARD_FACE (BLE + camera support)")
-            else -> Log.d("WebBleFragment", "Editor type: $editorName (BLE + basic features)")
+            EditorType.CARDBOARD_CONTROL.directoryName -> Log.d(TAG, "Editor type: CARDBOARD_CONTROL (BLE + basic features)")
+            EditorType.CARDBOARD_FACE.directoryName -> Log.d(TAG, "Editor type: CARDBOARD_FACE (BLE + camera support)")
+            else -> Log.d(TAG, "Editor type: $editorName (BLE + basic features)")
         }
 
         requestBlePermissionsIfNeeded()
@@ -148,20 +182,20 @@ class WebBleFragment : Fragment() {
         webView.addJavascriptInterface(bridge, "AndroidBle")
         webView.webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest) {
-                Log.d("WebBleFragment", "onPermissionRequest: ${request.resources.joinToString()}")
+                Log.d(TAG, "onPermissionRequest: ${request.resources.joinToString()}")
                 if (request.resources.contains(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
                     // Only allow camera access for CARDBOARD_FACE editor
                     if (editorName != EditorType.CARDBOARD_FACE.directoryName) {
-                        Log.d("WebBleFragment", "Camera access denied - not CARDBOARD_FACE editor")
+                        Log.d(TAG, "Camera access denied - not CARDBOARD_FACE editor")
                         request.deny()
                         return
                     }
                     
                     if (has(Manifest.permission.CAMERA)) {
-                        Log.d("WebBleFragment", "Granting camera permission to WebView")
+                        Log.d(TAG, "Granting camera permission to WebView")
                         request.grant(request.resources)
                     } else {
-                        Log.d("WebBleFragment", "Camera permission not granted, requesting...")
+                        Log.d(TAG, "Camera permission not granted, requesting...")
                         requestCameraPermission { granted ->
                             if (granted) {
                                 request.grant(request.resources)
@@ -176,13 +210,106 @@ class WebBleFragment : Fragment() {
             }
         }
         webView.webViewClient = object : WebViewClient() {
+            override fun onPageCommitVisible(v: WebView, url: String) {
+                super.onPageCommitVisible(v, url)
+                // Before first paint, so the button never flashes.
+                hideConnectButton()
+            }
             override fun onPageFinished(v: WebView, url: String) {
                 super.onPageFinished(v, url)
+                hideConnectButton()
                 injectBridgeJs()
+                pageReady = true
+                // A reload while linked: restore the indicator the page lost.
+                if (rxWriteChar != null) setPageConnected(true)
+                tryAutoConnect("page loaded")
             }
         }
-        Log.d("WebBleFragment", "Loading URL in WebBleFragment: $pageUrl")
+        Log.d(TAG, "Loading URL in WebBleFragment: $pageUrl")
         webView.loadUrl(pageUrl)
+
+        // Connect whenever the board comes into range (CheckService keeps
+        // scanning while there is no control session). The StateFlow replays
+        // its current value, so this also covers "already in range at start".
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                AppStateRepository.deviceAvailable.collect { available ->
+                    if (available) {
+                        // Back in range (or a board reset): start a fresh budget.
+                        reconnectAttempts = 0
+                        tryAutoConnect("device available")
+                    } else {
+                        mainHandler.removeCallbacks(reconnectRunnable)
+                    }
+                }
+            }
+        }
+    }
+
+    /** Silent connect if the page is up, the board is in range and nothing is connected. */
+    private fun tryAutoConnect(reason: String) {
+        mainHandler.removeCallbacks(reconnectRunnable)
+        if (!isAdded || view == null || !pageReady || !autoConnectEnabled) return
+        if (gatt != null || deviceMac.isEmpty()) return
+        if (!AppStateRepository.deviceAvailable.value) return
+        Log.d(TAG, "auto-connect ($reason)")
+        startConnect()
+    }
+
+    /** Exponential back-off after a drop or a failed attempt, while the board stays in range. */
+    private fun scheduleReconnect() {
+        if (!isAdded || view == null || !autoConnectEnabled) return
+        if (!AppStateRepository.deviceAvailable.value) return
+        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            Log.w(TAG, "auto-connect gave up after $reconnectAttempts attempts")
+            return
+        }
+        val delay = (RECONNECT_BASE_MS shl reconnectAttempts.coerceAtMost(4)).coerceAtMost(RECONNECT_MAX_MS)
+        reconnectAttempts++
+        Log.d(TAG, "reconnect in ${delay}ms (attempt $reconnectAttempts)")
+        mainHandler.removeCallbacks(reconnectRunnable)
+        mainHandler.postDelayed(reconnectRunnable, delay)
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun startConnect() {
+        if (!isAdded || !ensureBleReady()) return
+        if (gatt != null) return
+        val adapter = BluetoothUtils.getAdapter(requireContext()) ?: return
+        val dev = try { adapter.getRemoteDevice(deviceMac) } catch (_: Exception) { null } ?: return
+        gatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            dev.connectGatt(requireContext().applicationContext, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
+        } else {
+            dev.connectGatt(requireContext().applicationContext, false, gattCallback)
+        }
+        Log.d(TAG, "Initiating GATT connection to $deviceMac")
+    }
+
+    /**
+     * Hide the page controls the app replaces:
+     *  - `#robotShow`, the page's Web Bluetooth "connect" button — the link is
+     *    handled natively and connects on its own; the FAB shows the state.
+     *  - `#fullscreenBtn` (face app) — the page's Fullscreen API does nothing
+     *    inside the WebView; the app has its own full-screen mode in the FAB menu.
+     * Both sit in the absolutely positioned top-right menu, so nothing reflows.
+     */
+    private fun hideConnectButton() {
+        evalJs("(function(){if(document.getElementById('__calliopeHideConnect'))return;" +
+               "var s=document.createElement('style');s.id='__calliopeHideConnect';" +
+               "s.textContent='#robotShow,#fullscreenBtn{display:none !important;}';" +
+               "(document.head||document.documentElement).appendChild(s);})();")
+    }
+
+    /** Mirror the link state into the page: its (hidden) robot button class and the page hooks. */
+    private fun setPageConnected(connected: Boolean) {
+        // A ready UART link is the only thing that resets the retry budget;
+        // a bare GATT connect that drops again must not.
+        if (connected) reconnectAttempts = 0
+        val op = if (connected) "add" else "remove"
+        val hook = if (connected) "if(window.onBleReady){onBleReady();}"
+                   else "if(window.onBleDisconnected){onBleDisconnected();}"
+        evalJs("(function(){var b=document.getElementById('robotShow');" +
+               "if(b){b.classList.$op('robotShow_connected');}$hook})();")
     }
 
     private fun injectBridgeJs() {
@@ -253,19 +380,13 @@ class WebBleFragment : Fragment() {
 
     @SuppressLint("MissingPermission")
     inner class AndroidBleBridge(private val appCtx: Context) {
+        /** Manual (re)connect from the page's robot button; re-arms auto-connect. */
         @JavascriptInterface
         fun connect() {
             runOnUi {
-                if (!ensureBleReady()) return@runOnUi
-                if (gatt != null) return@runOnUi
-                val adapter = BluetoothUtils.getAdapter(requireContext()) ?: return@runOnUi
-                val dev = try { adapter.getRemoteDevice(deviceMac) } catch (_: Exception) { null } ?: return@runOnUi
-                gatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    dev.connectGatt(appCtx, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
-                } else {
-                    dev.connectGatt(appCtx, false, gattCallback)
-                }
-                Log.d("WebBleFragment", "Initiating GATT connection to $deviceMac")
+                autoConnectEnabled = true
+                reconnectAttempts = 0
+                startConnect()
             }
         }
         @JavascriptInterface
@@ -273,12 +394,19 @@ class WebBleFragment : Fragment() {
             val line = if (s.endsWith("\n")) s else "$s\n"
             enqueueWrite(line.toByteArray(StandardCharsets.UTF_8))
         }
+        /** Explicit disconnect from the page: stays disconnected until connect(). */
         @JavascriptInterface
-        fun disconnect() { runOnUi { closeGatt("disconnect") } }
+        fun disconnect() {
+            runOnUi {
+                autoConnectEnabled = false
+                mainHandler.removeCallbacks(reconnectRunnable)
+                closeGatt("disconnect")
+            }
+        }
 
         @JavascriptInterface
         fun requestCameraPermission(): Boolean {
-            Log.d("WebBleFragment", "JavaScript requested camera permission")
+            Log.d(TAG, "JavaScript requested camera permission")
             // Only allow camera for CARDBOARD_FACE editor
             return editorName == EditorType.CARDBOARD_FACE.directoryName && has(Manifest.permission.CAMERA)
         }
@@ -287,7 +415,7 @@ class WebBleFragment : Fragment() {
         fun isCameraAvailable(): Boolean {
             // Only allow camera for CARDBOARD_FACE editor
             val available = editorName == EditorType.CARDBOARD_FACE.directoryName && has(Manifest.permission.CAMERA)
-            Log.d("WebBleFragment", "Camera availability check: $available (editor: $editorName)")
+            Log.d(TAG, "Camera availability check: $available (editor: $editorName)")
             return available
         }
     }
@@ -300,19 +428,28 @@ class WebBleFragment : Fragment() {
                     // Report the control session only once the link is real,
                     // not optimistically at connectGatt() time.
                     AppStateRepository.updateNotification(INFO, R.string.flashing_device_connected)
-                    AppStateRepository.updateState(State.STATE_CONTROL)
+                    AppStateRepository.setControl(true)
                     try { g.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH) } catch (_: Exception) {}
                     g.requestMtu(247)
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
+                    val hadLink = rxWriteChar != null
                     txNotifyChar = null; rxWriteChar = null
                     negotiatedMtu = 23
                     isWriting.set(false)
                     writeQueue.clear()
+                    // Release the client — also for a failed attempt (status != 0),
+                    // which otherwise leaked a registered GATT app per try.
+                    try { g.close() } catch (_: Exception) {}
                     gatt = null
                     // A dropped link ends the control session — without this the
                     // FAB stayed orange and the Connect menu item stayed hidden.
-                    AppStateRepository.updateState(State.STATE_IDLE)
+                    AppStateRepository.setControl(false)
+                    Log.d(TAG, "disconnected (status=$status, hadLink=$hadLink)")
+                    runOnUi {
+                        if (hadLink) setPageConnected(false)
+                        scheduleReconnect()
+                    }
                 }
             }
         }
@@ -339,11 +476,11 @@ class WebBleFragment : Fragment() {
                 cccd.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                 g.writeDescriptor(cccd)
             } else {
-                evalJs("if(window.onBleReady){onBleReady();}")
+                setPageConnected(true)
             }
         }
         override fun onDescriptorWrite(g: BluetoothGatt, d: BluetoothGattDescriptor, status: Int) {
-            if (d.uuid == CCCD_UUID) evalJs("if(window.onBleReady){onBleReady();}")
+            if (d.uuid == CCCD_UUID) setPageConnected(true)
         }
         override fun onCharacteristicChanged(g: BluetoothGatt, ch: BluetoothGattCharacteristic) {
             if (ch.uuid == UART_TX_CHARACTERISTIC_UUID) {
@@ -426,9 +563,12 @@ class WebBleFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        mainHandler.removeCallbacksAndMessages(null)
+        autoConnectEnabled = false
+        pageReady = false
         closeGatt("onDestroyView")
         try { (webView.parent as? ViewGroup)?.removeView(webView) } catch (_: Throwable) {}
         webView.destroy()
-        AppStateRepository.updateState(State.STATE_IDLE)
+        AppStateRepository.setControl(false)
     }
 }

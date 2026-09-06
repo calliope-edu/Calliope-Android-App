@@ -14,7 +14,6 @@ import android.util.Base64
 import android.util.Log
 import cc.calliope.mini.bridge.BridgeBleSession
 import cc.calliope.mini.core.state.AppStateRepository
-import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.Permission
 import cc.calliope.mini.utils.Utils
 import org.java_websocket.WebSocket
@@ -62,27 +61,30 @@ class ScratchLinkBleSession(
     private var scanning = false
     private var gatt: BridgeBleSession? = null
     private var pendingConnectId: Any? = null
+    /** Device of the in-flight connect, kept for the one-shot 133 retry. */
+    private var pendingDevice: BluetoothDevice? = null
+    private var connectRetried = false
     private var disposed = false
 
     /**
      * Whether we've told the app it's in a live-control session. Drives the
      * native movable FAB colour via [AppStateRepository], exactly like
-     * the cardboard editor (WebBleFragment): STATE_CONTROL while a peripheral
-     * is connected, STATE_IDLE once it drops or the editor closes.
+     * the cardboard editor (WebBleFragment): control = true while a peripheral
+     * is connected, false once it drops or the editor closes.
      */
     private var controlReported = false
 
     private fun reportControl() {
         if (!controlReported) {
             controlReported = true
-            AppStateRepository.updateState(State.STATE_CONTROL)
+            AppStateRepository.setControl(true)
         }
     }
 
     private fun reportIdle() {
         if (controlReported) {
             controlReported = false
-            AppStateRepository.updateState(State.STATE_IDLE)
+            AppStateRepository.setControl(false)
         }
     }
 
@@ -392,6 +394,12 @@ class ScratchLinkBleSession(
         // listener will be ignored (see listenerFor staleness check).
         gatt?.disconnect()
         pendingConnectId = id
+        pendingDevice = device
+        connectRetried = false
+        startConnect(device)
+    }
+
+    private fun startConnect(device: BluetoothDevice) {
         // The listener needs a reference to its own session, which only
         // exists after construction — capture it through a holder var.
         var session: BridgeBleSession? = null
@@ -399,6 +407,24 @@ class ScratchLinkBleSession(
         session = created
         gatt = created
         created.connect(device)
+    }
+
+    /**
+     * A connect that fails before the link is up with GATT status 133 is
+     * usually a transient stack hiccup (seen right after a previous close):
+     * retry once, transparently to scratch-vm, before reporting the error.
+     */
+    private fun retryConnectOnce(reason: String): Boolean {
+        val id = pendingConnectId ?: return false
+        val device = pendingDevice ?: return false
+        if (connectRetried || !reason.contains("133")) return false
+        connectRetried = true
+        Log.w(TAG, "connect failed ($reason) — retrying once in ${CONNECT_RETRY_DELAY_MS}ms")
+        gatt = null
+        handler.postDelayed({
+            if (!disposed && pendingConnectId === id && gatt == null) startConnect(device)
+        }, CONNECT_RETRY_DELAY_MS)
+        return true
     }
 
     /**
@@ -416,6 +442,7 @@ class ScratchLinkBleSession(
         override fun onConnected(deviceName: String?) {
             handler.post {
                 if (isStale()) return@post
+                pendingDevice = null
                 reportControl()
                 pendingConnectId?.let {
                     pendingConnectId = null
@@ -427,6 +454,7 @@ class ScratchLinkBleSession(
         override fun onDisconnected(reason: String) {
             handler.post {
                 if (isStale()) return@post
+                if (retryConnectOnce(reason)) return@post
                 reportIdle()
                 pendingConnectId?.let {
                     pendingConnectId = null
@@ -624,6 +652,7 @@ class ScratchLinkBleSession(
 
     companion object {
         private const val TAG = "ScratchLinkBle"
+        private const val CONNECT_RETRY_DELAY_MS = 600L
         private const val ADVERT_THROTTLE_MS = 700L
     }
 }
