@@ -3,12 +3,6 @@ package cc.calliope.mini.ui.fragment.web
 import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.BluetoothGattCallback
-import android.bluetooth.BluetoothGattCharacteristic
-import android.bluetooth.BluetoothGattDescriptor
-import android.bluetooth.BluetoothProfile
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -34,21 +28,19 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.PreferenceManager
 import cc.calliope.mini.R
+import cc.calliope.mini.core.bluetooth.UartSession
 import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.Notification.INFO
 import cc.calliope.mini.ui.activity.CameraPermissionActivity
-import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import cc.calliope.mini.ui.model.EditorType
 import cc.calliope.mini.utils.Constants
-import java.nio.charset.StandardCharsets
-import java.util.UUID
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicBoolean
+import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import kotlinx.coroutines.launch
 
 /**
  * Hosts the Cardboard editors (control / face) and bridges their UART calls
- * to a native GATT link with the current board.
+ * to a native [UartSession] with the current board. The fragment is a thin
+ * JS bridge; the GATT work lives in the session.
  *
  * Connection follows the same pattern as the Blocks editor: connect
  * silently in the background as soon as the page is up and the board is in
@@ -86,20 +78,9 @@ class WebBleFragment : Fragment() {
         }
     }
 
-    private val UART_SERVICE_UUID: UUID = UUID.fromString("6e400001-b5a3-f393-e0a9-e50e24dcca9e")
-    private val UART_TX_CHARACTERISTIC_UUID: UUID = UUID.fromString("6e400002-b5a3-f393-e0a9-e50e24dcca9e")
-    private val UART_RX_CHARACTERISTIC_UUID: UUID = UUID.fromString("6e400003-b5a3-f393-e0a9-e50e24dcca9e")
-    private val CCCD_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
-
     private lateinit var webView: WebView
     private lateinit var bridge: AndroidBleBridge
-
-    private var gatt: BluetoothGatt? = null
-    private var txNotifyChar: BluetoothGattCharacteristic? = null // 0002
-    private var rxWriteChar: BluetoothGattCharacteristic? = null  // 0003
-    private var negotiatedMtu: Int = 23
-    private val writeQueue = ConcurrentLinkedQueue<ByteArray>()
-    private val isWriting = AtomicBoolean(false)
+    private var uart: UartSession? = null
 
     // ---- Auto-connect driver ----------------------------------------------
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -138,13 +119,6 @@ class WebBleFragment : Fragment() {
         Log.d(TAG, "WebBleFragment created for editor: $editorName, URL: $pageUrl")
         Log.d(TAG, "Bluetooth device MAC: $deviceMac")
         Log.d(TAG, "Camera permission available: ${has(Manifest.permission.CAMERA)}")
-        
-        // Log the editor type
-        when (editorName) {
-            EditorType.CARDBOARD_CONTROL.directoryName -> Log.d(TAG, "Editor type: CARDBOARD_CONTROL (BLE + basic features)")
-            EditorType.CARDBOARD_FACE.directoryName -> Log.d(TAG, "Editor type: CARDBOARD_FACE (BLE + camera support)")
-            else -> Log.d(TAG, "Editor type: $editorName (BLE + basic features)")
-        }
 
         requestBlePermissionsIfNeeded()
     }
@@ -156,6 +130,7 @@ class WebBleFragment : Fragment() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        uart = UartSession(requireContext(), uartListener)
         webView = WebView(requireContext())
         val marginBottom = resources.getDimensionPixelSize(R.dimen.bottom_bar_clearance)
         val params = FrameLayout.LayoutParams(
@@ -178,7 +153,7 @@ class WebBleFragment : Fragment() {
             allowFileAccessFromFileURLs = true
             allowUniversalAccessFromFileURLs = true
         }
-        bridge = AndroidBleBridge(requireContext())
+        bridge = AndroidBleBridge()
         webView.addJavascriptInterface(bridge, "AndroidBle")
         webView.webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest) {
@@ -190,7 +165,7 @@ class WebBleFragment : Fragment() {
                         request.deny()
                         return
                     }
-                    
+
                     if (has(Manifest.permission.CAMERA)) {
                         Log.d(TAG, "Granting camera permission to WebView")
                         request.grant(request.resources)
@@ -221,7 +196,7 @@ class WebBleFragment : Fragment() {
                 injectBridgeJs()
                 pageReady = true
                 // A reload while linked: restore the indicator the page lost.
-                if (rxWriteChar != null) setPageConnected(true)
+                if (uart?.isReady == true) setPageConnected(true)
                 tryAutoConnect("page loaded")
             }
         }
@@ -246,11 +221,54 @@ class WebBleFragment : Fragment() {
         }
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        mainHandler.removeCallbacksAndMessages(null)
+        autoConnectEnabled = false
+        pageReady = false
+        uart?.disconnect()
+        uart = null
+        try { (webView.parent as? ViewGroup)?.removeView(webView) } catch (_: Throwable) {}
+        webView.destroy()
+        AppStateRepository.setControl(false)
+    }
+
+    // ---- UART link -------------------------------------------------------------
+
+    /** Delivered on the Bluetooth binder thread; everything hops to the main thread. */
+    private val uartListener = object : UartSession.Listener {
+        override fun onConnected() {
+            // Report the control session only once the link is real, not
+            // optimistically at connect time.
+            AppStateRepository.updateNotification(INFO, R.string.flashing_device_connected)
+            AppStateRepository.setControl(true)
+        }
+
+        override fun onReady() {
+            runOnUi { setPageConnected(true) }
+        }
+
+        override fun onDisconnected(status: Int, hadLink: Boolean) {
+            // A dropped link ends the control session — without this the
+            // FAB stayed orange and the Connect menu item stayed hidden.
+            AppStateRepository.setControl(false)
+            Log.d(TAG, "disconnected (status=$status, hadLink=$hadLink)")
+            runOnUi {
+                if (hadLink) setPageConnected(false)
+                scheduleReconnect()
+            }
+        }
+
+        override fun onText(text: String) {
+            evalJs("if(window.onUart){onUart(${jsString(text)});}")
+        }
+    }
+
     /** Silent connect if the page is up, the board is in range and nothing is connected. */
     private fun tryAutoConnect(reason: String) {
         mainHandler.removeCallbacks(reconnectRunnable)
         if (!isAdded || view == null || !pageReady || !autoConnectEnabled) return
-        if (gatt != null || deviceMac.isEmpty()) return
+        if (uart?.isConnected != false || deviceMac.isEmpty()) return
         if (!AppStateRepository.deviceAvailable.value) return
         Log.d(TAG, "auto-connect ($reason)")
         startConnect()
@@ -271,18 +289,14 @@ class WebBleFragment : Fragment() {
         mainHandler.postDelayed(reconnectRunnable, delay)
     }
 
-    @SuppressLint("MissingPermission")
     private fun startConnect() {
         if (!isAdded || !ensureBleReady()) return
-        if (gatt != null) return
+        val session = uart ?: return
+        if (session.isConnected) return
         val adapter = BluetoothUtils.getAdapter(requireContext()) ?: return
-        val dev = try { adapter.getRemoteDevice(deviceMac) } catch (_: Exception) { null } ?: return
-        gatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            dev.connectGatt(requireContext().applicationContext, false, gattCallback, BluetoothDevice.TRANSPORT_LE)
-        } else {
-            dev.connectGatt(requireContext().applicationContext, false, gattCallback)
-        }
+        val dev: BluetoothDevice = try { adapter.getRemoteDevice(deviceMac) } catch (_: Exception) { null } ?: return
         Log.d(TAG, "Initiating GATT connection to $deviceMac")
+        session.connect(dev)
     }
 
     /**
@@ -322,15 +336,15 @@ class WebBleFragment : Fragment() {
                 window.connectButtonPressed = function(){ try{ AndroidBle.connect(); }catch(e){} };
                 window.onUart = window.onUart || function(s){ console.log('[UART RX]', s); };
                 window.onBleReady = window.onBleReady || function(){ console.log('[BLE] Ready'); };
-                
+
                 // Camera functions
-                window.isCameraAvailable = function(){ 
-                  try{ return AndroidBle.isCameraAvailable(); }catch(e){ return false; } 
+                window.isCameraAvailable = function(){
+                  try{ return AndroidBle.isCameraAvailable(); }catch(e){ return false; }
                 };
-                window.requestCameraPermission = function(){ 
-                  try{ return AndroidBle.requestCameraPermission(); }catch(e){ return false; } 
+                window.requestCameraPermission = function(){
+                  try{ return AndroidBle.requestCameraPermission(); }catch(e){ return false; }
                 };
-                
+
                 console.log('[Bridge] Camera support injected');
                 console.log('[Bridge] Editor type: $editorName');
               }
@@ -338,8 +352,8 @@ class WebBleFragment : Fragment() {
                 try{
                   if(String(window.sendUART||'').indexOf('AndroidBle.writeText')===-1){ window.sendUART = function(s){ SEND(s); }; }
                   if(String(window.buttonPressed||'').indexOf('SEND(')===-1){ window.buttonPressed = function(name){ SEND(name); }; }
-                  if(String(window.isCameraAvailable||'').indexOf('AndroidBle.isCameraAvailable')===-1){ 
-                    window.isCameraAvailable = function(){ try{ return AndroidBle.isCameraAvailable(); }catch(e){ return false; } }; 
+                  if(String(window.isCameraAvailable||'').indexOf('AndroidBle.isCameraAvailable')===-1){
+                    window.isCameraAvailable = function(){ try{ return AndroidBle.isCameraAvailable(); }catch(e){ return false; } };
                   }
                 }catch(e){}
                 setTimeout(ensure,1000);
@@ -363,9 +377,7 @@ class WebBleFragment : Fragment() {
             if (!has(Manifest.permission.BLUETOOTH_ADMIN)) perms += Manifest.permission.BLUETOOTH_ADMIN
         }
 
-        // Camera permission will be requested separately through CameraPermissionActivity when needed
-        // No automatic camera permission request here
-
+        // Camera permission is requested separately through CameraPermissionActivity when needed.
         if (perms.isNotEmpty()) permissionLauncher.launch(perms.toTypedArray())
     }
 
@@ -378,8 +390,19 @@ class WebBleFragment : Fragment() {
         cameraPermissionLauncher.launch(intent)
     }
 
-    @SuppressLint("MissingPermission")
-    inner class AndroidBleBridge(private val appCtx: Context) {
+    private fun ensureBleReady(): Boolean {
+        val adapter = BluetoothUtils.getAdapter(requireContext())
+        if (adapter == null || !adapter.isEnabled) return false
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            has(Manifest.permission.BLUETOOTH_CONNECT) && has(Manifest.permission.BLUETOOTH_SCAN)
+        } else {
+            has(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
+    // ---- JS bridge -------------------------------------------------------------
+
+    inner class AndroidBleBridge {
         /** Manual (re)connect from the page's robot button; re-arms auto-connect. */
         @JavascriptInterface
         fun connect() {
@@ -389,18 +412,19 @@ class WebBleFragment : Fragment() {
                 startConnect()
             }
         }
+
         @JavascriptInterface
         fun writeText(s: String) {
-            val line = if (s.endsWith("\n")) s else "$s\n"
-            enqueueWrite(line.toByteArray(StandardCharsets.UTF_8))
+            uart?.send(s)
         }
+
         /** Explicit disconnect from the page: stays disconnected until connect(). */
         @JavascriptInterface
         fun disconnect() {
             runOnUi {
                 autoConnectEnabled = false
                 mainHandler.removeCallbacks(reconnectRunnable)
-                closeGatt("disconnect")
+                uart?.disconnect()
             }
         }
 
@@ -420,155 +444,16 @@ class WebBleFragment : Fragment() {
         }
     }
 
-    @SuppressLint("MissingPermission")
-    private val gattCallback = object : BluetoothGattCallback() {
-        override fun onConnectionStateChange(g: BluetoothGatt, status: Int, newState: Int) {
-            when (newState) {
-                BluetoothProfile.STATE_CONNECTED -> {
-                    // Report the control session only once the link is real,
-                    // not optimistically at connectGatt() time.
-                    AppStateRepository.updateNotification(INFO, R.string.flashing_device_connected)
-                    AppStateRepository.setControl(true)
-                    try { g.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH) } catch (_: Exception) {}
-                    g.requestMtu(247)
-                }
-                BluetoothProfile.STATE_DISCONNECTED -> {
-                    val hadLink = rxWriteChar != null
-                    txNotifyChar = null; rxWriteChar = null
-                    negotiatedMtu = 23
-                    isWriting.set(false)
-                    writeQueue.clear()
-                    // Release the client — also for a failed attempt (status != 0),
-                    // which otherwise leaked a registered GATT app per try.
-                    try { g.close() } catch (_: Exception) {}
-                    gatt = null
-                    // A dropped link ends the control session — without this the
-                    // FAB stayed orange and the Connect menu item stayed hidden.
-                    AppStateRepository.setControl(false)
-                    Log.d(TAG, "disconnected (status=$status, hadLink=$hadLink)")
-                    runOnUi {
-                        if (hadLink) setPageConnected(false)
-                        scheduleReconnect()
-                    }
-                }
-            }
-        }
-        override fun onMtuChanged(g: BluetoothGatt, mtu: Int, status: Int) {
-            negotiatedMtu = if (status == BluetoothGatt.GATT_SUCCESS) mtu else 23
-            BluetoothUtils.clearServicesCache(g)
-            g.discoverServices()
-        }
-        override fun onServicesDiscovered(g: BluetoothGatt, status: Int) {
-            if (status != BluetoothGatt.GATT_SUCCESS) return
-            val svc = g.getService(UART_SERVICE_UUID) ?: return
-            txNotifyChar = svc.getCharacteristic(UART_TX_CHARACTERISTIC_UUID) // 0002 notify
-            rxWriteChar = svc.getCharacteristic(UART_RX_CHARACTERISTIC_UUID)  // 0003 write
-            if (txNotifyChar == null || rxWriteChar == null) return
-            rxWriteChar?.let { ch ->
-                val props = ch.properties
-                ch.writeType = if ((props and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0)
-                    BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
-                else BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-            }
-            val okSet = g.setCharacteristicNotification(txNotifyChar, true)
-            val cccd = txNotifyChar?.getDescriptor(CCCD_UUID)
-            if (okSet && cccd != null) {
-                cccd.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-                g.writeDescriptor(cccd)
-            } else {
-                setPageConnected(true)
-            }
-        }
-        override fun onDescriptorWrite(g: BluetoothGatt, d: BluetoothGattDescriptor, status: Int) {
-            if (d.uuid == CCCD_UUID) setPageConnected(true)
-        }
-        override fun onCharacteristicChanged(g: BluetoothGatt, ch: BluetoothGattCharacteristic) {
-            if (ch.uuid == UART_TX_CHARACTERISTIC_UUID) {
-                val s = String(ch.value ?: ByteArray(0), StandardCharsets.UTF_8)
-                evalJs("if(window.onUart){onUart(${jsString(s)});}")
-            }
-        }
-        override fun onCharacteristicWrite(g: BluetoothGatt, ch: BluetoothGattCharacteristic, status: Int) {
-            isWriting.set(false); drainQueue()
-        }
-    }
-
-    private fun enqueueWrite(data: ByteArray) {
-        runOnUi {
-            val g = gatt
-            val ch = rxWriteChar
-            if (g == null || ch == null) return@runOnUi
-            val mtuPayload = (negotiatedMtu - 3).coerceAtLeast(20)
-            var offset = 0
-            while (offset < data.size) {
-                val end = (offset + mtuPayload).coerceAtMost(data.size)
-                writeQueue.add(data.copyOfRange(offset, end))
-                offset = end
-            }
-            drainQueue()
-        }
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun drainQueue() {
-        if (isWriting.get()) return
-        val next = writeQueue.poll() ?: return
-        val g = gatt ?: return
-        val ch = rxWriteChar ?: return
-        isWriting.set(true)
-        ch.value = next
-        val noResp = ch.writeType == BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
-        val ok = g.writeCharacteristic(ch)
-        if (!ok) { isWriting.set(false); return }
-        if (noResp) {
-            isWriting.set(false)
-            webView.postDelayed({ drainQueue() }, 12)
-        }
-    }
-
-    private fun ensureBleReady(): Boolean {
-        val adapter = BluetoothUtils.getAdapter(requireContext())
-        if (adapter == null || !adapter.isEnabled) return false
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            has(Manifest.permission.BLUETOOTH_CONNECT) && has(Manifest.permission.BLUETOOTH_SCAN)
-        } else {
-            has(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun closeGatt(reason: String) {
-        try { gatt?.disconnect() } catch (_: Exception) {}
-        try { gatt?.close() } catch (_: Exception) {}
-        gatt = null
-        txNotifyChar = null
-        rxWriteChar = null
-        negotiatedMtu = 23
-        isWriting.set(false)
-        writeQueue.clear()
-    }
-
     private fun runOnUi(block: () -> Unit) {
         if (!isAdded) return
-        webView.post { block() }
+        mainHandler.post { if (isAdded && view != null) block() }
     }
 
     private fun evalJs(js: String) {
         if (!isAdded) return
-        webView.post { webView.evaluateJavascript(js, null) }
+        mainHandler.post { if (isAdded && view != null) webView.evaluateJavascript(js, null) }
     }
 
     private fun jsString(s: String): String =
         "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\""
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        mainHandler.removeCallbacksAndMessages(null)
-        autoConnectEnabled = false
-        pageReady = false
-        closeGatt("onDestroyView")
-        try { (webView.parent as? ViewGroup)?.removeView(webView) } catch (_: Throwable) {}
-        webView.destroy()
-        AppStateRepository.setControl(false)
-    }
 }
