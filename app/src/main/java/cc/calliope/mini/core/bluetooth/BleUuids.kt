@@ -26,6 +26,8 @@ object BleUuids {
     @JvmField val DFU_CONTROL_CHARACTERISTIC: UUID = UUID.fromString("e95d93b1-251d-470a-a062-fa1922dfa9a8")
     /** Nordic Secure DFU service (nRF52 boards). */
     @JvmField val SECURE_DFU_SERVICE: UUID = UUID.fromString("0000fe59-0000-1000-8000-00805f9b34fb")
+    /** Nordic legacy DFU service advertised by the nRF51 bootloader ("DfuTarg"). */
+    @JvmField val LEGACY_DFU_SERVICE: UUID = UUID.fromString("00001530-1212-efde-1523-785feabcd123")
 
     // ---- MbitMore (pxt-blocks-runtime) ------------------------------------
     @JvmField val MBIT_MORE_SERVICE: UUID = UUID.fromString("0b50f3e4-607f-4151-9091-7d008d6ffc5c")

@@ -195,6 +195,7 @@
     <string name="error_device_version_incorrect">Версія пристрою неправильна. Сервіс буде зупинено.</string>
     <string name="error_file_path_missing">Шлях до файлу відсутній. Сервіс буде зупинено.</string>
     <string name="error_dfu_failed">DFU не вдався. Сервіс буде зупинено.</string>
+    <string name="error_legacy_bootloader_unreachable">Плата повернулась у програму раніше, ніж телефон дістався до режиму DFU. На цьому телефоні mini 1/2 прошивається по Bluetooth лише тоді, коли програма на платі вимагає парування. Спершу залий програму з паруванням або скористайся USB.</string>
     <string name="error_flashing_in_progress">Прошивка вже виконується</string>
     <string name="error_unsupported_board_version">Непідтримувана версія плати: %d</string>
     <string name="error_failed_prepare_firmware_zip">Не вдалося підготувати ZIP файл прошивки</string>
