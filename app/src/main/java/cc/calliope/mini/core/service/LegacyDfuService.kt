@@ -2,325 +2,231 @@ package cc.calliope.mini.core.service
 
 import android.app.Activity.RESULT_OK
 import android.app.Service
-import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.BluetoothGatt.GATT_SUCCESS
-import android.bluetooth.BluetoothGattCallback
-import android.bluetooth.BluetoothGattCharacteristic
-import android.bluetooth.BluetoothManager
-import android.bluetooth.BluetoothProfile
-import android.bluetooth.BluetoothStatusCodes
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.ResultReceiver
 import android.util.Log
 import cc.calliope.mini.R
+import cc.calliope.mini.core.bluetooth.BleUuids
+import cc.calliope.mini.core.bluetooth.GattConnection
+import cc.calliope.mini.core.bluetooth.GattStatus
 import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.FlashPhase
 import cc.calliope.mini.core.state.Notification.ERROR
-import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Permission
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import cc.calliope.mini.utils.bluetooth.BluetoothUtils
+import java.util.UUID
 
-open class LegacyDfuService : Service() {
+/**
+ * Legacy DFU trigger for nRF51 boards (mini 1/2): reboot the board into
+ * its DFU bootloader so Nordic DFU can take over.
+ *
+ * The script (hardware contract 2, verified on real boards — keep the
+ * order and the delays):
+ *  1. connect with a 2 s settle before discovery, cache refreshed;
+ *  2. READ the DFU control characteristic first, then WRITE 0x01 to it;
+ *  3. remove the bond (Nordic DFU ≥ 2.7 would otherwise wait for a
+ *     Service Changed indication the V2 bootloader never sends);
+ *  4. disconnect, wait 2 s, close, and report the result to the caller
+ *     through the [ResultReceiver] — FlashingService then waits a further
+ *     3 s before starting Nordic DFU.
+ *
+ * A link the board drops (status 19) or a failed connect is retried
+ * [numbAttempts] times; the result is `false` if the write never happened.
+ */
+class LegacyDfuService : Service(), GattConnection.Listener {
+
     companion object {
         const val TAG = "LegacyDfuService"
-        const val GATT_DISCONNECTED_BY_DEVICE = 19
         const val EXTRA_DEVICE_ADDRESS = Constants.CURRENT_DEVICE_ADDRESS
+        const val EXTRA_RESULT_RECEIVER = "resultReceiver"
         const val EXTRA_NUMB_ATTEMPTS = Constants.EXTRA_NUMB_ATTEMPTS
         const val DEFAULT_NUMB_ATTEMPTS = 1
 
-        private val DFU_CONTROL_SERVICE_UUID = Constants.DFU_CONTROL_SERVICE_UUID
-        private val DFU_CONTROL_CHARACTERISTIC_UUID = Constants.DFU_CONTROL_CHARACTERISTIC_UUID
+        /** Settle time between connect and service discovery (contract 2). */
+        const val DISCOVERY_DELAY_MS = 2000L
+        /** Between the link going down and `close()` (contract 2). */
+        const val CLOSE_DELAY_MS = 2000L
+        /** Before a reconnect attempt after a drop or a failed connect. */
+        const val RECONNECT_DELAY_MS = 2000L
+        /** Nothing should take longer than this before discovery completes. */
+        const val CONNECT_TIMEOUT_MS = 30_000L
     }
 
-    private var isComplete = false
-    private var attempts = 0
-    private var numbAttempts = DEFAULT_NUMB_ATTEMPTS
-    private val serviceJob = SupervisorJob()
-    private val serviceScope = CoroutineScope(Dispatchers.Main + serviceJob)
-
+    private val handler = Handler(Looper.getMainLooper())
+    private var connection: GattConnection? = null
+    private var device: BluetoothDevice? = null
     private var resultReceiver: ResultReceiver? = null
+    private var numbAttempts = DEFAULT_NUMB_ATTEMPTS
+    private var attempts = 0
+    /** True once the 0x01 write completed: the board is rebooting into DFU. */
+    private var isComplete = false
+    /** We closed the link ourselves to try again (service not found yet). */
+    private var retryPending = false
 
-    @SuppressWarnings("MissingPermission")
-    private val gattCallback = object : BluetoothGattCallback() {
-
-        override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-            when (status) {
-                GATT_SUCCESS -> {
-                    when (newState) {
-                        BluetoothProfile.STATE_CONNECTED -> handleConnectedState(gatt)
-                        BluetoothProfile.STATE_DISCONNECTED -> stopService(gatt)
-                    }
-                }
-                GATT_DISCONNECTED_BY_DEVICE -> {
-                    Log.w(TAG, "Disconnected by device")
-                    reConnect(gatt.device.address)
-                }
-                else -> {
-                    if(attempts < numbAttempts) {
-                        Log.w(TAG, "Connection failed. Attempt: $attempts")
-                        reConnect(gatt.device.address)
-                        attempts++
-                    } else {
-                        val message: String = getString(GattStatusUser.get(status).message)
-                        Log.e(TAG, "Connection failed. Attempts: $attempts. Error: $status $message")
-                        stopService(gatt)
-                    }
-                }
-            }
-        }
-
-        override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-            if (status == GATT_SUCCESS) {
-                getDfuControlService(gatt)
-            } else {
-                gatt.disconnect()
-                Log.w(TAG, "Services discovered not success")
-            }
-        }
-
-        override fun onServiceChanged(gatt: BluetoothGatt) {
-            super.onServiceChanged(gatt)
-        }
-
-        @Suppress("DEPRECATION")
-        @Deprecated(
-            "Used natively in Android 12 and lower",
-            ReplaceWith("onCharacteristicRead(gatt, characteristic, characteristic.value, status)")
-        )
-        override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
-            onCharacteristicRead(gatt, characteristic, characteristic.value, status)
-        }
-
-        override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray, status: Int) {
-            if (status == GATT_SUCCESS) {
-                Log.d(TAG, "Characteristic read: ${characteristic.uuid} Value: ${value.let { it.contentToString() }}")
-                writeCharacteristic(gatt, characteristic)
-            } else {
-                Log.w(TAG, "Characteristic read failed: ${characteristic.uuid}")
-                gatt.disconnect()
-            }
-        }
-
-        override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic?, status: Int) {
-            if (status == GATT_SUCCESS) {
-                Log.d(TAG, "Flash command written successfully")
-                isComplete = true
-                // The board now reboots into its DFU bootloader; FlashingService
-                // waits for it and hands over to Nordic DFU.
-                AppStateRepository.flashPhase(FlashPhase.REBOOTING)
-                // Remove bond so Nordic DFU library won't wait for Service Changed indication
-                // V2 DFU bootloader doesn't send Service Changed, causing timeout on DFU 2.7.0+
-                if (gatt.device.bondState == BluetoothDevice.BOND_BONDED) {
-                    Log.d(TAG, "Removing bond before DFU...")
-                    BluetoothUtils.removeBond(gatt.device)
-                }
-            } else {
-                Log.e(TAG, "Error writing characteristic: $status")
-            }
-            gatt.disconnect()
-        }
-    }
-
-    override fun onCreate() {
-        super.onCreate()
-        Log.d(TAG, "Service created")
-    }
-
-    override fun onBind(intent: Intent): IBinder? {
-        return null
-    }
-
-    @Suppress("DEPRECATION")
-    private fun getParcelableExtra(intent: Intent?, name: String): ResultReceiver? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent?.getParcelableExtra(name, ResultReceiver::class.java)
-        } else {
-            intent?.getParcelableExtra(name)
-        }
-    }
+    override fun onBind(intent: Intent): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "Legacy DFU Service started")
-
-        // Get the pending intent from the intent
-        resultReceiver = getParcelableExtra(intent,"resultReceiver")
+        resultReceiver = getReceiver(intent)
 
         if (!Permission.isAccessGranted(this, *Permission.BLUETOOTH_PERMISSIONS)) {
-                Log.e(TAG, "BLUETOOTH permission no granted")
-                stopSelf()
-                return START_NOT_STICKY
+            Log.e(TAG, "BLUETOOTH permission not granted")
+            stopSelf()
+            return START_NOT_STICKY
         }
 
-        val address = intent?.getStringExtra(EXTRA_DEVICE_ADDRESS)
         numbAttempts = intent?.getIntExtra(EXTRA_NUMB_ATTEMPTS, DEFAULT_NUMB_ATTEMPTS) ?: DEFAULT_NUMB_ATTEMPTS
-        connect(address)
+        val address = intent?.getStringExtra(EXTRA_DEVICE_ADDRESS)
+        val adapter = BluetoothUtils.getAdapter(this)
+        if (adapter == null || !adapter.isEnabled || !BluetoothUtils.isValidBluetoothMAC(address)) {
+            AppStateRepository.updateNotification(ERROR, getString(R.string.error_bluetooth_adapter_null))
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        device = try { adapter.getRemoteDevice(address) } catch (_: Exception) { null }
+        if (device == null) {
+            Log.e(TAG, "Device is null")
+            AppStateRepository.updateNotification(ERROR, getString(R.string.error_device_null))
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
+        connect()
         return START_NOT_STICKY
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        serviceJob.cancel()
-
-        val bundle = Bundle()
-        bundle.putBoolean("result", isComplete)
-        resultReceiver?.send(RESULT_OK, bundle)
-
-        Log.d(TAG, "Legacy DFU Service destroyed")
+        handler.removeCallbacksAndMessages(null)
+        connection?.disconnect()
+        connection = null
+        resultReceiver?.send(RESULT_OK, Bundle().apply { putBoolean("result", isComplete) })
+        Log.d(TAG, "Legacy DFU Service destroyed (result=$isComplete)")
     }
 
-    private fun reConnect(address: String?) {
-        Log.d(TAG, "Reconnecting to the device...")
-        serviceScope.launch {
-            delay(2000)
-            connect(address)
-        }
-    }
-
-    @SuppressWarnings("MissingPermission")
-    private fun connect(address: String?) {
+    private fun connect() {
+        val dev = device ?: return
         Log.d(TAG, "Connecting to the device...")
-
-        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        val adapter: BluetoothAdapter? = bluetoothManager.adapter
-
-        if (adapter == null || !adapter.isEnabled || !BluetoothUtils.isValidBluetoothMAC(address)) {
-            AppStateRepository.updateNotification(ERROR, getString(R.string.error_bluetooth_adapter_null))
-            stopSelf()
-            return
-        }
-
-        val device = adapter.getRemoteDevice(address)
-        if (device == null) {
-            Log.e(TAG, "Device is null")
-            AppStateRepository.updateNotification(ERROR, getString(R.string.error_device_null))
-            stopSelf()
-            return
-        }
-
         AppStateRepository.flashPhase(FlashPhase.CONNECTING)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            device.connectGatt(this, false,
-                gattCallback, BluetoothDevice.TRANSPORT_LE, BluetoothDevice.PHY_LE_1M_MASK or BluetoothDevice.PHY_LE_2M_MASK)
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            device.connectGatt(this, false,
-                gattCallback, BluetoothDevice.TRANSPORT_LE)
-        } else {
-            device.connectGatt(this, false,
-                gattCallback)
-        }
+        connection = GattConnection(
+            applicationContext, this,
+            GattConnection.Config(
+                requestMtu = null,
+                highPriority = false,
+                phyMask = true,
+                refreshServiceCache = true,
+                discoveryDelayMs = DISCOVERY_DELAY_MS,
+                waitForBond = true,
+                closeDelayMs = CLOSE_DELAY_MS,
+                connectTimeoutMs = CONNECT_TIMEOUT_MS,
+            ),
+        ).also { it.connect(dev) }
     }
 
-    @SuppressWarnings("MissingPermission")
-    private fun handleConnectedState(gatt: BluetoothGatt) {
-        val bondState = gatt.device.bondState
-        if (bondState == BluetoothDevice.BOND_BONDING) {
-            Log.w(TAG, "Waiting for bonding to complete")
-        } else {
-            BluetoothUtils.clearServicesCache(gatt)
-            serviceScope.launch {
-                Log.d(TAG, "Wait for 2000 millis before service discovery")
-                delay(2000)
-                startServiceDiscovery(gatt)
-            }
-        }
+    private fun reconnect() {
+        Log.d(TAG, "Reconnecting to the device...")
+        handler.postDelayed({ connect() }, RECONNECT_DELAY_MS)
     }
 
-    @SuppressWarnings("MissingPermission")
-    private fun startServiceDiscovery(gatt: BluetoothGatt) {
-        BluetoothUtils.clearServicesCache(gatt)
+    // ---- GattConnection.Listener ---------------------------------------------
 
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
-            // Check the result inside the coroutine — reading it right after
-            // launch{} always saw the initial false on API 24.
-            serviceScope.launch {
-                Log.d(TAG, "Wait for 1600 millis before service discovery")
-                delay(1600)
-                if (!gatt.discoverServices()) {
-                    Log.e(TAG, "discoverServices failed to start")
-                }
-            }
-        } else {
-            if (!gatt.discoverServices()) {
-                Log.e(TAG, "discoverServices failed to start")
-            }
-        }
-    }
-
-    @SuppressWarnings("MissingPermission")
-    private fun getDfuControlService(gatt: BluetoothGatt) {
-        val dfuControlService = gatt.getService(DFU_CONTROL_SERVICE_UUID)
-        if (dfuControlService == null) {
+    override fun onConnected(deviceName: String?) {
+        val c = connection ?: return
+        val service: UUID = BleUuids.DFU_CONTROL_SERVICE
+        val characteristic: UUID = BleUuids.DFU_CONTROL_CHARACTERISTIC
+        if (!c.hasService(service)) {
             if (attempts < numbAttempts) {
                 Log.w(TAG, "Cannot find DFU legacy service. Attempt: $attempts")
-                reConnect(gatt.device.address)
                 attempts++
+                retryPending = true
+                c.disconnect()
                 return
             }
             Log.e(TAG, "Cannot find DFU legacy service. Attempts: $attempts")
             AppStateRepository.updateNotification(ERROR, getString(R.string.error_missing_dfu_service))
-            gatt.disconnect()
+            c.disconnect()
             return
         }
-
-        val dfuControlCharacteristic = dfuControlService.getCharacteristic(
-            DFU_CONTROL_CHARACTERISTIC_UUID
-        )
-        if (dfuControlCharacteristic == null) {
+        if (!c.hasCharacteristic(service, characteristic)) {
             Log.e(TAG, "Cannot find DFU legacy characteristic")
             AppStateRepository.updateNotification(ERROR, getString(R.string.error_missing_dfu_characteristic))
-            gatt.disconnect()
+            c.disconnect()
             return
         }
-
-        gatt.readCharacteristic(dfuControlCharacteristic)
+        // READ first, WRITE in the read callback — the order the bootloader
+        // trigger was verified with.
+        c.read(service, characteristic) { value ->
+            if (value == null) {
+                Log.w(TAG, "Characteristic read failed")
+                c.disconnect()
+                return@read
+            }
+            Log.d(TAG, "Characteristic read: ${value.contentToString()} — writing flash command")
+            c.write(service, characteristic, byteArrayOf(1), withResponse = true) { ok ->
+                if (ok) {
+                    Log.d(TAG, "Flash command written successfully")
+                    isComplete = true
+                    // The board now reboots into its DFU bootloader.
+                    AppStateRepository.flashPhase(FlashPhase.REBOOTING)
+                    removeBondIfNeeded()
+                } else {
+                    Log.e(TAG, "Error writing characteristic")
+                }
+                c.disconnect()
+            }
+        }
     }
 
-    @SuppressWarnings("MissingPermission")
-    private fun writeCharacteristic(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+    @Suppress("MissingPermission")
+    private fun removeBondIfNeeded() {
+        val dev = device ?: return
+        if (dev.bondState == BluetoothDevice.BOND_BONDED) {
+            Log.d(TAG, "Removing bond before DFU...")
+            BluetoothUtils.removeBond(dev)
+        }
+    }
+
+    override fun onDisconnected(status: Int) {
+        connection = null
+        when {
+            isComplete -> stopSelf()
+            retryPending -> {
+                retryPending = false
+                reconnect()
+            }
+            status == 0 -> stopSelf()
+            attempts < numbAttempts -> {
+                attempts++
+                Log.w(TAG, "Link down (${GattStatus.fromCode(status).name}). Attempt: $attempts")
+                reconnect()
+            }
+            else -> {
+                Log.e(TAG, "Link down (${GattStatus.fromCode(status).name}). Attempts: $attempts")
+                stopSelf()
+            }
+        }
+    }
+
+    override fun onNotify(serviceUuid: UUID, characteristicUuid: UUID, data: ByteArray) = Unit
+
+    override fun onError(message: String) {
+        Log.w(TAG, message)
+        val c = connection
+        if (c != null && c.isConnected) c.disconnect() else stopSelf()
+    }
+
+    @Suppress("DEPRECATION")
+    private fun getReceiver(intent: Intent?): ResultReceiver? =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val value = byteArrayOf(1)
-            val writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-            val res = gatt.writeCharacteristic(characteristic, value, writeType)
-
-            if (res == BluetoothStatusCodes.SUCCESS) {
-                Log.d(TAG, "Writing Flash Command...")
-            } else {
-                Log.e(TAG, "Error writing characteristic: $res")
-            }
+            intent?.getParcelableExtra(EXTRA_RESULT_RECEIVER, ResultReceiver::class.java)
         } else {
-            characteristic.setValue(1, BluetoothGattCharacteristic.FORMAT_UINT8, 0)
-            try {
-                Log.d(TAG, "Writing Flash Command...")
-                gatt.writeCharacteristic(characteristic)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                gatt.disconnect()
-                Log.e(TAG, "Error writing characteristic: ${e.message}")
-            }
+            intent?.getParcelableExtra(EXTRA_RESULT_RECEIVER)
         }
-    }
-
-    @SuppressWarnings("MissingPermission")
-    private fun stopService(gatt: BluetoothGatt) {
-        BluetoothUtils.clearServicesCache(gatt)
-        serviceScope.launch {
-            Log.d(TAG, "Wait for 2000 millis before closing the service...")
-            delay(2000)
-            gatt.close()
-            stopSelf()
-        }
-    }
 }
