@@ -2,6 +2,7 @@ package cc.calliope.mini.ui.activity;
 
 
 import android.animation.ObjectAnimator;
+import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -28,6 +29,8 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.view.ViewCompat;
+import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.core.util.Consumer;
 
@@ -193,13 +196,38 @@ public abstract class BaseActivity extends AppCompatActivity
     private final Consumer<Notification> notificationObserver = notification -> {
         int type = notification.getType();
         String message = notification.getMessage();
+        View host = snackbarHost();
 
         switch (type) {
-            case Notification.INFO -> SnackbarHelper.infoSnackbar(rootView, message).show();
-            case Notification.WARNING -> SnackbarHelper.warningSnackbar(rootView, message).show();
-            case Notification.ERROR -> SnackbarHelper.errorSnackbar(rootView, message).show();
+            case Notification.INFO -> SnackbarHelper.infoSnackbar(host, message).show();
+            case Notification.WARNING -> SnackbarHelper.warningSnackbar(host, message).show();
+            case Notification.ERROR -> SnackbarHelper.errorSnackbar(host, message).show();
         }
     };
+
+    /**
+     * The view a snackbar should attach to: the content of a showing dialog
+     * (scripts bottom sheet, pattern dialog) if there is one, else the
+     * activity root. A dialog is its own window drawn above the activity —
+     * and the activity content is blurred behind it — so a snackbar in the
+     * activity window ends up blurred or fully covered by the sheet.
+     */
+    private View snackbarHost() {
+        for (Fragment fragment : getSupportFragmentManager().getFragments()) {
+            if (!(fragment instanceof DialogFragment dialogFragment)) {
+                continue;
+            }
+            Dialog dialog = dialogFragment.getDialog();
+            if (dialog == null || !dialog.isShowing()) {
+                continue;
+            }
+            View content = dialog.findViewById(android.R.id.content);
+            if (content != null) {
+                return content;
+            }
+        }
+        return rootView;
+    }
 
     // FLASH EVENT OBSERVER — the progress ring around the FAB
     private final Consumer<FlashEvent> flashEventObserver = event -> {
@@ -327,14 +355,14 @@ public abstract class BaseActivity extends AppCompatActivity
     }
 
     private void showBluetoothDisabledWarning() {
-        SnackbarHelper.errorSnackbar(rootView, getString(R.string.error_snackbar_bluetooth_disabled))
+        SnackbarHelper.errorSnackbar(snackbarHost(), getString(R.string.error_snackbar_bluetooth_disabled))
                 .setDuration(BaseTransientBottomBar.LENGTH_INDEFINITE)
                 .setAction(R.string.button_enable, this::startBluetoothEnableActivity)
                 .show();
     }
 
     private void showLocationDisabledWarning() {
-        SnackbarHelper.errorSnackbar(rootView, getString(R.string.error_snackbar_location_disable))
+        SnackbarHelper.errorSnackbar(snackbarHost(), getString(R.string.error_snackbar_location_disable))
                 .show();
     }
 
