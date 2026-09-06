@@ -8,7 +8,9 @@ import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 import static cc.calliope.mini.utils.file.FileVersion.VERSION_2;
 import static cc.calliope.mini.utils.file.FileVersion.VERSION_3;
 
+import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
+import android.bluetooth.BluetoothDevice;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -19,14 +21,17 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ResultReceiver;
+import android.os.SystemClock;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.util.Consumer;
 import androidx.lifecycle.LifecycleService;
 import androidx.preference.PreferenceManager;
 
 import java.io.File;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -36,6 +41,7 @@ import cc.calliope.mini.utils.file.FirmwareZipCreator;
 import cc.calliope.mini.utils.hex.HexParser;
 import cc.calliope.mini.utils.hex.InitPacket;
 import cc.calliope.mini.R;
+import cc.calliope.mini.core.bluetooth.BleUuids;
 import cc.calliope.mini.core.state.AppMode;
 import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.core.state.FlashEvent;
@@ -49,8 +55,11 @@ import cc.calliope.mini.utils.settings.Preference;
 import cc.calliope.mini.utils.settings.Settings;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
+import cc.calliope.mini.utils.bluetooth.BluetoothUtils;
 import cc.calliope.mini.core.service.partialflashing.PartialFlashingService;
+import no.nordicsemi.android.dfu.DfuDeviceSelector;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
+import no.nordicsemi.android.dfu.internal.scanner.BootloaderScannerFactory;
 
 
 public class FlashingService extends LifecycleService {
@@ -58,6 +67,25 @@ public class FlashingService extends LifecycleService {
     private static final int NUMBER_OF_RETRIES = 3;
     private static final int REBOOT_TIME = 2000; // time required by the device to reboot, ms
     private static final long LEGACY_DFU_REBOOT_DELAY_MS = 3000L;
+    /**
+     * How long to look for the advertising bootloader. Normally it shows up
+     * within a second of the 3 s reboot pause. The long ceiling covers the
+     * failure mode of an nRF51 board running a program built WITHOUT
+     * Bluetooth pairing: entered through the DFU service over an
+     * unencrypted link, its bootloader (Nordic SDK 8) only advertises
+     * DIRECTED to the address the phone used for the trigger — about 60 s —
+     * then reboots into the program. A phone whose stack rotates its random
+     * address right after connecting (Samsung / Android 15+) never sees
+     * those packets. A program that requires pairing hands the bootloader
+     * the phone's IRK instead, and it advertises normally (verified on the
+     * same phone). Seeing the board back as its program ends the wait early
+     * with a dedicated error.
+     */
+    private static final long LEGACY_BOOTLOADER_SCAN_MS = 70_000L;
+    /** Ignore "board back as program" sightings this early — it may still be rebooting. */
+    private static final long LEGACY_BOOTLOADER_GRACE_MS = 5_000L;
+    /** Sentinel from the scan: the board came back as its program, DFU is unreachable. */
+    private static final String BOOTLOADER_LOST = "";
     private static final String NOTIFICATION_CHANNEL_ID = "flashing_service_channel";
     private static final int NOTIFICATION_ID = 201;
     public static final String EXTRA_FORCE_FULL_DFU = "extra_force_full_dfu";
@@ -225,7 +253,7 @@ public class FlashingService extends LifecycleService {
         currentAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
         currentPattern = preferences.getString(Constants.CURRENT_DEVICE_PATTERN, "");
 
-        if (!checkBluetoothMAC(currentAddress)) {
+        if (!BluetoothUtils.isValidBluetoothMAC(currentAddress)) {
             Log.e(TAG, "Device address is incorrect");
             handleError(getString(R.string.error_device_address_incorrect));
             return false;
@@ -288,22 +316,6 @@ public class FlashingService extends LifecycleService {
             return false;
         }
 
-        return true;
-    }
-
-    public boolean checkBluetoothMAC(String macAddress) {
-        if (macAddress == null) {
-            Log.e(TAG, "MAC address is null");
-            return false;
-        }
-
-        String regex = "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$";
-        if (!macAddress.matches(regex)) {
-            Log.i(TAG, "Invalid Bluetooth MAC address: " + macAddress);
-            return false;
-        }
-
-        Log.i(TAG, "MAC address: " + macAddress);
         return true;
     }
 
@@ -419,7 +431,7 @@ public class FlashingService extends LifecycleService {
         // Start the service
         Intent service = new Intent(this, LegacyDfuService.class);
         service.putExtra(Constants.CURRENT_DEVICE_ADDRESS, currentAddress);
-        service.putExtra("resultReceiver", resultReceiver);
+        service.putExtra(LegacyDfuService.EXTRA_RESULT_RECEIVER, resultReceiver);
         startService(service);
     }
 
@@ -480,21 +492,151 @@ public class FlashingService extends LifecycleService {
      * from waiting for Service Changed indication (which V2 bootloader doesn't send).
      */
     private void startDfuLegacy() {
-        prepareFirmwareAsync(zipPath ->
-                new DfuServiceInitiator(currentAddress)
-                        .setDeviceName(currentPattern)
-                        .setMtu(23)
-                        .setNumberOfRetries(NUMBER_OF_RETRIES)
-                        .setRebootTime(REBOOT_TIME)
-                        .setKeepBond(false)
-                        .setForceDfu(true)
-                        .setForceScanningForNewAddressInLegacyDfu(true)
-                        // V2 (nRF51) needs PRN enabled - it can't handle data sent too fast
-                        .setPacketsReceiptNotificationsEnabled(true)
-                        .setPacketsReceiptNotificationsValue(6)
-                        .setZip(zipPath)
-                        .start(this, DfuService.class)
-        );
+        prepareFirmwareAsync(zipPath -> {
+            try {
+                backgroundExecutor.execute(() -> {
+                    String target = findLegacyBootloader();
+                    mainHandler.post(() -> {
+                        if (BOOTLOADER_LOST.equals(target)) {
+                            Log.e(TAG, "Board rebooted into its program before DFU could connect");
+                            handleError(getString(R.string.error_legacy_bootloader_unreachable));
+                            return;
+                        }
+                        startDfuLegacy(target, zipPath);
+                    });
+                });
+            } catch (RejectedExecutionException e) {
+                Log.w(TAG, "Service stopped before the bootloader scan");
+            }
+        });
+    }
+
+    private void startDfuLegacy(String targetAddress, String zipPath) {
+        new DfuServiceInitiator(targetAddress)
+                .setDeviceName(currentPattern)
+                .setMtu(23)
+                .setNumberOfRetries(NUMBER_OF_RETRIES)
+                .setRebootTime(REBOOT_TIME)
+                .setKeepBond(false)
+                .setForceDfu(true)
+                .setForceScanningForNewAddressInLegacyDfu(true)
+                // V2 (nRF51) needs PRN enabled - it can't handle data sent too fast
+                .setPacketsReceiptNotificationsEnabled(true)
+                .setPacketsReceiptNotificationsValue(6)
+                .setZip(zipPath)
+                .start(this, DfuService.class);
+    }
+
+    /**
+     * Where is the bootloader advertising? After the 0x01 trigger the nRF51
+     * bootloader (Nordic SDK 8+) may keep the application's address or, when
+     * entered through the DFU service the way LegacyDfuService does it, use
+     * the last byte incremented by one. Nordic's library only scans for that
+     * inside its own buttonless flow; with forceDfu it connects straight to
+     * the address it was given and times out if the bootloader moved. So
+     * look for the bootloader with the library's own scanner (same address
+     * or +1, filtered by the legacy DFU service UUID) and hand DFU the address
+     * that actually advertises. Blocking — call off the main thread.
+     */
+    @SuppressLint("MissingPermission")
+    private String findLegacyBootloader() {
+        Log.d(TAG, "Scanning for the legacy DFU bootloader (" + LEGACY_BOOTLOADER_SCAN_MS + " ms)...");
+        LegacyBootloaderSelector selector = new LegacyBootloaderSelector();
+        String found = BootloaderScannerFactory
+                .getScanner(currentAddress, BleUuids.LEGACY_DFU_SERVICE)
+                .searchUsing(selector, LEGACY_BOOTLOADER_SCAN_MS);
+        if (selector.applicationSeen) {
+            return BOOTLOADER_LOST;
+        }
+        if (found == null) {
+            Log.w(TAG, "Bootloader not found — trying the application address " + currentAddress);
+            return currentAddress;
+        }
+        Log.i(TAG, "Bootloader found at " + found
+                + (found.equalsIgnoreCase(currentAddress) ? "" : " (application address " + currentAddress + ")"));
+        return found;
+    }
+
+    /**
+     * Accepts the board at its application address or at that address + 1,
+     * but only while it advertises as the bootloader (legacy DFU service
+     * UUID or the "DfuTarg" name in the advertisement) — a board that has
+     * rebooted back into its application must not be handed to DFU. The
+     * library's default scan filters (legacy DFU service UUID plus a
+     * catch-all) are kept: a MAC filter would only match public addresses
+     * and the board's is random static.
+     */
+    private static final class LegacyBootloaderSelector implements DfuDeviceSelector {
+        private final long startedAt = SystemClock.elapsedRealtime();
+        /** The board advertised as its program again: the bootloader is gone. */
+        volatile boolean applicationSeen = false;
+
+        @Override
+        public boolean matches(@NonNull BluetoothDevice device, int rssi, @NonNull byte[] scanRecord,
+                               @NonNull String originalAddress, @NonNull String incrementedAddress) {
+            String address = device.getAddress();
+            boolean ours = originalAddress.equalsIgnoreCase(address) || incrementedAddress.equalsIgnoreCase(address);
+            if (!ours) return false;
+            boolean bootloader = advertisesLegacyDfu(scanRecord);
+            long elapsed = SystemClock.elapsedRealtime() - startedAt;
+            Log.d(TAG, "Board seen at " + address + " after " + elapsed + " ms: "
+                    + (bootloader ? "bootloader" : "not the bootloader (" + advertisedName(scanRecord) + ")"));
+            if (bootloader) return true;
+            if (elapsed > LEGACY_BOOTLOADER_GRACE_MS) {
+                // Ends the scan; findLegacyBootloader() reads the flag.
+                applicationSeen = true;
+                return true;
+            }
+            return false;
+        }
+    }
+
+    /** Legacy DFU service UUID as it appears in an AD structure (little-endian). */
+    private static final byte[] LEGACY_DFU_UUID_LE = {
+            (byte) 0x23, (byte) 0xD1, (byte) 0xBC, (byte) 0xEA, (byte) 0x5F, (byte) 0x78, (byte) 0x23, (byte) 0x15,
+            (byte) 0xDE, (byte) 0xEF, (byte) 0x12, (byte) 0x12, (byte) 0x30, (byte) 0x15, (byte) 0x00, (byte) 0x00,
+    };
+
+    /** True if the raw advertisement lists the legacy DFU service or is named "DfuTarg". */
+    static boolean advertisesLegacyDfu(byte[] scanRecord) {
+        int i = 0;
+        while (i + 1 < scanRecord.length) {
+            int len = scanRecord[i] & 0xFF;
+            if (len == 0) break;
+            int type = scanRecord[i + 1] & 0xFF;
+            int dataStart = i + 2;
+            int dataLen = len - 1;
+            if (dataStart + dataLen > scanRecord.length) break;
+            if (type == 0x06 || type == 0x07) { // incomplete / complete list of 128-bit UUIDs
+                for (int off = dataStart; off + 16 <= dataStart + dataLen; off += 16) {
+                    boolean same = true;
+                    for (int k = 0; k < 16; k++) {
+                        if (scanRecord[off + k] != LEGACY_DFU_UUID_LE[k]) { same = false; break; }
+                    }
+                    if (same) return true;
+                }
+            } else if (type == 0x08 || type == 0x09) { // shortened / complete local name
+                if ("DfuTarg".equals(new String(scanRecord, dataStart, dataLen, java.nio.charset.StandardCharsets.UTF_8))) {
+                    return true;
+                }
+            }
+            i += len + 1;
+        }
+        return false;
+    }
+
+    private static String advertisedName(byte[] scanRecord) {
+        int i = 0;
+        while (i + 1 < scanRecord.length) {
+            int len = scanRecord[i] & 0xFF;
+            if (len == 0) break;
+            int type = scanRecord[i + 1] & 0xFF;
+            if ((type == 0x08 || type == 0x09) && i + 1 + len <= scanRecord.length) {
+                return new String(scanRecord, i + 2, len - 1, java.nio.charset.StandardCharsets.UTF_8);
+            }
+            i += len + 1;
+        }
+        return "?";
     }
 
     private void handleError(String message) {

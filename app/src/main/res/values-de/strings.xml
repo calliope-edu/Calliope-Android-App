@@ -69,6 +69,7 @@
     <string name="subject_dialog_share">Datei teilen…</string>
     <string name="text_dialog_share">Calliope mini Skript teilen</string>
     <string name="menu_fab_connect">Verbindung</string>
+    <string name="menu_fab_disconnect">Trennen</string>
     <string name="menu_fab_scripts">Programme</string>
     <string name="menu_fab_full_screen">Vollbild</string>
     <string name="menu_fab_scan_qr">QR scannen</string>
@@ -188,6 +189,7 @@
     <string name="error_device_version_incorrect">Geräteversion ist falsch. Service wird gestoppt.</string>
     <string name="error_file_path_missing">Dateipfad fehlt. Service wird gestoppt.</string>
     <string name="error_dfu_failed">DFU fehlgeschlagen. Service wird gestoppt.</string>
+    <string name="error_legacy_bootloader_unreachable">Der mini hat sein Programm neu gestartet, bevor das Telefon den DFU-Modus erreichen konnte. Auf diesem Telefon lässt sich ein mini 1/2 nur per Bluetooth flashen, wenn das Programm auf dem Board eine Kopplung verlangt. Zuerst ein Programm mit Kopplung flashen oder USB verwenden.</string>
     <string name="error_flashing_in_progress">Es läuft bereits ein Flash-Vorgang</string>
     <string name="error_unsupported_board_version">Nicht unterstützte Board-Version: %d</string>
     <string name="error_failed_prepare_firmware_zip">Firmware-ZIP konnte nicht vorbereitet werden</string>

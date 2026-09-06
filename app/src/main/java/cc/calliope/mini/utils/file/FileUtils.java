@@ -159,11 +159,14 @@ public class FileUtils {
         //
         // We can confirm V3-compatibility without trusting line 1 by
         // scanning the records for either:
-        //   - a data record at an address >= 0x40000 (nRF51 / V1+V2 only
-        //     has 256 KB flash, so anything addressed >= 0x40000 must be
-        //     V3-targeted), OR
-        //   - any Microsoft-Universal-Hex block-marker record types
-        //     (0x0A–0x0E), which only appear in genuine universal hexes.
+        //   - a data record in the flash region at an address >= 0x40000
+        //     (nRF51 / V1+V2 only has 256 KB flash, so code addressed
+        //     >= 0x40000 must be V3-targeted) — the UICR block at
+        //     0x10001014 that every nRF51 hex carries does NOT count, OR
+        //   - a Microsoft-Universal-Hex block-marker record (0x0A–0x0D),
+        //     which only appears in genuine universal hexes. 0x0E is
+        //     MakeCode's embedded-source record and shows up in plain V1/V2
+        //     and V3 hexes alike, so it is no evidence.
         //
         // Reclassify VERSION_2 → UNIVERSAL when either signal fires.
         // Leave VERSION_3 and UNIVERSAL alone (the shallow match is
@@ -181,6 +184,11 @@ public class FileUtils {
      * O(file size) but only invoked for V2-classified files where the
      * deeper check is needed.
      */
+    /** First code address only an nRF52 (V3) can hold: nRF51 flash is 256 KB. */
+    private static final long V3_ONLY_FLASH_START = 0x40000L;
+    /** Above this lie UICR/FICR and peripherals, not code — ignore for version evidence. */
+    private static final long FLASH_REGION_END = 0x10000000L;
+
     private static boolean containsV3Evidence(String filePath) {
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             long baseAddr = 0;
@@ -210,14 +218,15 @@ public class FileUtils {
                     try {
                         int loAddr = Integer.parseInt(line.substring(3, 7), 16);
                         long fullAddr = baseAddr + loAddr;
-                        if (fullAddr >= 0x40000L) {
+                        if (fullAddr >= V3_ONLY_FLASH_START && fullAddr < FLASH_REGION_END) {
                             return true;  // V3-only flash region
                         }
                     } catch (NumberFormatException ignored) { /* malformed */ }
-                } else if (recordType >= 0x0A && recordType <= 0x0E) {
-                    // Microsoft Universal-Hex block-marker records — only
-                    // present in genuine universal hexes (irrespective of
-                    // whether the "C0DE" line-2 marker is also there).
+                } else if (recordType >= 0x0A && recordType <= 0x0D) {
+                    // Microsoft Universal-Hex block-marker records (Block
+                    // Start / End, Padded Data, Custom Data) — only present
+                    // in genuine universal hexes, whether or not the "C0DE"
+                    // line-2 marker is also there.
                     return true;
                 }
             }

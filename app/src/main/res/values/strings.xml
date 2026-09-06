@@ -119,6 +119,7 @@
     <string name="partial_flashing_failed">Partial flashing failed, attempting full flashing</string>
     <string name="points" translatable="false">…</string>
     <string name="menu_fab_connect">Connection</string>
+    <string name="menu_fab_disconnect">Disconnect</string>
     <string name="menu_fab_scripts">Programs</string>
     <string name="menu_fab_full_screen">Full screen</string>
     <string name="menu_fab_scan_qr">Scan QR</string>
@@ -259,6 +260,7 @@
     <string name="error_device_version_incorrect">Device version is incorrect. Service will stop.</string>
     <string name="error_file_path_missing">File path is missing. Service will stop.</string>
     <string name="error_dfu_failed">DFU failed. Service will stop.</string>
+    <string name="error_legacy_bootloader_unreachable">The board restarted its program before the phone could reach its DFU mode. On this phone a mini 1/2 can be flashed over Bluetooth only if the program on the board requires pairing. Flash a program with pairing enabled first, or use USB.</string>
     <string name="error_flashing_in_progress">Flashing is already in progress</string>
     <string name="error_unsupported_board_version">Unsupported board version: %d</string>
     <string name="error_failed_prepare_firmware_zip">Failed to prepare firmware ZIP</string>

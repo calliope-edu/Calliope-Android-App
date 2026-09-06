@@ -2,6 +2,7 @@ package cc.calliope.mini.core.bluetooth
 
 import android.app.Service
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -58,6 +59,20 @@ class CheckService : Service() {
 
     private var stateJob: Job? = null
 
+    /**
+     * The current board is chosen in the pattern dialog and forgotten in
+     * Settings ("remove all"). Both only touch SharedPreferences, so this is
+     * the one place to learn that the target changed — without it the
+     * service kept scanning for the old MAC and the FAB kept showing a
+     * board that had just been removed. Kept as a field: the preference
+     * manager holds listeners weakly.
+     */
+    private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == null || key == Constants.CURRENT_DEVICE_ADDRESS) {
+            mainHandler.post { updateScanningState() }
+        }
+    }
+
     /** Scanning is allowed only when nothing is running (no flash, no
      *  bonding) and no editor holds a live BLE session with the board. */
     private fun onStateChanged(mode: AppMode, control: Boolean) {
@@ -104,9 +119,10 @@ class CheckService : Service() {
         isRunning = true
         Log.d(TAG, "Service started")
 
-        // Get MAC address from preferences
+        // Get MAC address from preferences and follow it from now on
         val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
         macAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
+        preferences.registerOnSharedPreferenceChangeListener(prefsListener)
 
         // Observe application state and lifecycle on main thread
         mainHandler.post {
@@ -134,9 +150,15 @@ class CheckService : Service() {
     }
 
     private fun updateScanningState() {
-        // Re-read MAC address in case it changed
+        // Re-read the target; a changed (or removed) board invalidates the
+        // running scan and the availability derived from it.
         val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        macAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
+        val newMac = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
+        if (newMac != macAddress) {
+            Log.d(TAG, "current device changed: '$macAddress' -> '$newMac'")
+            macAddress = newMac
+            stopScan()
+        }
 
         if (lastLoggedCanScan != canScan) {
             lastLoggedCanScan = canScan
@@ -240,6 +262,8 @@ class CheckService : Service() {
         mainHandler.post {
             ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleObserver)
         }
+        PreferenceManager.getDefaultSharedPreferences(applicationContext)
+            .unregisterOnSharedPreferenceChangeListener(prefsListener)
         stateJob?.cancel()
         scanJob?.cancel()
         statusCheckJob?.cancel()

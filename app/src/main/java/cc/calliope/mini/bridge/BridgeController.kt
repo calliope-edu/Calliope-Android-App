@@ -16,6 +16,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import androidx.preference.PreferenceManager
 import cc.calliope.mini.R
+import cc.calliope.mini.core.bluetooth.BleUuids
+import cc.calliope.mini.core.bluetooth.GattConnection
 import cc.calliope.mini.core.service.FlashingService
 import cc.calliope.mini.core.state.AppMode
 import cc.calliope.mini.core.state.AppStateRepository
@@ -37,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap
  * Dispatcher for the Calliope native-proxy bridge.
  *
  * One controller per host fragment. Owns:
- *   - the BLE session ([BridgeBleSession])
+ *   - the BLE session ([GattConnection])
  *   - the JS-event sender (writes to `window.__calliopeNative.onMessage`)
  *   - the flash pipeline (hex → temp file → [FlashingService] + progress
  *     receiver → flashProgress events)
@@ -50,10 +52,11 @@ class BridgeController(
     private val context: Context,
     private val webView: WebView,
     private val lifecycleOwner: LifecycleOwner,
-) : BridgeBleSession.Listener {
+) : GattConnection.Listener {
 
     private val main = Handler(Looper.getMainLooper())
-    private val session = BridgeBleSession(context.applicationContext, this)
+    /** Open-mode link (CODAL open firmware): default config, no bonding. */
+    private val session = GattConnection(context.applicationContext, this)
 
 
     /** GATT characteristics the JS side has subscribed to. We forward
@@ -73,7 +76,7 @@ class BridgeController(
     private fun reportControl() {
         if (!controlReported) {
             controlReported = true
-            AppStateRepository.setControl(true)
+            AppStateRepository.setControl(true) { main.post { disconnectByUser() } }
         }
     }
 
@@ -222,20 +225,26 @@ class BridgeController(
     }
 
     private fun handleDisconnect(id: String, args: JSONObject) {
-        notifySubs.clear()
-        session.disconnect()
-        emitState("ble", status = "disconnected", deviceName = "")
+        disconnectByUser()
         replyOk(id)
     }
 
-    // BridgeBleSession delivers these on a binder thread; marshal to main so
+    /** End the session from the native side (FAB menu) — the widget sees a plain disconnect. */
+    private fun disconnectByUser() {
+        if (destroyed) return
+        notifySubs.clear()
+        session.disconnect()
+        emitState("ble", status = "disconnected", deviceName = "")
+    }
+
+    // GattConnection delivers these on a binder thread; marshal to main so
     // all controller state stays single-threaded.
     override fun onConnected(deviceName: String?) {
         main.post { onConnectedMain(deviceName) }
     }
 
-    override fun onDisconnected(reason: String) {
-        main.post { onDisconnectedMain(reason) }
+    override fun onDisconnected(status: Int) {
+        main.post { onDisconnectedMain("gatt status=$status") }
     }
 
     override fun onError(message: String) {
@@ -263,7 +272,7 @@ class BridgeController(
         // Auto-subscribe Nordic UART TX so REPL/console/live-data reaches the
         // widget as `serialData` without the web side requesting it. Best-effort:
         // fails silently on programs with no UART service (e.g. MicroPython).
-        session.enableNotify(uartService, uartTx) { /* best-effort */ }
+        session.enableNotify(BleUuids.UART_SERVICE, BleUuids.UART_TX) { /* best-effort */ }
         cancelConnectTimeout()
         val id = pendingConnectReplyId
         pendingConnectReplyId = null
@@ -296,7 +305,7 @@ class BridgeController(
         // layer (serial.ts onSerialData/onSerialLine) consumes directly. This
         // is the inbound half of the proxy serial channel; without it proxy
         // serial is write-only.
-        if (serviceUuid == uartService && characteristicUuid == uartTx) {
+        if (serviceUuid == BleUuids.UART_SERVICE && characteristicUuid == BleUuids.UART_TX) {
             sendEvent("serialData", JSONObject().put("data", base64Encode(data)))
             return
         }
@@ -360,14 +369,10 @@ class BridgeController(
     // ---- Serial (UART) ----------------------------------------------------
 
     /** Nordic UART RX (write-from-host) characteristic in CODAL. */
-    private val uartService: UUID = UUID.fromString("6e400001-b5a3-f393-e0a9-e50e24dcca9e")
-    private val uartRx: UUID = UUID.fromString("6e400003-b5a3-f393-e0a9-e50e24dcca9e")
-    private val uartTx: UUID = UUID.fromString("6e400002-b5a3-f393-e0a9-e50e24dcca9e")
-
     private fun handleSerialWrite(id: String, args: JSONObject) {
         if (!session.isConnected) { replyError(id, "not connected"); return }
         val data = base64Decode(args.optString("data", ""))
-        session.write(uartService, uartRx, data, withResponse = false) { ok ->
+        session.write(BleUuids.UART_SERVICE, BleUuids.UART_RX, data, withResponse = false) { ok ->
             if (ok) replyOk(id) else replyError(id, "serial write failed")
         }
     }
@@ -564,10 +569,6 @@ class BridgeController(
         }, timeoutMs = 1500)
     }
 
-    /** MbitMore service exposed by pxt-blocks-runtime. */
-    private val mbitMoreService: UUID = UUID.fromString("0b50f3e4-607f-4151-9091-7d008d6ffc5c")
-    private val mbitMoreState: UUID = UUID.fromString("0b500101-607f-4151-9091-7d008d6ffc5c")
-
     /**
      * Read MbitMore STATE and call `onResult(true)` if the device is
      * running the real pxt-blocks-runtime (STATE filled with sensor data),
@@ -597,7 +598,7 @@ class BridgeController(
         }
         timeout = Runnable { finish(false) }
         main.postDelayed(timeout, 1500)
-        session.read(mbitMoreService, mbitMoreState) { data ->
+        session.read(BleUuids.MBIT_MORE_SERVICE, BleUuids.MBIT_MORE_STATE) { data ->
             val anyNonZero = data != null && data.any { it != 0.toByte() }
             main.post { finish(anyNonZero) }
         }

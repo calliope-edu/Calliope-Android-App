@@ -116,9 +116,30 @@ object AppStateRepository {
         }
     }
 
+    /** How to end the current control session, registered by its owner. */
+    @Volatile
+    private var controlDisconnect: (() -> Unit)? = null
+
     @JvmStatic
-    fun setControl(active: Boolean) {
+    fun setControl(active: Boolean) = setControl(active, null)
+
+    /**
+     * Flag a live editor session. The owner passes [disconnect] so the UI
+     * (the FAB menu) can end the session without knowing which editor —
+     * Cardboard UART, Scratch Link or the campus bridge — holds it.
+     */
+    @JvmStatic
+    fun setControl(active: Boolean, disconnect: (() -> Unit)?) {
+        controlDisconnect = if (active) disconnect else null
         _control.value = active
+    }
+
+    /** End the current control session. Returns false if none is registered. */
+    @JvmStatic
+    fun disconnectControl(): Boolean {
+        val action = controlDisconnect ?: return false
+        action()
+        return true
     }
 
     @JvmStatic

@@ -4,7 +4,6 @@ import androidx.annotation.IntDef;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.util.UUID;
 
 public class Constants {
     public static final String EXTRA_FILE_PATH = "cc.calliope.mini.EXTRA_FILE_PATH";
@@ -30,7 +29,4 @@ public class Constants {
     @Retention(RetentionPolicy.SOURCE)
     public @interface HardwareVersion {
     }
-    public static final UUID DFU_CONTROL_SERVICE_UUID = UUID.fromString("E95D93B0-251D-470A-A062-FA1922DFA9A8");
-    public static final UUID DFU_CONTROL_CHARACTERISTIC_UUID = UUID.fromString("E95D93B1-251D-470A-A062-FA1922DFA9A8");
-    public static final UUID SECURE_DFU_SERVICE_UUID = UUID.fromString("0000FE59-0000-1000-8000-00805F9B34FB");
 }

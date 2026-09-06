@@ -315,6 +315,19 @@ public class WebFragment extends Fragment implements DownloadListener, HostAcces
                 window.__calliopeVM = vm;
                 var currentExt = null, connecting = false;
 
+                // Native "Disconnect" (FAB menu). Going through scratch-vm
+                // is what makes it a clean disconnect: the vm drops
+                // `_connected` before closing the socket, so scratch-gui
+                // shows plain "disconnected" instead of the connection-lost
+                // modal — which this driver would otherwise treat as an
+                // unexpected drop and silently reconnect.
+                window.__calliopeDisconnect = function(){
+                  try {
+                    var ext = currentExt || extIdOf(store);
+                    if (isConnected(vm, ext)) vm.disconnectPeripheral(ext);
+                  } catch(e){}
+                };
+
                 // Auto-connect to the first peripheral seen during any scan —
                 // whether we start it silently at launch or the user starts it
                 // from the modal's Connect button.
