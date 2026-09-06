@@ -77,7 +77,7 @@ class ScratchLinkBleSession(
     private fun reportControl() {
         if (!controlReported) {
             controlReported = true
-            AppStateRepository.setControl(true)
+            AppStateRepository.setControl(true) { ScratchLinkServer.requestUserDisconnect() }
         }
     }
 

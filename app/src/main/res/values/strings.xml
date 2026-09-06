@@ -119,6 +119,7 @@
     <string name="partial_flashing_failed">Partial flashing failed, attempting full flashing</string>
     <string name="points" translatable="false">…</string>
     <string name="menu_fab_connect">Connection</string>
+    <string name="menu_fab_disconnect">Disconnect</string>
     <string name="menu_fab_scripts">Programs</string>
     <string name="menu_fab_full_screen">Full screen</string>
     <string name="menu_fab_scan_qr">Scan QR</string>

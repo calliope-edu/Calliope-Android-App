@@ -69,6 +69,7 @@
     <string name="subject_dialog_share">Datei teilen…</string>
     <string name="text_dialog_share">Calliope mini Skript teilen</string>
     <string name="menu_fab_connect">Verbindung</string>
+    <string name="menu_fab_disconnect">Trennen</string>
     <string name="menu_fab_scripts">Programme</string>
     <string name="menu_fab_full_screen">Vollbild</string>
     <string name="menu_fab_scan_qr">QR scannen</string>

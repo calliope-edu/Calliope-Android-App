@@ -239,9 +239,11 @@ class WebBleFragment : Fragment() {
     private val uartListener = object : UartSession.Listener {
         override fun onConnected() {
             // Report the control session only once the link is real, not
-            // optimistically at connect time.
+            // optimistically at connect time. The FAB's "Disconnect" ends it
+            // like an explicit JS disconnect: the driver stays off until the
+            // user leaves and re-enters the editor.
             AppStateRepository.updateNotification(INFO, R.string.flashing_device_connected)
-            AppStateRepository.setControl(true)
+            AppStateRepository.setControl(true) { bridge.disconnect() }
         }
 
         override fun onReady() {

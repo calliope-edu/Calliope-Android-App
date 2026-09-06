@@ -2,6 +2,9 @@ package cc.calliope.mini.scratchlink
 
 import android.content.Context
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
+import cc.calliope.mini.core.state.AppStateRepository
 import android.util.Log
 import org.java_websocket.WebSocket
 import org.java_websocket.handshake.ClientHandshake
@@ -143,6 +146,40 @@ class ScratchLinkServer private constructor(private val appCtx: Context) :
         fun closeAllSessions(reason: String) {
             instance?.closeSessions(reason)
         }
+
+        /**
+         * How to ask the Blocks page itself to disconnect (evaluates
+         * `window.__calliopeDisconnect`). Registered by the retained editor
+         * that owns the WebView; null while no Blocks page is alive.
+         */
+        @Volatile
+        private var userDisconnectHook: (() -> Unit)? = null
+
+        @JvmStatic
+        fun setUserDisconnectHook(hook: (() -> Unit)?) {
+            userDisconnectHook = hook
+        }
+
+        /**
+         * End the live Blocks session on the user's request (FAB menu).
+         * Prefers the page-side path so scratch-vm records an intended
+         * disconnect; if the page doesn't release the board within
+         * [USER_DISCONNECT_FALLBACK_MS], drop the sockets ourselves.
+         */
+        @JvmStatic
+        fun requestUserDisconnect() {
+            val hook = userDisconnectHook
+            if (hook == null) {
+                closeAllSessions("user disconnect")
+                return
+            }
+            hook()
+            Handler(Looper.getMainLooper()).postDelayed({
+                if (AppStateRepository.control.value) closeAllSessions("user disconnect (fallback)")
+            }, USER_DISCONNECT_FALLBACK_MS)
+        }
+
+        private const val USER_DISCONNECT_FALLBACK_MS = 1500L
 
         /**
          * Start the loopback server once. Idempotent and safe to call from

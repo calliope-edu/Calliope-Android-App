@@ -76,7 +76,7 @@ class BridgeController(
     private fun reportControl() {
         if (!controlReported) {
             controlReported = true
-            AppStateRepository.setControl(true)
+            AppStateRepository.setControl(true) { main.post { disconnectByUser() } }
         }
     }
 
@@ -225,10 +225,16 @@ class BridgeController(
     }
 
     private fun handleDisconnect(id: String, args: JSONObject) {
+        disconnectByUser()
+        replyOk(id)
+    }
+
+    /** End the session from the native side (FAB menu) — the widget sees a plain disconnect. */
+    private fun disconnectByUser() {
+        if (destroyed) return
         notifySubs.clear()
         session.disconnect()
         emitState("ble", status = "disconnected", deviceName = "")
-        replyOk(id)
     }
 
     // GattConnection delivers these on a binder thread; marshal to main so

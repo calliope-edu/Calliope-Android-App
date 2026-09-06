@@ -423,9 +423,11 @@ public abstract class BaseActivity extends AppCompatActivity
 
     public void addPopupMenuItems(List<PopupItem> popupItems) {
         // While controlling the mini (a live editor session) we're already
-        // linked to it, so pairing to another device makes no sense — hide
-        // the connect item.
-        if (!AppStateRepository.getControl().getValue()) {
+        // linked to it, so pairing to another device makes no sense — offer
+        // ending the session instead of the connect item.
+        if (AppStateRepository.getControl().getValue()) {
+            popupItems.add(new PopupItem(R.string.menu_fab_disconnect, R.drawable.ic_disconnect));
+        } else {
             popupItems.add(new PopupItem(R.string.menu_fab_connect, R.drawable.ic_connect));
         }
     }
@@ -437,7 +439,10 @@ public abstract class BaseActivity extends AppCompatActivity
         if (!(parent.getItemAtPosition(position) instanceof PopupItem item)) {
             return;
         }
-        if (item.titleId() == R.string.menu_fab_connect) {
+        if (item.titleId() == R.string.menu_fab_disconnect) {
+            // The session owner registered how to end it (see setControl).
+            AppStateRepository.disconnectControl();
+        } else if (item.titleId() == R.string.menu_fab_connect) {
             showPatternDialog(new FobParams(
                     patternFab.getWidth(),
                     patternFab.getHeight(),
