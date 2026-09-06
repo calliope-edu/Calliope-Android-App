@@ -12,7 +12,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Base64
 import android.util.Log
-import cc.calliope.mini.bridge.BridgeBleSession
+import cc.calliope.mini.core.bluetooth.GattConnection
 import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.utils.Permission
 import cc.calliope.mini.utils.Utils
@@ -59,7 +59,7 @@ class ScratchLinkBleSession(
     private val discovered = HashMap<String, BluetoothDevice>()
     private val lastAdvertised = HashMap<String, Long>()
     private var scanning = false
-    private var gatt: BridgeBleSession? = null
+    private var gatt: GattConnection? = null
     private var pendingConnectId: Any? = null
     /** Device of the in-flight connect, kept for the one-shot 133 retry. */
     private var pendingDevice: BluetoothDevice? = null
@@ -402,8 +402,8 @@ class ScratchLinkBleSession(
     private fun startConnect(device: BluetoothDevice) {
         // The listener needs a reference to its own session, which only
         // exists after construction — capture it through a holder var.
-        var session: BridgeBleSession? = null
-        val created = BridgeBleSession(appCtx, listenerFor { session })
+        var session: GattConnection? = null
+        val created = GattConnection(appCtx, listenerFor { session })
         session = created
         gatt = created
         created.connect(device)
@@ -414,12 +414,12 @@ class ScratchLinkBleSession(
      * usually a transient stack hiccup (seen right after a previous close):
      * retry once, transparently to scratch-vm, before reporting the error.
      */
-    private fun retryConnectOnce(reason: String): Boolean {
+    private fun retryConnectOnce(status: Int): Boolean {
         val id = pendingConnectId ?: return false
         val device = pendingDevice ?: return false
-        if (connectRetried || !reason.contains("133")) return false
+        if (connectRetried || status != GattConnection.GATT_ERROR_133) return false
         connectRetried = true
-        Log.w(TAG, "connect failed ($reason) — retrying once in ${CONNECT_RETRY_DELAY_MS}ms")
+        Log.w(TAG, "connect failed (gatt status=$status) — retrying once in ${CONNECT_RETRY_DELAY_MS}ms")
         gatt = null
         handler.postDelayed({
             if (!disposed && pendingConnectId === id && gatt == null) startConnect(device)
@@ -428,12 +428,12 @@ class ScratchLinkBleSession(
     }
 
     /**
-     * A GATT listener bound to one [BridgeBleSession]. Every callback checks
+     * A GATT listener bound to one [GattConnection]. Every callback checks
      * whether that session is still the current one; a stale session (already
      * replaced by a newer connect, or cleared by discover/dispose) is ignored
      * so its late disconnect can't tear down a healthy socket.
      */
-    private fun listenerFor(owner: () -> BridgeBleSession?) = object : BridgeBleSession.Listener {
+    private fun listenerFor(owner: () -> GattConnection?) = object : GattConnection.Listener {
         private fun isStale(): Boolean {
             val o = owner()
             return o == null || gatt !== o
@@ -451,14 +451,14 @@ class ScratchLinkBleSession(
             }
         }
 
-        override fun onDisconnected(reason: String) {
+        override fun onDisconnected(status: Int) {
             handler.post {
                 if (isStale()) return@post
-                if (retryConnectOnce(reason)) return@post
+                if (retryConnectOnce(status)) return@post
                 reportIdle()
                 pendingConnectId?.let {
                     pendingConnectId = null
-                    sendError(it, -32500, "connect failed: $reason")
+                    sendError(it, -32500, "connect failed: gatt status=$status")
                 }
                 // Peripheral went away — closing the socket is how the
                 // scratch-vm client learns about it (handleDisconnectError).
@@ -574,7 +574,7 @@ class ScratchLinkBleSession(
         }
     }
 
-    private fun connectedGatt(id: Any?): BridgeBleSession? {
+    private fun connectedGatt(id: Any?): GattConnection? {
         val g = gatt
         if (g == null || !g.isConnected) {
             sendError(id, -32500, "peripheral is not connected")

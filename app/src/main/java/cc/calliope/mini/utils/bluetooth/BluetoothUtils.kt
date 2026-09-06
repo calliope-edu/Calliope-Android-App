@@ -48,6 +48,7 @@ class BluetoothUtils {
             }
         }
 
+        @JvmStatic
         fun isValidBluetoothMAC(macAddress: String?): Boolean {
             if (macAddress == null) {
                 Log.e(TAG, "MAC address is null")

@@ -21,7 +21,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import cc.calliope.mini.R
 import cc.calliope.mini.ui.activity.NotificationActivity
-import cc.calliope.mini.core.service.GattStatus
+import cc.calliope.mini.core.bluetooth.GattStatus
 import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.Notification
 import cc.calliope.mini.core.state.FlashPhase
@@ -1183,7 +1183,7 @@ class PartialFlashingService : Service() {
                         "Device may need to be re-paired.")
             }
             else -> {
-                Log.e(TAG, "GATT Error $status: ${GattStatus.fromCode(status)?.description ?: "Unknown error"}")
+                Log.e(TAG, "GATT Error $status: ${GattStatus.fromCode(status).name}")
             }
         }
     }
@@ -1191,7 +1191,7 @@ class PartialFlashingService : Service() {
     // GATT Callback
     private val gattCallback = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
-            val statusDesc = GattStatus.fromCode(status)?.description ?: "Unknown ($status)"
+            val statusDesc = "${GattStatus.fromCode(status).name} ($status)"
             Log.d(TAG, "onConnectionStateChange: status=$statusDesc, newState=$newState")
 
             // Handle device-initiated disconnect (reboot)

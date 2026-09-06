@@ -49,6 +49,7 @@ import cc.calliope.mini.utils.settings.Preference;
 import cc.calliope.mini.utils.settings.Settings;
 import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
+import cc.calliope.mini.utils.bluetooth.BluetoothUtils;
 import cc.calliope.mini.core.service.partialflashing.PartialFlashingService;
 import no.nordicsemi.android.dfu.DfuServiceInitiator;
 
@@ -225,7 +226,7 @@ public class FlashingService extends LifecycleService {
         currentAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
         currentPattern = preferences.getString(Constants.CURRENT_DEVICE_PATTERN, "");
 
-        if (!checkBluetoothMAC(currentAddress)) {
+        if (!BluetoothUtils.isValidBluetoothMAC(currentAddress)) {
             Log.e(TAG, "Device address is incorrect");
             handleError(getString(R.string.error_device_address_incorrect));
             return false;
@@ -288,22 +289,6 @@ public class FlashingService extends LifecycleService {
             return false;
         }
 
-        return true;
-    }
-
-    public boolean checkBluetoothMAC(String macAddress) {
-        if (macAddress == null) {
-            Log.e(TAG, "MAC address is null");
-            return false;
-        }
-
-        String regex = "^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$";
-        if (!macAddress.matches(regex)) {
-            Log.i(TAG, "Invalid Bluetooth MAC address: " + macAddress);
-            return false;
-        }
-
-        Log.i(TAG, "MAC address: " + macAddress);
         return true;
     }
 
@@ -419,7 +404,7 @@ public class FlashingService extends LifecycleService {
         // Start the service
         Intent service = new Intent(this, LegacyDfuService.class);
         service.putExtra(Constants.CURRENT_DEVICE_ADDRESS, currentAddress);
-        service.putExtra("resultReceiver", resultReceiver);
+        service.putExtra(LegacyDfuService.EXTRA_RESULT_RECEIVER, resultReceiver);
         startService(service);
     }
 
