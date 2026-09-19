@@ -30,6 +30,7 @@ import androidx.lifecycle.LifecycleService;
 import androidx.preference.PreferenceManager;
 
 import java.io.File;
+import java.util.UUID;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -88,10 +89,19 @@ public class FlashingService extends LifecycleService {
     private static final String NOTIFICATION_CHANNEL_ID = "flashing_service_channel";
     private static final int NOTIFICATION_ID = 201;
     public static final String EXTRA_FORCE_FULL_DFU = "extra_force_full_dfu";
+    /** Root of the per-session work directories under cacheDir. */
+    private static final String WORK_ROOT = "flash";
     private String currentAddress;
     private String currentPattern;
     private int boardVersion;
     private String currentPath;
+    /**
+     * This session's own directory for application.bin / .dat / update.zip.
+     * The file names are fixed by what Nordic DFU expects inside the zip, so
+     * uniqueness has to come from the directory: a fixed cacheDir path let an
+     * overlapping or crashed flash clobber the files of the next one.
+     */
+    private File workDir;
     private boolean forceFullDfu = false;
 
     // True while this instance owns the flash session (claimed through
@@ -136,6 +146,10 @@ public class FlashingService extends LifecycleService {
         super.onDestroy();
         Log.d(TAG, "FlashingService destroyed");
         mainHandler.removeCallbacksAndMessages(null);
+        // The session is over (Done stops this service), DFU no longer reads the zip.
+        if (workDir != null) {
+            FileUtils.deleteRecursively(workDir);
+        }
         if (backgroundExecutor != null) {
             backgroundExecutor.shutdownNow();
         }
@@ -196,6 +210,8 @@ public class FlashingService extends LifecycleService {
             return START_NOT_STICKY;
         }
         flashingJobActive = true;
+        // We hold the mutex, so nothing else can be using the work area.
+        FileUtils.deleteRecursively(new File(getCacheDir(), WORK_ROOT));
 
         // From here on every refusal goes through handleError(), which ends
         // the session and stops the service — otherwise the foreground
@@ -446,7 +462,13 @@ public class FlashingService extends LifecycleService {
             HexParser parser = new HexParser(currentPath);
             byte[] firmware = parser.getCalliopeBin(boardVersion);
 
-            String firmwarePath = new File(getCacheDir(), "application.bin").getAbsolutePath();
+            workDir = new File(new File(getCacheDir(), WORK_ROOT), UUID.randomUUID().toString());
+            if (!workDir.mkdirs()) {
+                Log.e(TAG, "Failed to create work directory " + workDir);
+                return null;
+            }
+
+            String firmwarePath = new File(workDir, "application.bin").getAbsolutePath();
             if (!FileUtils.writeFile(firmwarePath, firmware)) {
                 Log.e(TAG, "Failed to write firmware to file");
                 return null;
@@ -456,14 +478,14 @@ public class FlashingService extends LifecycleService {
             InitPacket initPacket = new InitPacket(boardVersion);
             byte[] initData = initPacket.encode(firmware);
 
-            String initPacketPath = new File(getCacheDir(), "application.dat").getAbsolutePath();
+            String initPacketPath = new File(workDir, "application.dat").getAbsolutePath();
             if (!FileUtils.writeFile(initPacketPath, initData)) {
                 Log.e(TAG, "Failed to write init packet to file");
                 return null;
             }
 
             // Create ZIP
-            FirmwareZipCreator zipCreator = new FirmwareZipCreator(this, firmwarePath, initPacketPath);
+            FirmwareZipCreator zipCreator = new FirmwareZipCreator(new File(workDir, "update.zip"), firmwarePath, initPacketPath);
             String zipPath = zipCreator.createZip();
             if (zipPath == null) {
                 Log.e(TAG, "Failed to create ZIP");
