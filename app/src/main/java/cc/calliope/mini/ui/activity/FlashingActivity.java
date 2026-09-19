@@ -1,8 +1,6 @@
 package cc.calliope.mini.ui.activity;
 
-import static cc.calliope.mini.core.state.Notification.ERROR;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -15,9 +13,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.util.Consumer;
 
 import cc.calliope.mini.R;
-import cc.calliope.mini.core.service.FlashingService;
+import cc.calliope.mini.core.service.FlashLauncher;
 import cc.calliope.mini.core.state.AppMode;
-import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.core.state.FlashEvent;
 import cc.calliope.mini.core.state.FlashMode;
 import cc.calliope.mini.core.state.FlashResult;
@@ -142,8 +139,10 @@ public class FlashingActivity extends AppCompatActivity {
 
     private void onRetryClicked(View view) {
         Log.d(TAG, "retry requested");
-        if (!Boolean.TRUE.equals(AppStateRepository.getDeviceAvailable().getValue())) {
-            AppStateRepository.updateNotification(ERROR, R.string.error_no_connected);
+        // Retry repeats the flash with the user's configured mode (partial if
+        // enabled, otherwise full DFU) — same as a normal flash — of the same
+        // file, to the board that is current now.
+        if (!FlashLauncher.retry(this).started) {
             return;
         }
 
@@ -152,13 +151,6 @@ public class FlashingActivity extends AppCompatActivity {
         progressBar.setProgress(0);
         title.setText("");
         status.setText(R.string.flashing_process_starting);
-
-        // Retry repeats the flash with the user's configured mode (partial if
-        // enabled, otherwise full DFU) — same as a normal flash. The previous
-        // force-full-DFU was a workaround for the stopSelf race (fixed in
-        // FlashingService) and for unreliable partial flashing bonding.
-        Intent serviceIntent = new Intent(this, FlashingService.class);
-        startService(serviceIntent);
     }
 
     private void finishActivity() {

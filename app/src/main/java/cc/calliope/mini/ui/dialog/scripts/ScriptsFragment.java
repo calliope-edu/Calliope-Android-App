@@ -43,17 +43,14 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import cc.calliope.mini.core.service.FlashingService;
+import cc.calliope.mini.core.service.FlashLauncher;
 import cc.calliope.mini.utils.file.FileUtils;
 import cc.calliope.mini.utils.file.FileWrapper;
 import cc.calliope.mini.R;
-import cc.calliope.mini.ui.activity.FlashingActivity;
 import cc.calliope.mini.ui.dialog.DialogUtils;
 import cc.calliope.mini.core.state.AppStateRepository;
-import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.databinding.FragmentScriptsBinding;
 import cc.calliope.mini.ui.model.EditorType;
-import cc.calliope.mini.utils.settings.Settings;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.utils.WindowUtils;
 
@@ -160,24 +157,10 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     }
 
     private void openDfuActivity(FileWrapper file) {
-        if (!Utils.isBluetoothEnabled(requireContext())) {
-            AppStateRepository.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
+        // On a refusal the sheet stays open: the reason shows as a snackbar in it.
+        if (FlashLauncher.launch(activity, file.getAbsolutePath()).started) {
             dismiss();
-            return;
         }
-        if (!AppStateRepository.getDeviceAvailable().getValue()) {
-            AppStateRepository.updateNotification(ERROR, R.string.error_no_connected);
-            return;
-        }
-        if (!Settings.isBackgroundFlashingEnable(activity)) {
-            final Intent intent = new Intent(activity, FlashingActivity.class);
-            intent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
-            startActivity(intent);
-        }
-        Intent serviceIntent = new Intent(activity, FlashingService.class);
-        serviceIntent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
-        activity.startService(serviceIntent);
-        dismiss();
     }
 
     private void openPopupMenu(View view, FileWrapper file) {

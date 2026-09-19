@@ -2,7 +2,6 @@ package cc.calliope.mini.bridge
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -19,7 +18,7 @@ import cc.calliope.mini.R
 import cc.calliope.mini.core.bluetooth.BleUuids
 import cc.calliope.mini.core.bluetooth.BoardGeneration
 import cc.calliope.mini.core.bluetooth.GattConnection
-import cc.calliope.mini.core.service.FlashingService
+import cc.calliope.mini.core.service.FlashLauncher
 import cc.calliope.mini.core.state.AppMode
 import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.FlashEvent
@@ -534,8 +533,8 @@ class BridgeController(
      * disconnect and kick FlashingService.
      */
     private fun beginFlash(id: String, hexFile: File, forceFullDfu: Boolean) {
-        // FlashingService reads its target MAC/version from SharedPreferences
-        // (already populated by the device-pairing flow). The radio is
+        // FlashLauncher resolves the target (the board picked in the pattern
+        // dialog) and hands it to FlashingService. The radio is
         // single-consumer on Android — partial flash needs an exclusive
         // GATT connection. We drop our proxy session and WAIT for the
         // STATE_DISCONNECTED callback (or a 1.5 s timeout) before starting
@@ -555,17 +554,18 @@ class BridgeController(
         emitFlashProgress(phase = "prepare", progress = 0)
 
         session.disconnect(onClosed = {
-            try {
-                val intent = Intent(context, FlashingService::class.java)
-                intent.putExtra(Constants.EXTRA_FILE_PATH, hexFile.absolutePath)
-                if (forceFullDfu) {
-                    intent.putExtra(FlashingService.EXTRA_FORCE_FULL_DFU, true)
-                }
-                context.startService(intent)
-            } catch (e: Exception) {
+            // The widget renders progress itself, and the background scan was
+            // paused for this session, so "in range" can't be required.
+            val result = FlashLauncher.launch(
+                context, hexFile.absolutePath,
+                screen = FlashLauncher.Screen.NONE,
+                forceFullDfu = forceFullDfu,
+                requireInRange = false,
+            )
+            if (!result.started) {
                 flashInFlight = false
                 pendingFlashReplyId = null
-                replyError(id, "could not start flashing service: ${e.message}")
+                replyError(id, result.error ?: "could not start flashing service")
             }
         }, timeoutMs = 1500)
     }

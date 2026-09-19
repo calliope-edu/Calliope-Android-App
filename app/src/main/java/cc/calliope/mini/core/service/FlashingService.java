@@ -10,7 +10,6 @@ import android.app.NotificationChannel;
 import android.bluetooth.BluetoothDevice;
 import android.app.NotificationManager;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.Bundle;
@@ -24,7 +23,6 @@ import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.util.Consumer;
 import androidx.lifecycle.LifecycleService;
-import androidx.preference.PreferenceManager;
 
 import java.io.File;
 import java.util.UUID;
@@ -49,9 +47,7 @@ import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.RepoObserve;
 import cc.calliope.mini.utils.file.FileUtils;
 import cc.calliope.mini.utils.file.FileVersion;
-import cc.calliope.mini.utils.settings.Preference;
 import cc.calliope.mini.utils.settings.Settings;
-import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.utils.bluetooth.BluetoothUtils;
 import cc.calliope.mini.core.service.partialflashing.PartialFlashingService;
@@ -86,7 +82,6 @@ public class FlashingService extends LifecycleService {
     private static final String BOOTLOADER_LOST = "";
     private static final String NOTIFICATION_CHANNEL_ID = "flashing_service_channel";
     private static final int NOTIFICATION_ID = 201;
-    public static final String EXTRA_FORCE_FULL_DFU = "extra_force_full_dfu";
     /** Root of the per-session work directories under cacheDir. */
     private static final String WORK_ROOT = "flash";
     private String currentAddress;
@@ -199,7 +194,7 @@ public class FlashingService extends LifecycleService {
 
         // Claim the process-wide flash mutex. Refused only if another flash
         // session is live (e.g. a DfuService still winding down).
-        forceFullDfu = intent.getBooleanExtra(EXTRA_FORCE_FULL_DFU, false);
+        forceFullDfu = intent.getBooleanExtra(FlashLauncher.EXTRA_FORCE_FULL_DFU, false);
         FlashMode initialMode = !forceFullDfu && Settings.isPartialFlashingEnable(this)
                 ? FlashMode.PARTIAL : FlashMode.FULL_DFU;
         if (!AppStateRepository.beginFlash(initialMode)) {
@@ -221,7 +216,7 @@ public class FlashingService extends LifecycleService {
         String message = getString(R.string.flashing_process_starting);
         AppStateRepository.updateNotification(Notification.INFO, message);
 
-        if (!loadDeviceInfo()) {
+        if (!loadDeviceInfo(intent)) {
             return START_NOT_STICKY;
         }
 
@@ -254,11 +249,10 @@ public class FlashingService extends LifecycleService {
         return false;
     }
 
-    private boolean loadDeviceInfo() {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-
-        currentAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
-        currentPattern = preferences.getString(Constants.CURRENT_DEVICE_PATTERN, "");
+    /** The target travels in the intent (see FlashLauncher), not through SharedPreferences. */
+    private boolean loadDeviceInfo(Intent intent) {
+        currentAddress = intent.getStringExtra(FlashLauncher.EXTRA_DEVICE_ADDRESS);
+        currentPattern = intent.getStringExtra(FlashLauncher.EXTRA_DEVICE_NAME);
 
         if (!BluetoothUtils.isValidBluetoothMAC(currentAddress)) {
             Log.e(TAG, "Device address is incorrect");
@@ -266,7 +260,8 @@ public class FlashingService extends LifecycleService {
             return false;
         }
 
-        boardGeneration = BoardGeneration.current(this);
+        boardGeneration = BoardGeneration.fromPref(
+                intent.getIntExtra(FlashLauncher.EXTRA_BOARD_GENERATION, BoardGeneration.UNKNOWN.getPrefValue()));
         if (boardGeneration == BoardGeneration.UNKNOWN) {
             Log.e(TAG, "Device version is incorrect");
             handleError(getString(R.string.error_device_version_incorrect));
@@ -277,14 +272,7 @@ public class FlashingService extends LifecycleService {
     }
 
     private boolean loadFilePath(Intent intent) {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-
-        currentPath = intent.getStringExtra(Constants.EXTRA_FILE_PATH);
-        if (currentPath == null || currentPath.isEmpty()) {
-            currentPath = preferences.getString(Constants.CURRENT_FILE_PATH, "");
-        } else {
-            Preference.putString(getApplicationContext(), Constants.CURRENT_FILE_PATH, currentPath);
-        }
+        currentPath = intent.getStringExtra(FlashLauncher.EXTRA_FILE_PATH);
 
         if (currentPath == null || currentPath.isEmpty()) {
             Log.e(TAG, "File path is missing");
@@ -449,7 +437,7 @@ public class FlashingService extends LifecycleService {
 
         // Start the service
         Intent service = new Intent(this, LegacyDfuService.class);
-        service.putExtra(Constants.CURRENT_DEVICE_ADDRESS, currentAddress);
+        service.putExtra(LegacyDfuService.EXTRA_DEVICE_ADDRESS, currentAddress);
         service.putExtra(LegacyDfuService.EXTRA_RESULT_RECEIVER, resultReceiver);
         startService(service);
     }
