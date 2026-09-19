@@ -1,7 +1,6 @@
 package cc.calliope.mini.utils.hex
 
-import cc.calliope.mini.utils.Constants.MINI_V2
-import cc.calliope.mini.utils.Constants.MINI_V3
+import cc.calliope.mini.core.bluetooth.BoardGeneration
 import java.io.File
 
 class HexParser(private val path: String) {
@@ -22,11 +21,11 @@ class HexParser(private val path: String) {
         return crc
     }
 
-    fun getCalliopeBin(version: Int): ByteArray {
-        val (addressRange, dataTypeCondition) = when (version) {
-            MINI_V2 -> 0x18000u..0x3BFFFu to { dataType: Int -> dataType == 1 }
-            MINI_V3 -> 0x1C000u..0x72FFFu to { dataType: Int -> dataType == 2 }
-            else -> throw IllegalArgumentException("Unsupported version: $version")
+    fun getCalliopeBin(generation: BoardGeneration): ByteArray {
+        val (addressRange, dataTypeCondition) = when (generation) {
+            BoardGeneration.NRF51 -> 0x18000u..0x3BFFFu to { dataType: Int -> dataType == 1 }
+            BoardGeneration.NRF52 -> 0x1C000u..0x72FFFu to { dataType: Int -> dataType == 2 }
+            BoardGeneration.UNKNOWN -> throw IllegalArgumentException("Unsupported board generation")
         }
 
         val partitions = collectPartitions(addressRange, dataTypeCondition)

@@ -1,7 +1,7 @@
 package cc.calliope.mini.ui.model
 
 import cc.calliope.mini.R
-import cc.calliope.mini.utils.Constants
+import cc.calliope.mini.core.bluetooth.BoardGeneration
 import java.util.Locale
 
 enum class EditorType(
@@ -102,9 +102,9 @@ enum class EditorType(
     val directoryName: String
         get() = name
 
-    fun getLocalizedUrl(boardVersion: Int): String {
-        // MINI_V2 covers mini 1/2 (nRF51 class); mini 3 and unknown boards get the V3 URL
-        val baseUrl = if (boardVersion == Constants.MINI_V2) urlV2 else urlV3
+    fun getLocalizedUrl(generation: BoardGeneration): String {
+        // nRF51 covers mini 1/2; mini 3 and unknown boards get the V3 URL
+        val baseUrl = if (generation == BoardGeneration.NRF51) urlV2 else urlV3
         if (this != MAKECODE) return baseUrl
 
         val langTag = Locale.getDefault().toLanguageTag()

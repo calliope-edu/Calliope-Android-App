@@ -15,7 +15,7 @@ import cc.calliope.mini.databinding.FragmentEditorsBinding
 import cc.calliope.mini.ui.adapter.MenuAdapter
 import cc.calliope.mini.ui.model.MenuItem
 import cc.calliope.mini.ui.model.EditorType
-import cc.calliope.mini.utils.Constants
+import cc.calliope.mini.core.bluetooth.BoardGeneration
 import cc.calliope.mini.ui.viewmodel.MenuViewModel
 import cc.calliope.mini.ui.dialog.DialogUtils
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -190,16 +190,15 @@ class EditorsFragment : Fragment() {
 
     private fun openEditor(item: MenuItem) {
         val context = requireContext()
-        val preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
-        val boardVersion = preferences.getInt(Constants.CURRENT_DEVICE_VERSION, Constants.UNIDENTIFIED)
+        val generation = BoardGeneration.current(context)
 
         // Use custom URL from settings if the item is "CUSTOM"
         val editorType = EditorType.entries.find { it.id == item.id }
         val url = if (item.id == EditorType.CUSTOM.id) {
             cc.calliope.mini.utils.settings.Settings.getCustomLink(context)
         } else {
-            editorType?.getLocalizedUrl(boardVersion)
-                ?: (if (boardVersion == Constants.MINI_V2) item.urlV2 else item.urlV3)
+            editorType?.getLocalizedUrl(generation)
+                ?: (if (generation == BoardGeneration.NRF51) item.urlV2 else item.urlV3)
         }
 
         // Routing is decided by the resolved URL, not the editor id: any

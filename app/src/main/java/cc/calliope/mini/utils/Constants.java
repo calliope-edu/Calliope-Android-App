@@ -1,10 +1,5 @@
 package cc.calliope.mini.utils;
 
-import androidx.annotation.IntDef;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
 public class Constants {
     public static final String EXTRA_FILE_PATH = "cc.calliope.mini.EXTRA_FILE_PATH";
     public static final String EXTRA_NUMB_ATTEMPTS = "cc.calliope.mini.EXTRA_NUMB_ATTEMPTS";
@@ -13,20 +8,4 @@ public class Constants {
     public static final String CURRENT_DEVICE_PATTERN = "cc.calliope.mini.CURRENT_DEVICE_PATTERN";
     public static final String CURRENT_DEVICE_VERSION = "cc.calliope.mini.CURRENT_DEVICE_VERSION";
     public static final String CONNECTED_DEVICE_ADDRESSES = "connected_device_addresses";
-    public static final int UNIDENTIFIED = 0;
-    /**
-     * Version 1.x, 2.0, 2,1
-     * <a href="https://calliope-mini.github.io/v10/">Version 1.x</a>
-     * <a href="https://calliope-mini.github.io/v20/">Version 2.0</a>
-     * <a href="https://calliope-mini.github.io/v21/">Version 2.1</a>
-     */
-    public static final int MINI_V2 = 1;
-    /**
-     * New version
-     */
-    public static final int MINI_V3 = 2;
-    @IntDef({UNIDENTIFIED, MINI_V2, MINI_V3})
-    @Retention(RetentionPolicy.SOURCE)
-    public @interface HardwareVersion {
-    }
 }

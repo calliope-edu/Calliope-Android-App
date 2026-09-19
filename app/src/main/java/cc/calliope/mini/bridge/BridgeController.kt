@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import androidx.preference.PreferenceManager
 import cc.calliope.mini.R
 import cc.calliope.mini.core.bluetooth.BleUuids
+import cc.calliope.mini.core.bluetooth.BoardGeneration
 import cc.calliope.mini.core.bluetooth.GattConnection
 import cc.calliope.mini.core.service.FlashingService
 import cc.calliope.mini.core.state.AppMode
@@ -656,8 +657,7 @@ class BridgeController(
     }
 
     /**
-     * Map the persisted chip class (BondingService writes
-     * [Constants.CURRENT_DEVICE_VERSION]) to the widget's version strings, so
+     * Map the current board's [BoardGeneration] to the widget's version strings, so
      * the web layer doesn't have to guess. Returns (boardVersion, calliopeVersion).
      *
      * Campus semantics: boardVersion is the silicon class ("V1" = nRF51,
@@ -669,12 +669,10 @@ class BridgeController(
      * own RAM-fit gate for a genuine mini 1. Unidentified → (null, null).
      */
     private fun versionStrings(): Pair<String?, String?> {
-        val v = PreferenceManager.getDefaultSharedPreferences(context)
-            .getInt(Constants.CURRENT_DEVICE_VERSION, Constants.UNIDENTIFIED)
-        return when (v) {
-            Constants.MINI_V3 -> "V2" to "V3"
-            Constants.MINI_V2 -> "V1" to "V2"
-            else -> null to null
+        return when (BoardGeneration.current(context)) {
+            BoardGeneration.NRF52 -> "V2" to "V3"
+            BoardGeneration.NRF51 -> "V1" to "V2"
+            BoardGeneration.UNKNOWN -> null to null
         }
     }
 

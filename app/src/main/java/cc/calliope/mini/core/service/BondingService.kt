@@ -10,17 +10,14 @@ import android.util.Log
 import androidx.annotation.StringRes
 import cc.calliope.mini.R
 import cc.calliope.mini.core.bluetooth.BleUuids
+import cc.calliope.mini.core.bluetooth.BoardGeneration
 import cc.calliope.mini.core.bluetooth.GattConnection
 import cc.calliope.mini.core.bluetooth.GattStatus
 import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.Notification
 import cc.calliope.mini.utils.Constants
-import cc.calliope.mini.utils.Constants.MINI_V2
-import cc.calliope.mini.utils.Constants.MINI_V3
-import cc.calliope.mini.utils.Constants.UNIDENTIFIED
 import cc.calliope.mini.utils.Permission
 import cc.calliope.mini.utils.bluetooth.BluetoothUtils
-import cc.calliope.mini.utils.settings.Preference
 import java.util.UUID
 
 /**
@@ -45,7 +42,6 @@ class BondingService : Service(), GattConnection.Listener {
     companion object {
         const val TAG = "BondingService"
         const val EXTRA_DEVICE_ADDRESS = Constants.CURRENT_DEVICE_ADDRESS
-        const val EXTRA_DEVICE_VERSION = Constants.CURRENT_DEVICE_VERSION
         const val EXTRA_NUMB_ATTEMPTS = Constants.EXTRA_NUMB_ATTEMPTS
         const val DEFAULT_NUMB_ATTEMPTS = 2
 
@@ -66,7 +62,7 @@ class BondingService : Service(), GattConnection.Listener {
     private var attempts = 0
     /** Links the board dropped itself. */
     private var deviceDisconnects = 0
-    private var deviceVersion: Int = UNIDENTIFIED
+    private var generation = BoardGeneration.UNKNOWN
     /** Set by [fail]; a non-zero disconnect after it ends the service. */
     private var failed = false
     private var finished = false
@@ -88,7 +84,6 @@ class BondingService : Service(), GattConnection.Listener {
             return START_NOT_STICKY
         }
         numbAttempts = intent.getIntExtra(EXTRA_NUMB_ATTEMPTS, DEFAULT_NUMB_ATTEMPTS)
-        deviceVersion = intent.getIntExtra(EXTRA_DEVICE_VERSION, UNIDENTIFIED)
 
         val adapter = BluetoothUtils.getAdapter(this)
         if (adapter == null || !adapter.isEnabled) {
@@ -155,7 +150,7 @@ class BondingService : Service(), GattConnection.Listener {
                     c.disconnect()
                     return
                 }
-                deviceVersion = MINI_V2
+                generation = BoardGeneration.NRF51
                 Log.i(TAG, "Reading DFU control characteristic to initiate pairing")
                 c.read(BleUuids.DFU_CONTROL_SERVICE, BleUuids.DFU_CONTROL_CHARACTERISTIC) { value ->
                     // The read itself is what triggers pairing on nRF51; its
@@ -166,7 +161,7 @@ class BondingService : Service(), GattConnection.Listener {
             }
             c.hasService(BleUuids.SECURE_DFU_SERVICE) -> {
                 Log.i(TAG, "Found Secure DFU Service")
-                deviceVersion = MINI_V3
+                generation = BoardGeneration.NRF52
                 if (dev.bondState == BluetoothDevice.BOND_NONE) {
                     Log.w(TAG, "Device is not bonded. Attempting to bond.")
                     dev.createBond()
@@ -228,7 +223,7 @@ class BondingService : Service(), GattConnection.Listener {
         failed = true
         AppStateRepository.updateNotification(Notification.ERROR, message)
         AppStateRepository.setError(getString(message))
-        Preference.putInt(applicationContext, Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED)
+        BoardGeneration.saveCurrent(applicationContext, BoardGeneration.UNKNOWN)
         if (connection?.isConnected != true) stopSelf()
     }
 
@@ -236,15 +231,12 @@ class BondingService : Service(), GattConnection.Listener {
         if (finished) return
         finished = true
         if (success) {
-            Log.d(TAG, "Device version: $deviceVersion")
-            val versionString = when (deviceVersion) {
-                MINI_V2 -> getString(R.string.mini_version_1)
-                MINI_V3 -> getString(R.string.mini_version_2)
-                else -> deviceVersion.toString()
-            }
+            Log.d(TAG, "Board generation: $generation")
             AppStateRepository.setIdle()
-            AppStateRepository.updateNotification(Notification.INFO, getString(R.string.info_mini_conected, versionString))
-            Preference.putInt(applicationContext, Constants.CURRENT_DEVICE_VERSION, deviceVersion)
+            AppStateRepository.updateNotification(
+                Notification.INFO, getString(R.string.info_mini_conected, getString(generation.labelRes)),
+            )
+            BoardGeneration.saveCurrent(applicationContext, generation)
         }
         stopSelf()
     }

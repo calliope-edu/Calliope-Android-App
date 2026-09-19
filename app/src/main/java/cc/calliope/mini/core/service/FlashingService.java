@@ -2,9 +2,6 @@ package cc.calliope.mini.core.service;
 
 import static android.app.Activity.RESULT_OK;
 import static cc.calliope.mini.core.state.Notification.ERROR;
-import static cc.calliope.mini.utils.Constants.MINI_V2;
-import static cc.calliope.mini.utils.Constants.MINI_V3;
-import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 import static cc.calliope.mini.utils.file.FileVersion.VERSION_2;
 import static cc.calliope.mini.utils.file.FileVersion.VERSION_3;
 
@@ -42,6 +39,7 @@ import cc.calliope.mini.utils.hex.HexParser;
 import cc.calliope.mini.utils.hex.InitPacket;
 import cc.calliope.mini.R;
 import cc.calliope.mini.core.bluetooth.BleUuids;
+import cc.calliope.mini.core.bluetooth.BoardGeneration;
 import cc.calliope.mini.core.state.AppMode;
 import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.core.state.FlashEvent;
@@ -93,7 +91,7 @@ public class FlashingService extends LifecycleService {
     private static final String WORK_ROOT = "flash";
     private String currentAddress;
     private String currentPattern;
-    private int boardVersion;
+    private BoardGeneration boardGeneration = BoardGeneration.UNKNOWN;
     private String currentPath;
     /**
      * This session's own directory for application.bin / .dat / update.zip.
@@ -268,8 +266,8 @@ public class FlashingService extends LifecycleService {
             return false;
         }
 
-        boardVersion = preferences.getInt(Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
-        if (boardVersion == UNIDENTIFIED) {
+        boardGeneration = BoardGeneration.current(this);
+        if (boardGeneration == BoardGeneration.UNKNOWN) {
             Log.e(TAG, "Device version is incorrect");
             handleError(getString(R.string.error_device_version_incorrect));
             return false;
@@ -314,12 +312,12 @@ public class FlashingService extends LifecycleService {
         // and universal MicroPython hexes were misclassified as VERSION_2,
         // tripping the V2-on-V3 rejection — now they classify as UNIVERSAL
         // and pass.
-        if (fileVersion == VERSION_3 && boardVersion == MINI_V2) {
+        if (fileVersion == VERSION_3 && boardGeneration == BoardGeneration.NRF51) {
             Log.e(TAG, "Flashing version mismatch: V3-only file on V2 board");
             handleError(getString(R.string.flashing_version_mismatch));
             return false;
         }
-        if (fileVersion == VERSION_2 && boardVersion == MINI_V3) {
+        if (fileVersion == VERSION_2 && boardGeneration == BoardGeneration.NRF52) {
             Log.e(TAG, "Flashing version mismatch: V1/V2-only file on V3 board");
             handleError(getString(R.string.flashing_version_mismatch));
             return false;
@@ -408,13 +406,13 @@ public class FlashingService extends LifecycleService {
         // Either the configured mode or the partial-flash fallback: from here
         // on the session is full DFU (legacy trigger + Nordic, or Nordic only).
         AppStateRepository.flashMode(FlashMode.FULL_DFU);
-        if (boardVersion == MINI_V2) {
-            startDfuControlService();
-        } else if (boardVersion == MINI_V3) {
-            prepareFirmwareAsync(this::startDfu);
-        } else {
-            Log.e(TAG, "Unsupported board version: " + boardVersion);
-            handleError(String.format(getString(R.string.error_unsupported_board_version), boardVersion));
+        switch (boardGeneration) {
+            case NRF51 -> startDfuControlService();
+            case NRF52 -> prepareFirmwareAsync(this::startDfu);
+            default -> {
+                Log.e(TAG, "Unsupported board generation: " + boardGeneration);
+                handleError(String.format(getString(R.string.error_unsupported_board_version), boardGeneration.getPrefValue()));
+            }
         }
     }
 
@@ -460,7 +458,7 @@ public class FlashingService extends LifecycleService {
         try {
             // Prepare firmware file
             HexParser parser = new HexParser(currentPath);
-            byte[] firmware = parser.getCalliopeBin(boardVersion);
+            byte[] firmware = parser.getCalliopeBin(boardGeneration);
 
             workDir = new File(new File(getCacheDir(), WORK_ROOT), UUID.randomUUID().toString());
             if (!workDir.mkdirs()) {
@@ -475,7 +473,7 @@ public class FlashingService extends LifecycleService {
             }
 
             // Prepare init packet
-            InitPacket initPacket = new InitPacket(boardVersion);
+            InitPacket initPacket = new InitPacket(boardGeneration);
             byte[] initData = initPacket.encode(firmware);
 
             String initPacketPath = new File(workDir, "application.dat").getAbsolutePath();
