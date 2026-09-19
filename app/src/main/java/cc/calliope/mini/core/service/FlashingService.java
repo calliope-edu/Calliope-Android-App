@@ -344,14 +344,26 @@ public class FlashingService extends LifecycleService {
         protected void onReceiveResult(int resultCode, Bundle resultData) {
             Log.d(TAG, "Partial flashing result received");
             if (resultCode == RESULT_OK) {
-                boolean isSuccess = resultData.getBoolean("result");
-                if (isSuccess) {
-                    // PartialFlashingService already finished the session;
-                    // the Done event stops this service.
-                    Log.d(TAG, "Partial flashing completed");
-                } else {
-                    Log.w(TAG, "Partial flashing failed, falling back to DFU");
-                    handleFullFlashing();
+                int code = resultData.getInt(PartialFlashingService.KEY_RESULT, PartialFlashingService.RESULT_FAILED);
+                switch (code) {
+                    case PartialFlashingService.RESULT_SUCCESS ->
+                        // PartialFlashingService already finished the session;
+                        // the Done event stops this service.
+                            Log.d(TAG, "Partial flashing completed");
+                    case PartialFlashingService.RESULT_ATTEMPT_DFU -> {
+                        // The board or the hex declined partial flashing;
+                        // nothing was written. The normal path.
+                        Log.i(TAG, "Partial flashing declined, continuing with full DFU");
+                        handleFullFlashing();
+                    }
+                    default -> {
+                        // A real failure mid-upload leaves the program region
+                        // half-written. A full DFU rewrites all of it, so it
+                        // is the recovery, not a blind retry — and if the board
+                        // is gone, DFU fails with a proper connection error.
+                        Log.w(TAG, "Partial flashing failed, recovering with full DFU");
+                        handleFullFlashing();
+                    }
                 }
             }
         }
