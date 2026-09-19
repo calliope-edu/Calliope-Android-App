@@ -12,7 +12,6 @@ import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.bluetooth.BluetoothDevice;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
@@ -155,16 +154,10 @@ public class FlashingService extends LifecycleService {
             }
         }
 
-        Intent notificationIntent = new Intent(this, NotificationActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, 0, notificationIntent,
-                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
-        );
-
         android.app.Notification notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setContentTitle(getString(R.string.flashing_notification_title))
                 .setSmallIcon(R.drawable.ic_notification_flash)
-                .setContentIntent(pendingIntent)
+                .setContentIntent(NotificationActivity.contentIntent(this))
                 .setOngoing(true)
                 .build();
 

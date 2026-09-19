@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.bluetooth.*
 import android.content.BroadcastReceiver
@@ -202,16 +201,10 @@ class PartialFlashingService : Service() {
             manager?.createNotificationChannel(channel)
         }
 
-        val notificationIntent = Intent(this, NotificationActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, notificationIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
         val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setContentTitle(getString(R.string.partial_flashing_starting))
             .setSmallIcon(R.drawable.ic_notification_flash)
-            .setContentIntent(pendingIntent)
+            .setContentIntent(NotificationActivity.contentIntent(this))
             .setOngoing(true)
             .build()
 
