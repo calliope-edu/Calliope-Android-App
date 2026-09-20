@@ -34,6 +34,7 @@ import cc.calliope.mini.core.state.Notification.INFO
 import cc.calliope.mini.ui.activity.CameraPermissionActivity
 import cc.calliope.mini.ui.model.EditorType
 import cc.calliope.mini.utils.Constants
+import cc.calliope.mini.utils.Permission
 import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import kotlinx.coroutines.launch
 
@@ -91,10 +92,6 @@ class WebBleFragment : Fragment() {
     private var reconnectAttempts = 0
     private val reconnectRunnable = Runnable { tryAutoConnect("retry") }
 
-    private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { tryAutoConnect("permissions granted") }
-
     private var cameraPermissionCallback: ((Boolean) -> Unit)? = null
     private val cameraPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -120,7 +117,6 @@ class WebBleFragment : Fragment() {
         Log.d(TAG, "Bluetooth device MAC: $deviceMac")
         Log.d(TAG, "Camera permission available: ${has(Manifest.permission.CAMERA)}")
 
-        requestBlePermissionsIfNeeded()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -366,23 +362,6 @@ class WebBleFragment : Fragment() {
         webView.evaluateJavascript(js, null)
     }
 
-    private fun requestBlePermissionsIfNeeded() {
-        val perms = mutableListOf<String>()
-
-        // Bluetooth permissions
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (!has(Manifest.permission.BLUETOOTH_CONNECT)) perms += Manifest.permission.BLUETOOTH_CONNECT
-            if (!has(Manifest.permission.BLUETOOTH_SCAN)) perms += Manifest.permission.BLUETOOTH_SCAN
-        } else {
-            if (!has(Manifest.permission.ACCESS_FINE_LOCATION)) perms += Manifest.permission.ACCESS_FINE_LOCATION
-            if (!has(Manifest.permission.BLUETOOTH)) perms += Manifest.permission.BLUETOOTH
-            if (!has(Manifest.permission.BLUETOOTH_ADMIN)) perms += Manifest.permission.BLUETOOTH_ADMIN
-        }
-
-        // Camera permission is requested separately through CameraPermissionActivity when needed.
-        if (perms.isNotEmpty()) permissionLauncher.launch(perms.toTypedArray())
-    }
-
     private fun has(p: String): Boolean =
         ContextCompat.checkSelfPermission(requireContext(), p) == PackageManager.PERMISSION_GRANTED
 
@@ -392,14 +371,15 @@ class WebBleFragment : Fragment() {
         cameraPermissionLauncher.launch(intent)
     }
 
+    /**
+     * Runtime permissions are the activity's business (PermissionGate sends
+     * the user to grant them before this screen is usable); here they are
+     * only checked, so a connect is never attempted without them.
+     */
     private fun ensureBleReady(): Boolean {
         val adapter = BluetoothUtils.getAdapter(requireContext())
         if (adapter == null || !adapter.isEnabled) return false
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            has(Manifest.permission.BLUETOOTH_CONNECT) && has(Manifest.permission.BLUETOOTH_SCAN)
-        } else {
-            has(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
+        return Permission.isBleAccessGranted(requireContext())
     }
 
     // ---- JS bridge -------------------------------------------------------------
