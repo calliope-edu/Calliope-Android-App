@@ -1,7 +1,6 @@
 package cc.calliope.mini.ui.views;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -19,12 +18,12 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import android.view.ViewTreeObserver;
 
-import androidx.preference.PreferenceManager;
-
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.shape.ShapeAppearanceModel;
 
+import cc.calliope.mini.ui.components.FabPositionStore;
 import cc.calliope.mini.utils.Utils;
+import kotlin.Pair;
 
 public class MovableFloatingActionButton extends FloatingActionButton implements View.OnTouchListener{
     private final static float CLICK_DRAG_TOLERANCE = 10; // Often, there will be a slight, unintentional, drag when the user taps the FAB, so we need to account for this.
@@ -41,9 +40,9 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
     private final PathMeasure pathMeasure = new PathMeasure();
 
     private static final int RADIUS_DP = 20;
-    private static final String PREF_FAB_X_FRACTION = "fab_x_fraction";
-    private static final String PREF_FAB_Y_FRACTION = "fab_y_fraction";
     private boolean positionRestored = false;
+    /** Where the dragged-to position is kept; null = not remembered. Set before the first layout. */
+    private FabPositionStore positionStore;
 
     public MovableFloatingActionButton(Context context) {
         super(context);
@@ -160,6 +159,10 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
 
     }
 
+    public void setPositionStore(FabPositionStore positionStore) {
+        this.positionStore = positionStore;
+    }
+
     public void setProgress(int percent) {
         this.progress = Math.max(percent, 0);
         invalidate();
@@ -234,29 +237,24 @@ public class MovableFloatingActionButton extends FloatingActionButton implements
         View parent = (View) getParent();
         if (parent == null || parent.getWidth() == 0 || parent.getHeight() == 0) return;
 
-        float xFraction = getX() / parent.getWidth();
-        float yFraction = getY() / parent.getHeight();
-
-        PreferenceManager.getDefaultSharedPreferences(context)
-                .edit()
-                .putFloat(PREF_FAB_X_FRACTION, xFraction)
-                .putFloat(PREF_FAB_Y_FRACTION, yFraction)
-                .apply();
+        if (positionStore != null) {
+            positionStore.save(getX() / parent.getWidth(), getY() / parent.getHeight());
+        }
     }
 
     private void restorePosition() {
         if (positionRestored) return;
         positionRestored = true;
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        if (!prefs.contains(PREF_FAB_X_FRACTION)) return;
+        Pair<Float, Float> saved = positionStore != null ? positionStore.load() : null;
+        if (saved == null) return;
 
         View parent = (View) getParent();
         if (parent == null || parent.getWidth() == 0 || parent.getHeight() == 0) return;
 
         ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) getLayoutParams();
-        float xFraction = prefs.getFloat(PREF_FAB_X_FRACTION, 0f);
-        float yFraction = prefs.getFloat(PREF_FAB_Y_FRACTION, 0f);
+        float xFraction = saved.getFirst();
+        float yFraction = saved.getSecond();
 
         float x = xFraction * parent.getWidth();
         float y = yFraction * parent.getHeight();

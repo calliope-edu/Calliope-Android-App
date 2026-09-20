@@ -12,7 +12,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
 
 import java.io.File;
 import java.util.HashMap;
@@ -252,11 +251,9 @@ public class MainActivity extends BaseActivity {
         }
     }
 
-    public void onPopupMenuItemClick(AdapterView<?> parent, View view, int position, long id) {
-        super.onPopupMenuItemClick(parent, view, position, id);
-        if (!(parent.getItemAtPosition(position) instanceof PopupItem item)) {
-            return;
-        }
+    @Override
+    protected void onPopupItemClick(PopupItem item) {
+        super.onPopupItemClick(item);
         int titleId = item.titleId();
         if (titleId == R.string.menu_fab_scripts) {
             ScriptsFragment scriptsFragment = new ScriptsFragment();
