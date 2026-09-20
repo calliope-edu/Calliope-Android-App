@@ -11,16 +11,18 @@ import android.widget.TextView;
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.util.Consumer;
+import androidx.lifecycle.ViewModelProvider;
 
 import cc.calliope.mini.R;
 import cc.calliope.mini.core.service.FlashLauncher;
 import cc.calliope.mini.core.state.AppMode;
-import cc.calliope.mini.core.state.FlashEvent;
+import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.core.state.FlashMode;
-import cc.calliope.mini.core.state.FlashResult;
+import cc.calliope.mini.core.state.FlashPhase;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.RepoObserve;
 import cc.calliope.mini.databinding.ActivityDfuBinding;
+import cc.calliope.mini.ui.viewmodel.FlashingViewModel;
 import cc.calliope.mini.ui.views.BoardProgressBar;
 
 public class FlashingActivity extends AppCompatActivity {
@@ -36,29 +38,39 @@ public class FlashingActivity extends AppCompatActivity {
         finish();
     };
     private boolean flashingCompleted = false;
+    private FlashingViewModel viewModel;
 
     private final Consumer<Notification> notificationObserver = notification -> {
         status.setText(notification.getMessage());
     };
 
-    // Replay = 0: a recreated activity cannot receive a stale Done from a
-    // previous flash. The sticky mode below covers what it needs to restore.
-    private final Consumer<FlashEvent> flashEventObserver = event -> {
-        if (event instanceof FlashEvent.Progress progress) {
-            int percent = progress.getPercent();
-            status.setText(R.string.flashing_uploading);
-            title.setText(String.format(getString(R.string.flashing_percent), percent));
-            progressBar.setProgress(percent);
-        } else if (event instanceof FlashEvent.Done done
-                && done.getResult() instanceof FlashResult.Success) {
-            Log.d(TAG, "flash completed, calling finishActivity()");
-            status.setText(R.string.flashing_completed);
-            progressBar.showCompleted();
-            finishActivity();
+    // Progress and completion come through the view model, which keeps the
+    // last values across a rotation (the repository's events are one-shot).
+    private void onPercent(Integer percent) {
+        if (percent == null) {
+            return;
         }
-        // Done(Failure) is rendered from the sticky mode (AppMode.Error) so
-        // that a rotation after the failure restores the same screen.
-    };
+        // After a rotation the last percentage is re-delivered whatever the
+        // phase is by now; the status line belongs to the phase (see modeObserver).
+        if (AppStateRepository.getMode().getValue() instanceof AppMode.Flashing flashing
+                && flashing.getPhase() == FlashPhase.UPLOADING) {
+            status.setText(R.string.flashing_uploading);
+        }
+        title.setText(String.format(getString(R.string.flashing_percent), percent));
+        progressBar.setProgress(percent);
+    }
+
+    private void onCompleted(Boolean completed) {
+        if (!Boolean.TRUE.equals(completed) || flashingCompleted) {
+            return;
+        }
+        Log.d(TAG, "flash completed, calling finishActivity()");
+        status.setText(R.string.flashing_completed);
+        progressBar.showCompleted();
+        finishActivity();
+    }
+    // A failure is rendered from the sticky mode (AppMode.Error) so that a
+    // rotation after the failure restores the same screen.
 
     private final Consumer<AppMode> modeObserver = mode -> {
         if (mode instanceof AppMode.Flashing flashing) {
@@ -112,7 +124,9 @@ public class FlashingActivity extends AppCompatActivity {
         flashingCompleted = false;
 
         RepoObserve.notifications(this, notificationObserver);
-        RepoObserve.flashEvents(this, flashEventObserver);
+        viewModel = new ViewModelProvider(this).get(FlashingViewModel.class);
+        viewModel.getPercent().observe(this, this::onPercent);
+        viewModel.getCompleted().observe(this, this::onCompleted);
         RepoObserve.mode(this, modeObserver);
 
         binding.retryButton.setOnClickListener(this::onRetryClicked);
@@ -148,6 +162,7 @@ public class FlashingActivity extends AppCompatActivity {
 
         view.setVisibility(View.INVISIBLE);
         flashingCompleted = false;
+        viewModel.reset();
         progressBar.setProgress(0);
         title.setText("");
         status.setText(R.string.flashing_process_starting);
