@@ -7,9 +7,8 @@ import androidx.annotation.NonNull;
  * WebView outlives any single fragment, so its JavaScript bridge can't hold
  * one: it asks for the current host instead, on the main thread.
  *
- * <p>Top-level (rather than nested in {@link WebFragment}) so {@code
- * WebFragment} can implement it without a cyclic-inheritance reference to its
- * own member type.
+ * <p>Implemented by {@link RetainedWebEditor}, which knows which fragment —
+ * if any — is showing its WebView right now.
  */
 public interface HostAccess {
 
