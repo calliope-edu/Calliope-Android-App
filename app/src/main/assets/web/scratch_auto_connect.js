@@ -118,6 +118,10 @@
       setTimeout(function(){ try { vm.scanForPeripheral(extId); } catch(e){} }, 200);
     }
 
+    // Native "Connect the mini" (FAB menu) after a disconnect: scan again,
+    // the PERIPHERAL_LIST_UPDATE handler above connects to the first board.
+    window.__calliopeConnectNow = function(){ startSilentScan(); };
+
     // Startup: the modal is open from initial state. Untouched by
     // the user -> close it and connect in the background.
     if (modalOpen(store) && !gestureRecent()){

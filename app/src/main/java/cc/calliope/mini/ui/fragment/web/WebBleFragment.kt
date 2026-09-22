@@ -82,6 +82,8 @@ class WebBleFragment : Fragment() {
     private lateinit var webView: WebView
     private lateinit var bridge: AndroidBleBridge
     private var uart: UartSession? = null
+    /** Offered on the FAB while this editor is showing (see AppStateRepository.reconnect). */
+    private val reconnectAction: () -> Unit = { bridge.connect() }
 
     // ---- Auto-connect driver ----------------------------------------------
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -127,6 +129,7 @@ class WebBleFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         uart = UartSession(requireContext(), uartListener)
+        AppStateRepository.setReconnectAction(reconnectAction)
         webView = WebView(requireContext())
         val marginBottom = resources.getDimensionPixelSize(R.dimen.bottom_bar_clearance)
         val params = FrameLayout.LayoutParams(
@@ -220,6 +223,7 @@ class WebBleFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         mainHandler.removeCallbacksAndMessages(null)
+        AppStateRepository.clearReconnectAction(reconnectAction)
         autoConnectEnabled = false
         pageReady = false
         uart?.disconnect()

@@ -100,6 +100,11 @@ public abstract class BaseActivity extends AppCompatActivity
         // ending the session instead of the connect item.
         if (AppStateRepository.getControl().getValue()) {
             popupItems.add(new PopupItem(R.string.menu_fab_disconnect, R.drawable.ic_disconnect));
+        } else if (AppStateRepository.getReconnect().getValue() != null) {
+            // An editor that connects on its own is showing and the user ended
+            // its session: connect the chosen board again, or pick another one.
+            popupItems.add(new PopupItem(R.string.menu_fab_change_device, R.drawable.ic_connect));
+            popupItems.add(new PopupItem(R.string.menu_fab_reconnect, R.drawable.ic_bluetooth));
         } else {
             popupItems.add(new PopupItem(R.string.menu_fab_connect, R.drawable.ic_connect));
         }
@@ -110,7 +115,12 @@ public abstract class BaseActivity extends AppCompatActivity
         if (item.titleId() == R.string.menu_fab_disconnect) {
             // The session owner registered how to end it (see setControl).
             AppStateRepository.disconnectControl();
-        } else if (item.titleId() == R.string.menu_fab_connect) {
+        } else if (item.titleId() == R.string.menu_fab_reconnect) {
+            kotlin.jvm.functions.Function0<kotlin.Unit> reconnect = AppStateRepository.getReconnect().getValue();
+            if (reconnect != null && permissionGate.requireBluetoothEnabled()) {
+                reconnect.invoke();
+            }
+        } else if (item.titleId() == R.string.menu_fab_connect || item.titleId() == R.string.menu_fab_change_device) {
             if (permissionGate.requireBluetoothEnabled()) {
                 PatternDialogFragment.newInstance(new FobParams(
                         patternFab.getWidth(),
