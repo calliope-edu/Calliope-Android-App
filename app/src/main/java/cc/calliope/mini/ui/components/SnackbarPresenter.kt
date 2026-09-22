@@ -9,6 +9,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.Notification
 import cc.calliope.mini.ui.SnackbarHelper
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 
 /**
@@ -43,13 +44,30 @@ class SnackbarPresenter(
         return root()
     }
 
+    /** The snackbar on screen, so the next notification can replace it. */
+    private var current: Snackbar? = null
+
+    /**
+     * Notifications are progress, not a log: the newest one is the truth and
+     * replaces whatever is showing. Otherwise they queue up, each staying
+     * its full duration, and a fast partial flash ends with "validating"
+     * still on screen and "completed" two snackbars behind it.
+     */
     private fun show(notification: Notification) {
         val host = host() ?: return
         val message = notification.message ?: return
-        when (notification.type) {
-            Notification.INFO -> SnackbarHelper.infoSnackbar(host, message).show()
-            Notification.WARNING -> SnackbarHelper.warningSnackbar(host, message).show()
-            Notification.ERROR -> SnackbarHelper.errorSnackbar(host, message).show()
+        current?.dismiss()
+        val snackbar = when (notification.type) {
+            Notification.WARNING -> SnackbarHelper.warningSnackbar(host, message)
+            Notification.ERROR -> SnackbarHelper.errorSnackbar(host, message)
+            else -> SnackbarHelper.infoSnackbar(host, message)
         }
+        current = snackbar
+        snackbar.addCallback(object : Snackbar.Callback() {
+            override fun onDismissed(transientBottomBar: Snackbar, event: Int) {
+                if (current === transientBottomBar) current = null
+            }
+        })
+        snackbar.show()
     }
 }
