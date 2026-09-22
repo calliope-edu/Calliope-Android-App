@@ -142,6 +142,27 @@ object AppStateRepository {
         return true
     }
 
+    /**
+     * How the screen on top would (re)connect to the current board. Unlike
+     * the disconnect action it belongs to the screen, not to a session: it is
+     * what the FAB offers after the user ended the session. Null while no
+     * such screen is showing, so the FAB offers the pattern dialog instead.
+     */
+    private val _reconnect = MutableStateFlow<(() -> Unit)?>(null)
+    @JvmStatic
+    val reconnect: StateFlow<(() -> Unit)?> get() = _reconnect.asStateFlow()
+
+    @JvmStatic
+    fun setReconnectAction(action: (() -> Unit)?) {
+        _reconnect.value = action
+    }
+
+    /** Only the owner clears its own action — a screen replaced by another must not clear the newer one. */
+    @JvmStatic
+    fun clearReconnectAction(action: (() -> Unit)?) {
+        _reconnect.compareAndSet(action, null)
+    }
+
     @JvmStatic
     fun updateDeviceAvailability(isAvailable: Boolean) {
         _deviceAvailable.value = isAvailable

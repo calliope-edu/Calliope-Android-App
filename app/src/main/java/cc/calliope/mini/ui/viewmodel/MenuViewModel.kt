@@ -1,15 +1,21 @@
 package cc.calliope.mini.ui.viewmodel
 
-import android.content.Context
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import cc.calliope.mini.ui.model.EditorType
 import cc.calliope.mini.ui.model.MenuItem
 import cc.calliope.mini.utils.settings.Settings
 
-class MenuViewModel(private val context: Context) : ViewModel() {
+/**
+ * The editors menu: which editors are shown and in what order. Holds the
+ * application context only — it outlives any activity, so it must never be
+ * handed one.
+ */
+class MenuViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val context get() = getApplication<Application>()
 
     private val _menuItems = MutableLiveData<List<MenuItem>>()
     val menuItems: LiveData<List<MenuItem>> = _menuItems
@@ -60,15 +66,5 @@ class MenuViewModel(private val context: Context) : ViewModel() {
     
     fun refreshMenu() {
         loadDefaultMenu()
-    }
-    
-    class Factory(private val context: Context) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            if (modelClass.isAssignableFrom(MenuViewModel::class.java)) {
-                return MenuViewModel(context) as T
-            }
-            throw IllegalArgumentException("Unknown ViewModel class")
-        }
     }
 }

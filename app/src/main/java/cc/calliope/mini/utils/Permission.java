@@ -40,6 +40,15 @@ public class Permission {
         return true;
     }
 
+    /**
+     * Everything the app needs at runtime to scan for and talk to a board:
+     * the Bluetooth permissions and, before Android 12, location.
+     */
+    public static boolean isBleAccessGranted(Context context) {
+        return isAccessGranted(context, BLUETOOTH_PERMISSIONS)
+                && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S || isAccessGranted(context, LOCATION_PERMISSIONS));
+    }
+
     public static boolean isAccessDeniedForever(Activity activity, String... permissions) {
         return !isAccessGranted(activity, permissions) // Location permission must be denied
                 && Preference.getBoolean(activity, permissions[0], false)// Permission must have been requested before

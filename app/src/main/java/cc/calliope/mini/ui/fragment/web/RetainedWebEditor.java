@@ -75,6 +75,15 @@ public final class RetainedWebEditor implements HostAccess {
             });
             return kotlin.Unit.INSTANCE;
         });
+        ScratchLinkServer.setUserConnectHook(() -> {
+            mainHandler.post(() -> {
+                if (!destroyed) {
+                    webView.evaluateJavascript(
+                            "(window.__calliopeConnectNow||function(){})();", null);
+                }
+            });
+            return kotlin.Unit.INSTANCE;
+        });
     }
 
     /**
@@ -182,6 +191,7 @@ public final class RetainedWebEditor implements HostAccess {
         destroyed = true;
         Log.i(TAG, "destroying retained editor (" + reason + "): " + url);
         ScratchLinkServer.setUserDisconnectHook(null);
+        ScratchLinkServer.setUserConnectHook(null);
         host = null;
         removeFromParent();
         webView.stopLoading();

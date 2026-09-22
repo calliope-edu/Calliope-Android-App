@@ -161,6 +161,16 @@ class ScratchLinkServer private constructor(private val appCtx: Context) :
         }
 
         /**
+         * How to ask the Blocks page to connect again (evaluates
+         * `window.__calliopeConnectNow`). Registered by the retained editor
+         * while its page is alive; the app offers it on the FAB.
+         */
+        @JvmStatic
+        fun setUserConnectHook(hook: (() -> Unit)?) {
+            AppStateRepository.setReconnectAction(hook)
+        }
+
+        /**
          * End the live Blocks session on the user's request (FAB menu).
          * Prefers the page-side path so scratch-vm records an intended
          * disconnect; if the page doesn't release the board within

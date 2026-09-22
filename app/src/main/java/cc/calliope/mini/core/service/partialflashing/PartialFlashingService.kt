@@ -823,8 +823,12 @@ class PartialFlashingService : Service() {
 
         val startTime = SystemClock.elapsedRealtime()
 
-        AppStateRepository.flashPhase(FlashPhase.UPLOADING)
-        AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_uploading))
+        // Reading the memory map and comparing hashes is still preparation;
+        // UPLOADING (and its "Uploading…" notice) starts in flashData, once
+        // bytes actually go over the air — otherwise "validating" was the
+        // last thing the user saw before "completed".
+        AppStateRepository.flashPhase(FlashPhase.PREPARING)
+        AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_firmware_validating))
 
         try {
             val hex = HexUtils(filePath!!)
@@ -848,7 +852,6 @@ class PartialFlashingService : Service() {
             Log.d(TAG, "Found data at line ${dataPos.line}, offset ${dataPos.part}")
 
             // Read memory map from device
-            AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_firmware_validating))
             codeStartAddress = 0
             codeEndAddress = 0
             dalStartAddress = 0
@@ -923,6 +926,8 @@ class PartialFlashingService : Service() {
             Log.d(TAG, "Code start address verified: 0x${String.format("%08X", codeStartAddress)}, starting flash")
 
             // Flash the data
+            AppStateRepository.flashPhase(FlashPhase.UPLOADING)
+            AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_uploading))
             val flashResult = flashData(hex, dataPos, startTime)
 
             val elapsed = (SystemClock.elapsedRealtime() - startTime) / 1000.0

@@ -67,8 +67,10 @@
     <string name="info_dialog_delete">Ви назавжди видалите \"%s\".</string>
     <string name="subject_dialog_share">Поділитися файлом…</string>
     <string name="text_dialog_share">Calliope mini firmware</string>
-    <string name="menu_fab_connect">Під\'єднання</string>
-    <string name="menu_fab_disconnect">Від\'єднатися</string>
+    <string name="menu_fab_connect">Вибрати mini</string>
+    <string name="menu_fab_disconnect">Від\'єднати mini</string>
+    <string name="menu_fab_reconnect">Під\'єднати mini</string>
+    <string name="menu_fab_change_device">Вибрати іншу mini</string>
     <string name="menu_fab_scripts">Програми</string>
     <string name="menu_fab_full_screen">На весь екран</string>
     <string name="menu_fab_scan_qr">Сканувати QR</string>

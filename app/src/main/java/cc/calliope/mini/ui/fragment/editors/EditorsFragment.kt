@@ -34,9 +34,7 @@ class EditorsFragment : Fragment() {
     private var _binding: FragmentEditorsBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: MenuViewModel by viewModels {
-        MenuViewModel.Factory(requireContext())
-    }
+    private val viewModel: MenuViewModel by viewModels()
     private lateinit var adapter: MenuAdapter
 
     /** Current column count; 2 on tablet landscape, 1 otherwise. */
