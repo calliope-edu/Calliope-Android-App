@@ -236,6 +236,22 @@ public class FileUtils {
         return false;
     }
 
+    /** Delete a file or a whole directory tree; missing paths are fine. */
+    public static void deleteRecursively(File file) {
+        if (file == null || !file.exists()) {
+            return;
+        }
+        File[] children = file.listFiles();
+        if (children != null) {
+            for (File child : children) {
+                deleteRecursively(child);
+            }
+        }
+        if (!file.delete()) {
+            Log.w(TAG, "Could not delete " + file);
+        }
+    }
+
     public static boolean writeFile(String path, byte[] data)  {
         File file = new File(path);
 

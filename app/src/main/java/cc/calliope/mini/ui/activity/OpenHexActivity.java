@@ -1,6 +1,5 @@
 package cc.calliope.mini.ui.activity;
 
-import static cc.calliope.mini.core.state.Notification.ERROR;
 
 import android.Manifest;
 import android.content.Intent;
@@ -23,13 +22,11 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import cc.calliope.mini.core.service.FlashingService;
+import cc.calliope.mini.core.service.FlashLauncher;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityHexBinding;
 import cc.calliope.mini.ui.model.EditorType;
-import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.utils.file.FileUtils;
-import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
 
 
@@ -137,21 +134,6 @@ public class OpenHexActivity extends BaseActivity {
     }
 
     private void startDFUActivity(File file) {
-        if(!Utils.isBluetoothEnabled(this)){
-            AppStateRepository.updateNotification(ERROR, R.string.error_snackbar_bluetooth_disabled);
-            return;
-        }
-
-        if (!AppStateRepository.getDeviceAvailable().getValue()){
-            AppStateRepository.updateNotification(ERROR, R.string.error_no_connected);
-            return;
-        }
-
-        final Intent intent = new Intent(this, FlashingActivity.class);
-        startActivity(intent);
-
-        Intent serviceIntent = new Intent(this, FlashingService.class);
-        serviceIntent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
-        startService(serviceIntent);
+        FlashLauncher.launch(this, file.getAbsolutePath());
     }
 }

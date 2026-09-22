@@ -1,9 +1,6 @@
 package cc.calliope.mini.ui.dialog.pattern;
 
 import static cc.calliope.mini.core.service.BondingService.EXTRA_DEVICE_ADDRESS;
-import static cc.calliope.mini.core.service.BondingService.EXTRA_DEVICE_VERSION;
-import static cc.calliope.mini.utils.Constants.MINI_V3;
-import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 
 import android.app.Activity;
 import android.app.Dialog;
@@ -37,10 +34,9 @@ import cc.calliope.mini.ui.views.PatternMatrixView;
 import cc.calliope.mini.core.bluetooth.ScanViewModel;
 import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.AppStateRepository;
+import cc.calliope.mini.core.bluetooth.BoardGeneration;
 import cc.calliope.mini.utils.bluetooth.BluetoothUtils;
 import cc.calliope.mini.utils.bluetooth.ConnectedDevicesManager;
-import cc.calliope.mini.utils.settings.Preference;
-import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.ui.views.FobParams;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.DialogPatternBinding;
@@ -205,12 +201,11 @@ public class PatternDialogFragment extends DialogFragment {
             deviceManager.saveCurrentDevice(currentDevice.getAddress(), currentDevice.getPattern());
 
             if(!currentAddress.equals(currentDevice.getAddress())){
-                Preference.putInt(context, Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
+                BoardGeneration.saveCurrent(context, BoardGeneration.UNKNOWN);
             }
 
             Intent service = new Intent(context, BondingService.class);
             service.putExtra(EXTRA_DEVICE_ADDRESS, currentDevice.getAddress());
-            service.putExtra(EXTRA_DEVICE_VERSION, MINI_V3);
             getActivity().startService(service);
         }
         dismiss();

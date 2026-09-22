@@ -2,9 +2,6 @@ package cc.calliope.mini.core.service;
 
 import static android.app.Activity.RESULT_OK;
 import static cc.calliope.mini.core.state.Notification.ERROR;
-import static cc.calliope.mini.utils.Constants.MINI_V2;
-import static cc.calliope.mini.utils.Constants.MINI_V3;
-import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 import static cc.calliope.mini.utils.file.FileVersion.VERSION_2;
 import static cc.calliope.mini.utils.file.FileVersion.VERSION_3;
 
@@ -12,9 +9,7 @@ import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.bluetooth.BluetoothDevice;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,9 +23,9 @@ import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.util.Consumer;
 import androidx.lifecycle.LifecycleService;
-import androidx.preference.PreferenceManager;
 
 import java.io.File;
+import java.util.UUID;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,6 +37,7 @@ import cc.calliope.mini.utils.hex.HexParser;
 import cc.calliope.mini.utils.hex.InitPacket;
 import cc.calliope.mini.R;
 import cc.calliope.mini.core.bluetooth.BleUuids;
+import cc.calliope.mini.core.bluetooth.BoardGeneration;
 import cc.calliope.mini.core.state.AppMode;
 import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.core.state.FlashEvent;
@@ -51,9 +47,7 @@ import cc.calliope.mini.core.state.Notification;
 import cc.calliope.mini.core.state.RepoObserve;
 import cc.calliope.mini.utils.file.FileUtils;
 import cc.calliope.mini.utils.file.FileVersion;
-import cc.calliope.mini.utils.settings.Preference;
 import cc.calliope.mini.utils.settings.Settings;
-import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
 import cc.calliope.mini.utils.bluetooth.BluetoothUtils;
 import cc.calliope.mini.core.service.partialflashing.PartialFlashingService;
@@ -88,11 +82,19 @@ public class FlashingService extends LifecycleService {
     private static final String BOOTLOADER_LOST = "";
     private static final String NOTIFICATION_CHANNEL_ID = "flashing_service_channel";
     private static final int NOTIFICATION_ID = 201;
-    public static final String EXTRA_FORCE_FULL_DFU = "extra_force_full_dfu";
+    /** Root of the per-session work directories under cacheDir. */
+    private static final String WORK_ROOT = "flash";
     private String currentAddress;
     private String currentPattern;
-    private int boardVersion;
+    private BoardGeneration boardGeneration = BoardGeneration.UNKNOWN;
     private String currentPath;
+    /**
+     * This session's own directory for application.bin / .dat / update.zip.
+     * The file names are fixed by what Nordic DFU expects inside the zip, so
+     * uniqueness has to come from the directory: a fixed cacheDir path let an
+     * overlapping or crashed flash clobber the files of the next one.
+     */
+    private File workDir;
     private boolean forceFullDfu = false;
 
     // True while this instance owns the flash session (claimed through
@@ -137,6 +139,10 @@ public class FlashingService extends LifecycleService {
         super.onDestroy();
         Log.d(TAG, "FlashingService destroyed");
         mainHandler.removeCallbacksAndMessages(null);
+        // The session is over (Done stops this service), DFU no longer reads the zip.
+        if (workDir != null) {
+            FileUtils.deleteRecursively(workDir);
+        }
         if (backgroundExecutor != null) {
             backgroundExecutor.shutdownNow();
         }
@@ -155,16 +161,10 @@ public class FlashingService extends LifecycleService {
             }
         }
 
-        Intent notificationIntent = new Intent(this, NotificationActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, 0, notificationIntent,
-                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT
-        );
-
         android.app.Notification notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setContentTitle(getString(R.string.flashing_notification_title))
                 .setSmallIcon(R.drawable.ic_notification_flash)
-                .setContentIntent(pendingIntent)
+                .setContentIntent(NotificationActivity.contentIntent(this))
                 .setOngoing(true)
                 .build();
 
@@ -194,7 +194,7 @@ public class FlashingService extends LifecycleService {
 
         // Claim the process-wide flash mutex. Refused only if another flash
         // session is live (e.g. a DfuService still winding down).
-        forceFullDfu = intent.getBooleanExtra(EXTRA_FORCE_FULL_DFU, false);
+        forceFullDfu = intent.getBooleanExtra(FlashLauncher.EXTRA_FORCE_FULL_DFU, false);
         FlashMode initialMode = !forceFullDfu && Settings.isPartialFlashingEnable(this)
                 ? FlashMode.PARTIAL : FlashMode.FULL_DFU;
         if (!AppStateRepository.beginFlash(initialMode)) {
@@ -203,6 +203,8 @@ public class FlashingService extends LifecycleService {
             return START_NOT_STICKY;
         }
         flashingJobActive = true;
+        // We hold the mutex, so nothing else can be using the work area.
+        FileUtils.deleteRecursively(new File(getCacheDir(), WORK_ROOT));
 
         // From here on every refusal goes through handleError(), which ends
         // the session and stops the service — otherwise the foreground
@@ -214,7 +216,7 @@ public class FlashingService extends LifecycleService {
         String message = getString(R.string.flashing_process_starting);
         AppStateRepository.updateNotification(Notification.INFO, message);
 
-        if (!loadDeviceInfo()) {
+        if (!loadDeviceInfo(intent)) {
             return START_NOT_STICKY;
         }
 
@@ -247,11 +249,10 @@ public class FlashingService extends LifecycleService {
         return false;
     }
 
-    private boolean loadDeviceInfo() {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-
-        currentAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "");
-        currentPattern = preferences.getString(Constants.CURRENT_DEVICE_PATTERN, "");
+    /** The target travels in the intent (see FlashLauncher), not through SharedPreferences. */
+    private boolean loadDeviceInfo(Intent intent) {
+        currentAddress = intent.getStringExtra(FlashLauncher.EXTRA_DEVICE_ADDRESS);
+        currentPattern = intent.getStringExtra(FlashLauncher.EXTRA_DEVICE_NAME);
 
         if (!BluetoothUtils.isValidBluetoothMAC(currentAddress)) {
             Log.e(TAG, "Device address is incorrect");
@@ -259,8 +260,9 @@ public class FlashingService extends LifecycleService {
             return false;
         }
 
-        boardVersion = preferences.getInt(Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
-        if (boardVersion == UNIDENTIFIED) {
+        boardGeneration = BoardGeneration.fromPref(
+                intent.getIntExtra(FlashLauncher.EXTRA_BOARD_GENERATION, BoardGeneration.UNKNOWN.getPrefValue()));
+        if (boardGeneration == BoardGeneration.UNKNOWN) {
             Log.e(TAG, "Device version is incorrect");
             handleError(getString(R.string.error_device_version_incorrect));
             return false;
@@ -270,14 +272,7 @@ public class FlashingService extends LifecycleService {
     }
 
     private boolean loadFilePath(Intent intent) {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-
-        currentPath = intent.getStringExtra(Constants.EXTRA_FILE_PATH);
-        if (currentPath == null || currentPath.isEmpty()) {
-            currentPath = preferences.getString(Constants.CURRENT_FILE_PATH, "");
-        } else {
-            Preference.putString(getApplicationContext(), Constants.CURRENT_FILE_PATH, currentPath);
-        }
+        currentPath = intent.getStringExtra(FlashLauncher.EXTRA_FILE_PATH);
 
         if (currentPath == null || currentPath.isEmpty()) {
             Log.e(TAG, "File path is missing");
@@ -305,12 +300,12 @@ public class FlashingService extends LifecycleService {
         // and universal MicroPython hexes were misclassified as VERSION_2,
         // tripping the V2-on-V3 rejection — now they classify as UNIVERSAL
         // and pass.
-        if (fileVersion == VERSION_3 && boardVersion == MINI_V2) {
+        if (fileVersion == VERSION_3 && boardGeneration == BoardGeneration.NRF51) {
             Log.e(TAG, "Flashing version mismatch: V3-only file on V2 board");
             handleError(getString(R.string.flashing_version_mismatch));
             return false;
         }
-        if (fileVersion == VERSION_2 && boardVersion == MINI_V3) {
+        if (fileVersion == VERSION_2 && boardGeneration == BoardGeneration.NRF52) {
             Log.e(TAG, "Flashing version mismatch: V1/V2-only file on V3 board");
             handleError(getString(R.string.flashing_version_mismatch));
             return false;
@@ -351,14 +346,26 @@ public class FlashingService extends LifecycleService {
         protected void onReceiveResult(int resultCode, Bundle resultData) {
             Log.d(TAG, "Partial flashing result received");
             if (resultCode == RESULT_OK) {
-                boolean isSuccess = resultData.getBoolean("result");
-                if (isSuccess) {
-                    // PartialFlashingService already finished the session;
-                    // the Done event stops this service.
-                    Log.d(TAG, "Partial flashing completed");
-                } else {
-                    Log.w(TAG, "Partial flashing failed, falling back to DFU");
-                    handleFullFlashing();
+                int code = resultData.getInt(PartialFlashingService.KEY_RESULT, PartialFlashingService.RESULT_FAILED);
+                switch (code) {
+                    case PartialFlashingService.RESULT_SUCCESS ->
+                        // PartialFlashingService already finished the session;
+                        // the Done event stops this service.
+                            Log.d(TAG, "Partial flashing completed");
+                    case PartialFlashingService.RESULT_ATTEMPT_DFU -> {
+                        // The board or the hex declined partial flashing;
+                        // nothing was written. The normal path.
+                        Log.i(TAG, "Partial flashing declined, continuing with full DFU");
+                        handleFullFlashing();
+                    }
+                    default -> {
+                        // A real failure mid-upload leaves the program region
+                        // half-written. A full DFU rewrites all of it, so it
+                        // is the recovery, not a blind retry — and if the board
+                        // is gone, DFU fails with a proper connection error.
+                        Log.w(TAG, "Partial flashing failed, recovering with full DFU");
+                        handleFullFlashing();
+                    }
                 }
             }
         }
@@ -387,13 +394,13 @@ public class FlashingService extends LifecycleService {
         // Either the configured mode or the partial-flash fallback: from here
         // on the session is full DFU (legacy trigger + Nordic, or Nordic only).
         AppStateRepository.flashMode(FlashMode.FULL_DFU);
-        if (boardVersion == MINI_V2) {
-            startDfuControlService();
-        } else if (boardVersion == MINI_V3) {
-            prepareFirmwareAsync(this::startDfu);
-        } else {
-            Log.e(TAG, "Unsupported board version: " + boardVersion);
-            handleError(String.format(getString(R.string.error_unsupported_board_version), boardVersion));
+        switch (boardGeneration) {
+            case NRF51 -> startDfuControlService();
+            case NRF52 -> prepareFirmwareAsync(this::startDfu);
+            default -> {
+                Log.e(TAG, "Unsupported board generation: " + boardGeneration);
+                handleError(String.format(getString(R.string.error_unsupported_board_version), boardGeneration.getPrefValue()));
+            }
         }
     }
 
@@ -430,7 +437,7 @@ public class FlashingService extends LifecycleService {
 
         // Start the service
         Intent service = new Intent(this, LegacyDfuService.class);
-        service.putExtra(Constants.CURRENT_DEVICE_ADDRESS, currentAddress);
+        service.putExtra(LegacyDfuService.EXTRA_DEVICE_ADDRESS, currentAddress);
         service.putExtra(LegacyDfuService.EXTRA_RESULT_RECEIVER, resultReceiver);
         startService(service);
     }
@@ -439,26 +446,32 @@ public class FlashingService extends LifecycleService {
         try {
             // Prepare firmware file
             HexParser parser = new HexParser(currentPath);
-            byte[] firmware = parser.getCalliopeBin(boardVersion);
+            byte[] firmware = parser.getCalliopeBin(boardGeneration);
 
-            String firmwarePath = new File(getCacheDir(), "application.bin").getAbsolutePath();
+            workDir = new File(new File(getCacheDir(), WORK_ROOT), UUID.randomUUID().toString());
+            if (!workDir.mkdirs()) {
+                Log.e(TAG, "Failed to create work directory " + workDir);
+                return null;
+            }
+
+            String firmwarePath = new File(workDir, "application.bin").getAbsolutePath();
             if (!FileUtils.writeFile(firmwarePath, firmware)) {
                 Log.e(TAG, "Failed to write firmware to file");
                 return null;
             }
 
             // Prepare init packet
-            InitPacket initPacket = new InitPacket(boardVersion);
+            InitPacket initPacket = new InitPacket(boardGeneration);
             byte[] initData = initPacket.encode(firmware);
 
-            String initPacketPath = new File(getCacheDir(), "application.dat").getAbsolutePath();
+            String initPacketPath = new File(workDir, "application.dat").getAbsolutePath();
             if (!FileUtils.writeFile(initPacketPath, initData)) {
                 Log.e(TAG, "Failed to write init packet to file");
                 return null;
             }
 
             // Create ZIP
-            FirmwareZipCreator zipCreator = new FirmwareZipCreator(this, firmwarePath, initPacketPath);
+            FirmwareZipCreator zipCreator = new FirmwareZipCreator(new File(workDir, "update.zip"), firmwarePath, initPacketPath);
             String zipPath = zipCreator.createZip();
             if (zipPath == null) {
                 Log.e(TAG, "Failed to create ZIP");

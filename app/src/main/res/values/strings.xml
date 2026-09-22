@@ -218,8 +218,9 @@
         ]]>
     </string>
     <string name="info_mini_conected">Calliope mini %s connected</string>
-    <string name="mini_version_1">1 or 2</string>
-    <string name="mini_version_2">3</string>
+    <string name="board_generation_unknown" translatable="false">?</string>
+    <string name="board_generation_nrf51">1 or 2</string>
+    <string name="board_generation_nrf52">3</string>
     <string name="flashing_version_mismatch">Version mismatch. Flashing not possible!</string>
     <string name="info_web">Instructions</string>
 

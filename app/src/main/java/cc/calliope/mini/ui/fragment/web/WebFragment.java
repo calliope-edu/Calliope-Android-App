@@ -5,7 +5,6 @@ import static cc.calliope.mini.core.state.Notification.ERROR;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -14,13 +13,11 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
 import cc.calliope.mini.ui.SnackbarHelper;
-import cc.calliope.mini.core.service.FlashingService;
+import cc.calliope.mini.core.service.FlashLauncher;
 import cc.calliope.mini.R;
 import cc.calliope.mini.scratchlink.ScratchLinkServer;
-import cc.calliope.mini.ui.activity.FlashingActivity;
 import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.utils.settings.Settings;
-import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.file.FileUtils;
 import cc.calliope.mini.utils.Utils;
 
@@ -798,25 +795,7 @@ public class WebFragment extends Fragment implements DownloadListener, HostAcces
             return;
         }
 
-        if (!Utils.isBluetoothEnabled(requireContext())) {
-            AppStateRepository.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
-            return;
-        }
-
-        if (!AppStateRepository.getDeviceAvailable().getValue()) {
-            AppStateRepository.updateNotification(ERROR, R.string.error_no_connected);
-            return;
-        }
-
-        if (!Settings.isBackgroundFlashingEnable(getActivity())) {
-            final Intent intent = new Intent(getActivity(), FlashingActivity.class);
-            intent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
-            startActivity(intent);
-        }
-
-        Intent serviceIntent = new Intent(getActivity(), FlashingService.class);
-        serviceIntent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
-        getActivity().startService(serviceIntent);
+        FlashLauncher.launch(requireActivity(), file.getAbsolutePath());
     }
 
     @Override

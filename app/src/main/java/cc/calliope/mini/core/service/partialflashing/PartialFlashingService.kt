@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.bluetooth.*
 import android.content.BroadcastReceiver
@@ -52,6 +51,8 @@ class PartialFlashingService : Service() {
         const val EXTRA_DEVICE_ADDRESS = "deviceAddress"
         const val EXTRA_FILE_PATH = "filepath"
         const val EXTRA_RESULT_RECEIVER = "resultReceiver"
+        /** Key of the result code in the ResultReceiver bundle. */
+        const val KEY_RESULT = "result"
 
         // UUIDs
         private val PARTIAL_FLASHING_SERVICE: UUID = UUID.fromString("e97dd91d-251d-470a-a062-fa1922dfa9a8")
@@ -202,16 +203,10 @@ class PartialFlashingService : Service() {
             manager?.createNotificationChannel(channel)
         }
 
-        val notificationIntent = Intent(this, NotificationActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, notificationIntent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
         val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setContentTitle(getString(R.string.partial_flashing_starting))
             .setSmallIcon(R.drawable.ic_notification_flash)
-            .setContentIntent(pendingIntent)
+            .setContentIntent(NotificationActivity.contentIntent(this))
             .setOngoing(true)
             .build()
 
@@ -231,19 +226,19 @@ class PartialFlashingService : Service() {
 
         if (!Permission.isAccessGranted(this, *Permission.BLUETOOTH_PERMISSIONS)) {
             Log.e(TAG, "Bluetooth permission not granted")
-            finishWithResult(false)
+            finishWithResult(RESULT_FAILED)
             return START_NOT_STICKY
         }
 
         if (!BluetoothUtils.isValidBluetoothMAC(deviceAddress)) {
             Log.e(TAG, "Invalid device address: $deviceAddress")
-            finishWithResult(false)
+            finishWithResult(RESULT_FAILED)
             return START_NOT_STICKY
         }
 
         if (filePath.isNullOrEmpty()) {
             Log.e(TAG, "File path is missing")
-            finishWithResult(false)
+            finishWithResult(RESULT_FAILED)
             return START_NOT_STICKY
         }
 
@@ -280,17 +275,17 @@ class PartialFlashingService : Service() {
                 Log.i(TAG, "Partial flashing completed successfully")
                 AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_completed))
                 AppStateRepository.finishFlash(FlashResult.Success)
-                finishWithResult(true)
+                finishWithResult(RESULT_SUCCESS)
             }
             RESULT_ATTEMPT_DFU -> {
                 Log.w(TAG, "Partial flashing not available, fallback to DFU")
                 AppStateRepository.updateNotification(Notification.WARNING, getString(R.string.partial_flashing_failed))
-                finishWithResult(false)
+                finishWithResult(RESULT_ATTEMPT_DFU)
             }
             else -> {
                 Log.e(TAG, "Partial flashing failed")
                 AppStateRepository.updateNotification(Notification.ERROR, getString(R.string.partial_flashing_failed))
-                finishWithResult(false)
+                finishWithResult(RESULT_FAILED)
             }
         }
     }
@@ -1470,9 +1465,14 @@ class PartialFlashingService : Service() {
         partialFlashCharacteristic = null
     }
 
-    private fun finishWithResult(success: Boolean) {
+    /**
+     * Report one of [RESULT_SUCCESS], [RESULT_ATTEMPT_DFU] (declined, nothing
+     * written) or [RESULT_FAILED] (a real failure) — the caller decides what
+     * each means; a boolean used to blur the last two.
+     */
+    private fun finishWithResult(result: Int) {
         val bundle = Bundle().apply {
-            putBoolean("result", success)
+            putInt(KEY_RESULT, result)
         }
         resultReceiver?.send(RESULT_OK, bundle)
         // Session state is owned by FlashingService / finishFlash: a failure
