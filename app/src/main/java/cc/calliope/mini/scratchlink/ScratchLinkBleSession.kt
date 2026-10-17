@@ -12,9 +12,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Base64
 import android.util.Log
-import cc.calliope.mini.bridge.BridgeBleSession
-import cc.calliope.mini.core.state.ApplicationStateHandler
-import cc.calliope.mini.core.state.State
+import cc.calliope.mini.core.bluetooth.GattConnection
+import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.utils.Permission
 import cc.calliope.mini.utils.Utils
 import org.java_websocket.WebSocket
@@ -60,29 +59,32 @@ class ScratchLinkBleSession(
     private val discovered = HashMap<String, BluetoothDevice>()
     private val lastAdvertised = HashMap<String, Long>()
     private var scanning = false
-    private var gatt: BridgeBleSession? = null
+    private var gatt: GattConnection? = null
     private var pendingConnectId: Any? = null
+    /** Device of the in-flight connect, kept for the one-shot 133 retry. */
+    private var pendingDevice: BluetoothDevice? = null
+    private var connectRetried = false
     private var disposed = false
 
     /**
      * Whether we've told the app it's in a live-control session. Drives the
-     * native movable FAB colour via [ApplicationStateHandler], exactly like
-     * the cardboard editor (WebBleFragment): STATE_CONTROL while a peripheral
-     * is connected, STATE_IDLE once it drops or the editor closes.
+     * native movable FAB colour via [AppStateRepository], exactly like
+     * the cardboard editor (WebBleFragment): control = true while a peripheral
+     * is connected, false once it drops or the editor closes.
      */
     private var controlReported = false
 
     private fun reportControl() {
         if (!controlReported) {
             controlReported = true
-            ApplicationStateHandler.updateState(State.STATE_CONTROL)
+            AppStateRepository.setControl(true) { ScratchLinkServer.requestUserDisconnect() }
         }
     }
 
     private fun reportIdle() {
         if (controlReported) {
             controlReported = false
-            ApplicationStateHandler.updateState(State.STATE_IDLE)
+            AppStateRepository.setControl(false)
         }
     }
 
@@ -189,7 +191,7 @@ class ScratchLinkBleSession(
             sendError(id, -32500, "Bluetooth permission not granted")
             return
         }
-        if (!Utils.isBluetoothEnabled()) {
+        if (!Utils.isBluetoothEnabled(appCtx)) {
             sendError(id, -32500, "Bluetooth is disabled")
             return
         }
@@ -392,22 +394,46 @@ class ScratchLinkBleSession(
         // listener will be ignored (see listenerFor staleness check).
         gatt?.disconnect()
         pendingConnectId = id
+        pendingDevice = device
+        connectRetried = false
+        startConnect(device)
+    }
+
+    private fun startConnect(device: BluetoothDevice) {
         // The listener needs a reference to its own session, which only
         // exists after construction — capture it through a holder var.
-        var session: BridgeBleSession? = null
-        val created = BridgeBleSession(appCtx, listenerFor { session })
+        var session: GattConnection? = null
+        val created = GattConnection(appCtx, listenerFor { session })
         session = created
         gatt = created
         created.connect(device)
     }
 
     /**
-     * A GATT listener bound to one [BridgeBleSession]. Every callback checks
+     * A connect that fails before the link is up with GATT status 133 is
+     * usually a transient stack hiccup (seen right after a previous close):
+     * retry once, transparently to scratch-vm, before reporting the error.
+     */
+    private fun retryConnectOnce(status: Int): Boolean {
+        val id = pendingConnectId ?: return false
+        val device = pendingDevice ?: return false
+        if (connectRetried || status != GattConnection.GATT_ERROR_133) return false
+        connectRetried = true
+        Log.w(TAG, "connect failed (gatt status=$status) — retrying once in ${CONNECT_RETRY_DELAY_MS}ms")
+        gatt = null
+        handler.postDelayed({
+            if (!disposed && pendingConnectId === id && gatt == null) startConnect(device)
+        }, CONNECT_RETRY_DELAY_MS)
+        return true
+    }
+
+    /**
+     * A GATT listener bound to one [GattConnection]. Every callback checks
      * whether that session is still the current one; a stale session (already
      * replaced by a newer connect, or cleared by discover/dispose) is ignored
      * so its late disconnect can't tear down a healthy socket.
      */
-    private fun listenerFor(owner: () -> BridgeBleSession?) = object : BridgeBleSession.Listener {
+    private fun listenerFor(owner: () -> GattConnection?) = object : GattConnection.Listener {
         private fun isStale(): Boolean {
             val o = owner()
             return o == null || gatt !== o
@@ -416,6 +442,7 @@ class ScratchLinkBleSession(
         override fun onConnected(deviceName: String?) {
             handler.post {
                 if (isStale()) return@post
+                pendingDevice = null
                 reportControl()
                 pendingConnectId?.let {
                     pendingConnectId = null
@@ -424,13 +451,14 @@ class ScratchLinkBleSession(
             }
         }
 
-        override fun onDisconnected(reason: String) {
+        override fun onDisconnected(status: Int) {
             handler.post {
                 if (isStale()) return@post
+                if (retryConnectOnce(status)) return@post
                 reportIdle()
                 pendingConnectId?.let {
                     pendingConnectId = null
-                    sendError(it, -32500, "connect failed: $reason")
+                    sendError(it, -32500, "connect failed: gatt status=$status")
                 }
                 // Peripheral went away — closing the socket is how the
                 // scratch-vm client learns about it (handleDisconnectError).
@@ -546,7 +574,7 @@ class ScratchLinkBleSession(
         }
     }
 
-    private fun connectedGatt(id: Any?): BridgeBleSession? {
+    private fun connectedGatt(id: Any?): GattConnection? {
         val g = gatt
         if (g == null || !g.isConnected) {
             sendError(id, -32500, "peripheral is not connected")
@@ -624,6 +652,7 @@ class ScratchLinkBleSession(
 
     companion object {
         private const val TAG = "ScratchLinkBle"
+        private const val CONNECT_RETRY_DELAY_MS = 600L
         private const val ADVERT_THROTTLE_MS = 700L
     }
 }

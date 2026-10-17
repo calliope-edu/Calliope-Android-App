@@ -17,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import cc.calliope.mini.bridge.BridgeController
+import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.bridge.CalliopeProxyBridge
 
 /**
@@ -57,10 +58,6 @@ class WebProxyFragment : Fragment() {
     private lateinit var webView: WebView
     private var controller: BridgeController? = null
 
-    private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions(),
-    ) { /* result ignored — controller errors back to JS if denied */ }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
@@ -68,7 +65,6 @@ class WebProxyFragment : Fragment() {
             editorName = it.getString(ARG_NAME)
         }
         Log.d(TAG, "created for editor=$editorName url=$pageUrl")
-        requestBlePermissionsIfNeeded()
     }
 
     override fun onCreateView(
@@ -112,6 +108,7 @@ class WebProxyFragment : Fragment() {
 
         val ctrl = BridgeController(requireContext().applicationContext, webView, viewLifecycleOwner)
         controller = ctrl
+        LeaveEditorGuard.install(this, canKeep = false) { AppStateRepository.disconnectControl() }
         // Seed the controller's origin gate before the first load so a
         // request can't slip through against a stale/null URL.
         ctrl.onPageUrl(pageUrl)
@@ -162,19 +159,6 @@ class WebProxyFragment : Fragment() {
             webView.saveState(bundle)
             outState.putBundle(STATE_WEBVIEW, bundle)
         }
-    }
-
-    private fun requestBlePermissionsIfNeeded() {
-        val perms = mutableListOf<String>()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (!has(Manifest.permission.BLUETOOTH_CONNECT)) perms += Manifest.permission.BLUETOOTH_CONNECT
-            if (!has(Manifest.permission.BLUETOOTH_SCAN)) perms += Manifest.permission.BLUETOOTH_SCAN
-        } else {
-            if (!has(Manifest.permission.ACCESS_FINE_LOCATION)) perms += Manifest.permission.ACCESS_FINE_LOCATION
-            if (!has(Manifest.permission.BLUETOOTH)) perms += Manifest.permission.BLUETOOTH
-            if (!has(Manifest.permission.BLUETOOTH_ADMIN)) perms += Manifest.permission.BLUETOOTH_ADMIN
-        }
-        if (perms.isNotEmpty()) permissionLauncher.launch(perms.toTypedArray())
     }
 
     private fun has(p: String): Boolean =

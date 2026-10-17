@@ -1,9 +1,6 @@
 package cc.calliope.mini.ui.dialog.pattern;
 
 import static cc.calliope.mini.core.service.BondingService.EXTRA_DEVICE_ADDRESS;
-import static cc.calliope.mini.core.service.BondingService.EXTRA_DEVICE_VERSION;
-import static cc.calliope.mini.utils.Constants.MINI_V3;
-import static cc.calliope.mini.utils.Constants.UNIDENTIFIED;
 
 import android.app.Activity;
 import android.app.Dialog;
@@ -36,12 +33,10 @@ import cc.calliope.mini.core.service.BondingService;
 import cc.calliope.mini.ui.views.PatternMatrixView;
 import cc.calliope.mini.core.bluetooth.ScanViewModel;
 import cc.calliope.mini.core.state.Notification;
-import cc.calliope.mini.core.state.State;
-import cc.calliope.mini.core.state.ApplicationStateHandler;
+import cc.calliope.mini.core.state.AppStateRepository;
+import cc.calliope.mini.core.bluetooth.BoardGeneration;
 import cc.calliope.mini.utils.bluetooth.BluetoothUtils;
 import cc.calliope.mini.utils.bluetooth.ConnectedDevicesManager;
-import cc.calliope.mini.utils.settings.Preference;
-import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.ui.views.FobParams;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.DialogPatternBinding;
@@ -124,7 +119,6 @@ public class PatternDialogFragment extends DialogFragment {
         scanViewModel.startScan();
 
         binding.buttonAction.setOnClickListener(this::onActionClick);
-        binding.buttonRemove.setOnClickListener(this::onRemoveClick);
     }
 
     @Override
@@ -200,34 +194,21 @@ public class PatternDialogFragment extends DialogFragment {
 
     private void onActionClick(View view){
         if(currentDevice != null && currentDevice.isActual()){
-            ApplicationStateHandler.updateState(State.STATE_BUSY);
-            ApplicationStateHandler.updateNotification(Notification.WARNING, R.string.flashing_device_connecting);
+            AppStateRepository.setBusy();
+            AppStateRepository.updateNotification(Notification.WARNING, R.string.flashing_device_connecting);
 
             //removeBond(currentDevice.getAddress());
             deviceManager.saveCurrentDevice(currentDevice.getAddress(), currentDevice.getPattern());
 
             if(!currentAddress.equals(currentDevice.getAddress())){
-                Preference.putInt(context, Constants.CURRENT_DEVICE_VERSION, UNIDENTIFIED);
+                BoardGeneration.saveCurrent(context, BoardGeneration.UNKNOWN);
             }
 
             Intent service = new Intent(context, BondingService.class);
             service.putExtra(EXTRA_DEVICE_ADDRESS, currentDevice.getAddress());
-            service.putExtra(EXTRA_DEVICE_VERSION, MINI_V3);
             getActivity().startService(service);
         }
         dismiss();
-    }
-
-    private void onRemoveClick(View view) {
-        String address = currentDevice == null ? currentAddress : currentDevice.getAddress();
-        if (deviceManager.removeBond(address)) {
-            String message = getString(R.string.pattern_removed, deviceManager.getCurrentPattern());
-            ApplicationStateHandler.updateNotification(Notification.INFO, message);
-            deviceManager.removeCurrentDevice(address);
-        } else {
-            String message = getString(R.string.pattern_remove_failed);
-            ApplicationStateHandler.updateNotification(Notification.ERROR, message);
-        }
     }
 
     private void onPatternChange(String pattern) {
@@ -258,9 +239,6 @@ public class PatternDialogFragment extends DialogFragment {
 
     private void setupButtons(boolean isBonded, boolean isActual){
         Button action = binding.buttonAction;
-        Button remove = binding.buttonRemove;
-
-        remove.setVisibility(isBonded?View.VISIBLE:View.GONE);
 
         if(isBonded){
             action.setText(R.string.button_select);
@@ -273,7 +251,7 @@ public class PatternDialogFragment extends DialogFragment {
         } else {
             action.setText(R.string.button_cancel);
             action.setOnClickListener(v -> dismiss());
-            action.setBackgroundResource(R.drawable.btn_aqua);
+            action.setBackgroundResource(R.drawable.btn_brand);
         }
     }
 }

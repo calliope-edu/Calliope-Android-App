@@ -1,7 +1,6 @@
 package cc.calliope.mini.utils.hex
 
-import cc.calliope.mini.utils.Constants.MINI_V2
-import cc.calliope.mini.utils.Constants.MINI_V3
+import cc.calliope.mini.core.bluetooth.BoardGeneration
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -80,11 +79,11 @@ class InitPacketV3(
     }
 }
 
-class InitPacket(version: Int) : InitPacketEncoder {
-    private val encoder: InitPacketEncoder = when (version) {
-        MINI_V2 -> InitPacketV2()
-        MINI_V3 -> InitPacketV3()
-        else -> throw IllegalArgumentException("Unsupported version: $version")
+class InitPacket(generation: BoardGeneration) : InitPacketEncoder {
+    private val encoder: InitPacketEncoder = when (generation) {
+        BoardGeneration.NRF51 -> InitPacketV2()
+        BoardGeneration.NRF52 -> InitPacketV3()
+        BoardGeneration.UNKNOWN -> throw IllegalArgumentException("Unsupported board generation")
     }
 
     override fun encode(firmware: ByteArray): ByteArray = encoder.encode(firmware)

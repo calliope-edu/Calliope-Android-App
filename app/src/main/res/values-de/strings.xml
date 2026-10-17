@@ -63,12 +63,21 @@
     <string name="button_ok">Ok</string>
     <string name="button_continue">fortsetzen</string>
     <string name="button_enable">aktivieren</string>
-    <string name="button_remove">entfernen</string>
+    <string name="content_description_script_editor">Editor, mit dem dieses Skript erstellt wurde</string>
     <string name="button_retry">wiederholen</string>
+    <string name="title_dialog_leave_editor">Editor verlassen?</string>
+    <string name="info_dialog_leave_editor_keep">Das Projekt bleibt im Hintergrund geöffnet und der verbundene mini bleibt verbunden. Schließen gibt den mini frei.</string>
+    <string name="info_dialog_leave_editor_close">Der mini ist verbunden. Beim Verlassen wird die Verbindung getrennt.</string>
+    <string name="button_keep_editor">Offen lassen</string>
+    <string name="button_stay_editor">Bleiben</string>
+    <string name="button_close_editor">Schließen</string>
     <string name="info_dialog_delete">\"%s\" wird entgültig gelöscht.</string>
     <string name="subject_dialog_share">Datei teilen…</string>
     <string name="text_dialog_share">Calliope mini Skript teilen</string>
-    <string name="menu_fab_connect">Verbindung</string>
+    <string name="menu_fab_connect">mini auswählen</string>
+    <string name="menu_fab_disconnect">mini trennen</string>
+    <string name="menu_fab_reconnect">mini verbinden</string>
+    <string name="menu_fab_change_device">Anderen mini auswählen</string>
     <string name="menu_fab_scripts">Programme</string>
     <string name="menu_fab_full_screen">Vollbild</string>
     <string name="menu_fab_scan_qr">QR scannen</string>
@@ -94,12 +103,14 @@
     <string name="flashing_device_connected">Gerät verbunden</string>
     <string name="flashing_process_starting">Prozess startet…</string>
     <string name="flashing_enabling_dfu_mode">DFU-Modus aktivieren…</string>
+    <string name="flashing_rebooting_partial">Board wird für das schnelle Flashen neu gestartet…</string>
     <string name="flashing_firmware_validating">Firmware validieren…</string>
     <string name="flashing_device_disconnecting">Gerät trennt sich…</string>
     <string name="flashing_completed">Flashen abgeschlossen</string>
     <string name="flashing_aborted">Flashen abgebrochen</string>
     <string name="flashing_uploading">Hochladen…</string>
     <string name="flashing_error">Fehler (%d): %s</string>
+    <string name="flashing_notification_title">Flashen…</string>
     <string name="partial_flashing_starting">Partielles Flashen startet…</string>
     <string name="partial_flashing_failed">Partielles Flashen fehlgeschlagen, versuche vollständiges Flashen</string>
 
@@ -144,8 +155,8 @@
         ]]>
     </string>
     <string name="info_mini_conected">Calliope mini %s verbunden</string>
-    <string name="mini_version_1">1 oder 2</string>
-    <string name="mini_version_2">3</string>
+    <string name="board_generation_nrf51">1 oder 2</string>
+    <string name="board_generation_nrf52">3</string>
     <string name="flashing_version_mismatch">Versionskonflikt. Flashen nicht möglich!</string>
     <string name="info_web">Anleitung</string>
 
@@ -157,8 +168,6 @@
     <string name="error_service_discovery">Service-Erkennung fehlgeschlagen</string>
     <string name="error_missing_characteristic">DFU-Legacy-Charakteristik nicht gefunden</string>
     <string name="error_reading_characteristic">Fehler beim Lesen der DFU-Steuerungscharakteristik</string>
-    <string name="pattern_removed">%s entfernt</string>
-    <string name="pattern_remove_failed">Gerät konnte nicht entfernt werden</string>
     <string name="error_bluetooth_adapter_null">Bluetooth-Adapter ist null oder nicht aktiviert</string>
     <string name="error_device_null">Gerät ist null</string>
     <string name="error_missing_dfu_service">DFU-Legacy-Service nicht gefunden.</string>
@@ -188,6 +197,8 @@
     <string name="error_device_version_incorrect">Geräteversion ist falsch. Service wird gestoppt.</string>
     <string name="error_file_path_missing">Dateipfad fehlt. Service wird gestoppt.</string>
     <string name="error_dfu_failed">DFU fehlgeschlagen. Service wird gestoppt.</string>
+    <string name="error_legacy_bootloader_unreachable">Der mini hat sein Programm neu gestartet, bevor das Telefon den DFU-Modus erreichen konnte. Auf diesem Telefon lässt sich ein mini 1/2 nur per Bluetooth flashen, wenn das Programm auf dem Board eine Kopplung verlangt. Zuerst ein Programm mit Kopplung flashen oder USB verwenden.</string>
+    <string name="error_flashing_in_progress">Es läuft bereits ein Flash-Vorgang</string>
     <string name="error_unsupported_board_version">Nicht unterstützte Board-Version: %d</string>
     <string name="error_failed_prepare_firmware_zip">Firmware-ZIP konnte nicht vorbereitet werden</string>
 

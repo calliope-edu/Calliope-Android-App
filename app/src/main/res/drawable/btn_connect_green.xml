@@ -6,7 +6,7 @@
             <item android:gravity="fill" >
                 <shape android:shape="rectangle">
                     <corners android:radius="20dp" />
-                    <solid android:color="@color/green" />
+                    <solid android:color="@color/state_connected" />
                 </shape>
             </item>
             <item android:gravity="center">
@@ -19,7 +19,7 @@
             <item android:gravity="fill" >
                 <shape android:shape="rectangle">
                     <corners android:radius="20dp" />
-                    <solid android:color="@color/green" />
+                    <solid android:color="@color/state_connected" />
                 </shape>
             </item>
             <item android:gravity="center">
@@ -32,7 +32,7 @@
             <item android:gravity="fill" >
                 <shape android:shape="rectangle">
                     <corners android:radius="20dp" />
-                    <solid android:color="@color/green" />
+                    <solid android:color="@color/state_connected" />
                 </shape>
             </item>
             <item android:gravity="center">

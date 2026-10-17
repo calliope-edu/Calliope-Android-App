@@ -75,7 +75,7 @@
     <string name="button_ok">Ok</string>
     <string name="button_continue">Continue</string>
     <string name="button_enable">Enable</string>
-    <string name="button_remove">Remove</string>
+    <string name="content_description_script_editor">Editor that created this script</string>
     <string name="info_dialog_delete">You will permanently delete \"%s\".</string>
     <string name="subject_dialog_share">Sharing File…</string>
     <string name="text_dialog_share">Calliope mini firmware</string>
@@ -106,6 +106,7 @@
     <string name="flashing_device_connected">Device connected</string>
     <string name="flashing_process_starting">Process starting…</string>
     <string name="flashing_enabling_dfu_mode">Enabling DFU mode…</string>
+    <string name="flashing_rebooting_partial">Restarting board for partial flashing…</string>
     <string name="flashing_firmware_validating">Firmware validating…</string>
     <string name="flashing_device_disconnecting">Device disconnecting…</string>
     <string name="flashing_completed">Flashing completed</string>
@@ -113,10 +114,14 @@
     <string name="flashing_uploading">Uploading…</string>
     <string name="flashing_percent" translatable="false">%d%%</string>
     <string name="flashing_error">Error (%d): %s</string>
+    <string name="flashing_notification_title">Flashing…</string>
     <string name="partial_flashing_starting">Partial flashing starting…</string>
     <string name="partial_flashing_failed">Partial flashing failed, attempting full flashing</string>
     <string name="points" translatable="false">…</string>
-    <string name="menu_fab_connect">Connection</string>
+    <string name="menu_fab_connect">Choose a mini</string>
+    <string name="menu_fab_disconnect">Disconnect the mini</string>
+    <string name="menu_fab_reconnect">Connect the mini</string>
+    <string name="menu_fab_change_device">Choose another mini</string>
     <string name="menu_fab_scripts">Programs</string>
     <string name="menu_fab_full_screen">Full screen</string>
     <string name="menu_fab_scan_qr">Scan QR</string>
@@ -159,6 +164,12 @@
 
     <!-- Bonding -->
     <string name="button_retry">Retry</string>
+    <string name="title_dialog_leave_editor">Leave the editor?</string>
+    <string name="info_dialog_leave_editor_keep">The project stays open in the background and the connected mini stays connected. Close it to free the mini.</string>
+    <string name="info_dialog_leave_editor_close">The mini is connected. Leaving disconnects it.</string>
+    <string name="button_keep_editor">Keep open</string>
+    <string name="button_stay_editor">Stay</string>
+    <string name="button_close_editor">Close</string>
 
     <!-- GATT errors (non-translatable) -->
     <string name="gatt_success" translatable="false">GATT SUCCESS</string>
@@ -175,7 +186,6 @@
     <string name="gatt_not_long" translatable="false">GATT NOT LONG</string>
     <string name="gatt_insuf_key_size" translatable="false">GATT INSUF KEY SIZE</string>
     <string name="gatt_invalid_attribute_length" translatable="false">A write operation exceeds the maximum length of the attribute</string>
-    <string name="gatt_invalid_attr_len" translatable="false">GATT INVALID ATTR LEN</string>
     <string name="gatt_err_unlikely" translatable="false">GATT ERR UNLIKELY</string>
     <string name="gatt_insufficient_encryption" translatable="false">Insufficient encryption for a given operation</string>
     <string name="gatt_unsupport_grp_type" translatable="false">GATT UNSUPPORT GRP TYPE</string>
@@ -216,8 +226,9 @@
         ]]>
     </string>
     <string name="info_mini_conected">Calliope mini %s connected</string>
-    <string name="mini_version_1">1 or 2</string>
-    <string name="mini_version_2">3</string>
+    <string name="board_generation_unknown" translatable="false">?</string>
+    <string name="board_generation_nrf51">1 or 2</string>
+    <string name="board_generation_nrf52">3</string>
     <string name="flashing_version_mismatch">Version mismatch. Flashing not possible!</string>
     <string name="info_web">Instructions</string>
 
@@ -230,8 +241,6 @@
     <string name="error_service_discovery">Service discovery failed</string>
     <string name="error_missing_characteristic">Cannot find DFU legacy characteristic</string>
     <string name="error_reading_characteristic">Failed to read DFU control characteristic</string>
-    <string name="pattern_removed">%s removed</string>
-    <string name="pattern_remove_failed">Failed to remove device</string>
     <string name="error_bluetooth_adapter_null">Bluetooth adapter is null or not enabled</string>
     <string name="error_missing_dfu_service">Cannot find DFU legacy service.</string>
     <string name="error_missing_dfu_characteristic">Cannot find DFU legacy characteristic.</string>
@@ -260,6 +269,8 @@
     <string name="error_device_version_incorrect">Device version is incorrect. Service will stop.</string>
     <string name="error_file_path_missing">File path is missing. Service will stop.</string>
     <string name="error_dfu_failed">DFU failed. Service will stop.</string>
+    <string name="error_legacy_bootloader_unreachable">The board restarted its program before the phone could reach its DFU mode. On this phone a mini 1/2 can be flashed over Bluetooth only if the program on the board requires pairing. Flash a program with pairing enabled first, or use USB.</string>
+    <string name="error_flashing_in_progress">Flashing is already in progress</string>
     <string name="error_unsupported_board_version">Unsupported board version: %d</string>
     <string name="error_failed_prepare_firmware_zip">Failed to prepare firmware ZIP</string>
 

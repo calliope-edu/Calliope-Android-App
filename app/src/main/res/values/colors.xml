@@ -48,13 +48,6 @@
     <color name="md_surface_container_high">#E5E9E8</color>
     <color name="md_surface_container_highest">#DFE3E2</color>
 
-    <!-- ============================================================= -->
-    <!-- Brand accent palette — kept intentionally vivid for key CTAs   -->
-    <!-- (e.g. the connect button) so the Calliope identity stays.      -->
-    <!-- ============================================================= -->
-    <color name="aqua_200">#FF00C8C6</color>
-    <color name="aqua_500">#FF009896</color>
-
     <!-- Brand accent — the classic vivid Calliope aqua, used for the key
          accents (FAB, bottom-nav indicator, checkboxes) with a white icon,
          matching the app's original look. Pinned (not a dynamic role) so
@@ -67,24 +60,32 @@
          used instead on dark surfaces (values-night). -->
     <color name="brand_link">#FF057876</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="purple">#FF8073E5</color>
-    <color name="blue_light">#FF00C0FF</color>
 
-    <!--personal-->
-    <color name="yellow">#FFFDC800</color>
-    <color name="pink">#FFE6006A</color>
-    <color name="green">#FF00D265</color>
-    <color name="red">#FFB00020</color>
+    <!-- Neutral grey ramp (dialog cancel buttons, muted icon tints, scrims). -->
     <color name="grey_transparent">#B0585858</color>
     <color name="grey_transparent_light">#60C1C1C1</color>
     <color name="grey_200">#FFC1C1C1</color>
     <color name="grey_500">#FF818181</color>
     <color name="grey_700">#FF585858</color>
-    <color name="orange">#FFFF5F1F</color>
     <color name="transparent">#00FFFFFF</color>
 
-    <color name="yellow_200">#FFFDC800</color>
-    <color name="yellow_500">#FFDD9800</color>
+    <!-- ============================================================= -->
+    <!-- Status / state palette. Deliberately vivid signal colours      -->
+    <!-- (FAB connection states, snackbars, dialog cards); values are   -->
+    <!-- the classic Calliope flat palette, only the names are semantic.-->
+    <!-- ============================================================= -->
+    <!-- The Calliope warning/pattern yellow (dialog cards, warning button). -->
+    <color name="brand_yellow">#FFFDC800</color>
+    <color name="status_warning">#FFDD9800</color>
+    <color name="status_error">#FFB00020</color>
+    <color name="state_busy">@color/brand_yellow</color>
+    <color name="state_control">#FF00C0FF</color>
+    <color name="state_script">#FFFF5F1F</color>
+    <color name="state_connected">#FF00D265</color>
+    <!-- Pattern-grid selection pink — part of the classic pairing look. -->
+    <color name="pattern_selected">#FFE6006A</color>
+    <!-- Launcher adaptive-icon background (template purple; see plan 6.6). -->
+    <color name="launcher_background">#FF8073E5</color>
 
     <color name="ic_fill_primary">#FF000000</color>
     <color name="ic_fill_secondary">#FFFFFFFF</color>

@@ -7,8 +7,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import org.apache.commons.io.FilenameUtils;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.concurrent.ExecutorService;
@@ -137,7 +135,7 @@ public class ScriptsRecyclerAdapter extends RecyclerView.Adapter<ScriptsRecycler
         }
 
         void setItem(FileWrapper file) {
-            String name = FilenameUtils.removeExtension(file.getName());
+            String name = FileUtils.removeExtension(file.getName());
             String date = Utils.dateFormat(file.lastModified());
 
             this.name.setText(name);

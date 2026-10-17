@@ -1,26 +1,33 @@
 package cc.calliope.mini.bridge
 
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothAdapter
 import android.content.Context
-import android.content.Intent
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import android.webkit.WebView
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
 import androidx.preference.PreferenceManager
 import cc.calliope.mini.R
-import cc.calliope.mini.core.service.FlashingService
-import cc.calliope.mini.core.state.ApplicationStateHandler
-import cc.calliope.mini.core.state.Event
+import cc.calliope.mini.core.bluetooth.BleUuids
+import cc.calliope.mini.core.bluetooth.BoardGeneration
+import cc.calliope.mini.core.bluetooth.GattConnection
+import cc.calliope.mini.core.service.FlashLauncher
+import cc.calliope.mini.core.state.AppMode
+import cc.calliope.mini.core.state.AppStateRepository
+import cc.calliope.mini.core.state.FlashEvent
+import cc.calliope.mini.core.state.FlashMode
+import cc.calliope.mini.core.state.FlashPhase
+import cc.calliope.mini.core.state.FlashResult
 import cc.calliope.mini.core.state.Notification
-import cc.calliope.mini.core.state.Progress
-import cc.calliope.mini.core.state.State
 import cc.calliope.mini.utils.Constants
+import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -32,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap
  * Dispatcher for the Calliope native-proxy bridge.
  *
  * One controller per host fragment. Owns:
- *   - the BLE session ([BridgeBleSession])
+ *   - the BLE session ([GattConnection])
  *   - the JS-event sender (writes to `window.__calliopeNative.onMessage`)
  *   - the flash pipeline (hex → temp file → [FlashingService] + progress
  *     receiver → flashProgress events)
@@ -45,16 +52,40 @@ class BridgeController(
     private val context: Context,
     private val webView: WebView,
     private val lifecycleOwner: LifecycleOwner,
-) : BridgeBleSession.Listener {
+) : GattConnection.Listener {
 
     private val main = Handler(Looper.getMainLooper())
-    private val session = BridgeBleSession(context.applicationContext, this)
+    /** Open-mode link (CODAL open firmware): default config, no bonding. */
+    private val session = GattConnection(context.applicationContext, this)
 
 
     /** GATT characteristics the JS side has subscribed to. We forward
      *  `onCharacteristicChanged` to JS only when this set contains the
      *  exact (service, char) pair — avoids leaking unrelated notifies. */
     private val notifySubs = ConcurrentHashMap.newKeySet<String>()
+
+    /**
+     * Whether we've told the app it's in a live-control session. Drives the
+     * native movable FAB colour via [AppStateRepository], exactly like
+     * the cardboard editor and the Scratch Link bridge: control = true while
+     * the campus session holds a GATT connection, false once it drops.
+     * Main-thread only.
+     */
+    private var controlReported = false
+
+    private fun reportControl() {
+        if (!controlReported) {
+            controlReported = true
+            AppStateRepository.setControl(true) { main.post { disconnectByUser() } }
+        }
+    }
+
+    private fun reportIdle() {
+        if (controlReported) {
+            controlReported = false
+            AppStateRepository.setControl(false)
+        }
+    }
 
     // ---- Lifecycle ---------------------------------------------------------
 
@@ -70,6 +101,9 @@ class BridgeController(
         // trigger an async onDisconnected -> emitState -> post() that would
         // otherwise race the WebView teardown.
         destroyed = true
+        // Runs on the main thread (fragment onDestroyView). Idempotent with
+        // the reportIdle() the disconnect callback will also fire.
+        reportIdle()
         // LifecycleOwner removes the observers automatically when its state
         // hits DESTROYED — no manual cleanup needed for them.
         session.disconnect()
@@ -163,7 +197,7 @@ class BridgeController(
             return
         }
         emitState("ble", status = "connecting", errorMessage = "")
-        val adapter = BluetoothAdapter.getDefaultAdapter()
+        val adapter = BluetoothUtils.getAdapter(context)
         if (adapter == null || !adapter.isEnabled) {
             val msg = context.getString(R.string.error_bluetooth_not_enabled)
             replyError(id, msg)
@@ -191,20 +225,26 @@ class BridgeController(
     }
 
     private fun handleDisconnect(id: String, args: JSONObject) {
-        notifySubs.clear()
-        session.disconnect()
-        emitState("ble", status = "disconnected", deviceName = "")
+        disconnectByUser()
         replyOk(id)
     }
 
-    // BridgeBleSession delivers these on a binder thread; marshal to main so
+    /** End the session from the native side (FAB menu) — the widget sees a plain disconnect. */
+    private fun disconnectByUser() {
+        if (destroyed) return
+        notifySubs.clear()
+        session.disconnect()
+        emitState("ble", status = "disconnected", deviceName = "")
+    }
+
+    // GattConnection delivers these on a binder thread; marshal to main so
     // all controller state stays single-threaded.
     override fun onConnected(deviceName: String?) {
         main.post { onConnectedMain(deviceName) }
     }
 
-    override fun onDisconnected(reason: String) {
-        main.post { onDisconnectedMain(reason) }
+    override fun onDisconnected(status: Int) {
+        main.post { onDisconnectedMain("gatt status=$status") }
     }
 
     override fun onError(message: String) {
@@ -228,10 +268,11 @@ class BridgeController(
             bleCanCommunicate = true,
             bleHasPermission = true,
         )
+        reportControl()
         // Auto-subscribe Nordic UART TX so REPL/console/live-data reaches the
         // widget as `serialData` without the web side requesting it. Best-effort:
         // fails silently on programs with no UART service (e.g. MicroPython).
-        session.enableNotify(uartService, uartTx) { /* best-effort */ }
+        session.enableNotify(BleUuids.UART_SERVICE, BleUuids.UART_TX) { /* best-effort */ }
         cancelConnectTimeout()
         val id = pendingConnectReplyId
         pendingConnectReplyId = null
@@ -239,6 +280,7 @@ class BridgeController(
     }
 
     private fun onDisconnectedMain(reason: String) {
+        reportIdle()
         notifySubs.clear()
         cancelConnectTimeout()
         emitState("ble", status = "disconnected", deviceName = "")
@@ -263,7 +305,7 @@ class BridgeController(
         // layer (serial.ts onSerialData/onSerialLine) consumes directly. This
         // is the inbound half of the proxy serial channel; without it proxy
         // serial is write-only.
-        if (serviceUuid == uartService && characteristicUuid == uartTx) {
+        if (serviceUuid == BleUuids.UART_SERVICE && characteristicUuid == BleUuids.UART_TX) {
             sendEvent("serialData", JSONObject().put("data", base64Encode(data)))
             return
         }
@@ -327,14 +369,10 @@ class BridgeController(
     // ---- Serial (UART) ----------------------------------------------------
 
     /** Nordic UART RX (write-from-host) characteristic in CODAL. */
-    private val uartService: UUID = UUID.fromString("6e400001-b5a3-f393-e0a9-e50e24dcca9e")
-    private val uartRx: UUID = UUID.fromString("6e400003-b5a3-f393-e0a9-e50e24dcca9e")
-    private val uartTx: UUID = UUID.fromString("6e400002-b5a3-f393-e0a9-e50e24dcca9e")
-
     private fun handleSerialWrite(id: String, args: JSONObject) {
         if (!session.isConnected) { replyError(id, "not connected"); return }
         val data = base64Decode(args.optString("data", ""))
-        session.write(uartService, uartRx, data, withResponse = false) { ok ->
+        session.write(BleUuids.UART_SERVICE, BleUuids.UART_RX, data, withResponse = false) { ok ->
             if (ok) replyOk(id) else replyError(id, "serial write failed")
         }
     }
@@ -342,77 +380,47 @@ class BridgeController(
     // ---- Flash -------------------------------------------------------------
 
     private var pendingFlashReplyId: String? = null
-    /** True from the moment we kick `FlashingService` until either a
-     *  `STATE_IDLE` follow-up to `STATE_FLASHING` or a `STATE_ERROR`
-     *  arrives. Acts as the filter for the global `ApplicationStateHandler`
+    /** True from the moment we kick `FlashingService` until the session's
+     *  `FlashEvent.Done` arrives. Acts as the filter for the global state
      *  observers so we don't react to flashes that started outside the
      *  proxy (legacy editors). */
     private var flashInFlight: Boolean = false
-    private var lastStateType: Int = State.STATE_IDLE
-    /** Tracks whether the current flash is going down the partial-flash
-     *  path or the full Nordic DFU path. Starts as "partial" (matches the
-     *  FlashingService default) and flips to "dfu" when a Nordic-DFU-only
-     *  progress code arrives — those don't fire during partial flash.
-     *  Forwarded to the widget as `partial: true/false` so the UI shows
-     *  the correct "Schnelles Flashen" vs "Vollständiges Flashen" label. */
-    private var currentFlashMode: String = "partial"
+    /** Partial-flash vs full-DFU, mirrored from the session's
+     *  [AppMode.Flashing.mode]. Forwarded to the widget as
+     *  `partial: true/false` so the UI shows the correct "Schnelles
+     *  Flashen" vs "Vollständiges Flashen" label. */
+    private var currentFlashMode: FlashMode = FlashMode.PARTIAL
+    private var lastPhase: FlashPhase? = null
 
-    private val progressObserver = Observer<Progress?> { p ->
-        if (!flashInFlight || p == null) return@Observer
-        when (val pct = p.value) {
-            Progress.PROGRESS_CONNECTING,
-            Progress.PROGRESS_STARTING -> {
-                // These codes only fire from the Nordic DFU library. Their
-                // arrival means PartialFlashingService either declined the
-                // hex (RESULT_ATTEMPT_DFU) or wasn't started at all
-                // (forceFullDfu) — either way we're now in full DFU.
-                currentFlashMode = "dfu"
-                emitFlashProgress("prepare", 0)
+    private fun onFlashEvent(event: FlashEvent) {
+        if (!flashInFlight) return
+        when (event) {
+            is FlashEvent.Progress -> emitFlashProgress("flashing", event.percent)
+            is FlashEvent.Done -> when (val r = event.result) {
+                is FlashResult.Success -> finishFlash(success = true, error = null)
+                is FlashResult.Failure -> finishFlash(success = false, error = r.message ?: "flash failed")
             }
-            Progress.PROGRESS_ENABLING_DFU_MODE -> {
-                currentFlashMode = "dfu"
-                emitFlashProgress("reboot", 0)
-            }
-            Progress.PROGRESS_VALIDATING -> emitFlashProgress("finalising", 100)
-            Progress.PROGRESS_DISCONNECTING -> { /* swallowed; finalised by state-idle */ }
-            Progress.PROGRESS_COMPLETED -> finishFlash(success = true, error = null)
-            Progress.PROGRESS_ABORTED -> finishFlash(success = false, error = "flash aborted")
-            else -> if (pct in 0..100) emitFlashProgress("flashing", pct)
         }
     }
 
-    private val stateObserver = Observer<State?> { s ->
-        if (s == null) return@Observer
-        val type = s.type
-        if (flashInFlight) {
-            when (type) {
-                // STATE_ERROR can come from preflight (loadDeviceInfo /
-                // checkCompatibility — e.g. V2 hex on V3 board) before any
-                // progress fires, OR from a failed DFU step. Surface the
-                // most recent ERROR notification as the reason.
-                State.STATE_ERROR -> finishFlash(success = false, error = latestErrorMessage ?: "flash failed")
-                // STATE_FLASHING → STATE_IDLE is the secondary "done" edge
-                // for paths that don't post a PROGRESS_COMPLETED.
-                State.STATE_IDLE -> if (lastStateType == State.STATE_FLASHING) {
-                    finishFlash(success = true, error = null)
-                }
-                else -> { /* STATE_BUSY / STATE_CONTROL — uninteresting */ }
-            }
+    private fun onMode(mode: AppMode) {
+        if (!flashInFlight || mode !is AppMode.Flashing) return
+        currentFlashMode = mode.mode
+        if (mode.phase == lastPhase) return
+        lastPhase = mode.phase
+        when (mode.phase) {
+            FlashPhase.PREPARING,
+            FlashPhase.CONNECTING -> emitFlashProgress("prepare", 0)
+            FlashPhase.REBOOTING -> emitFlashProgress("reboot", 0)
+            FlashPhase.UPLOADING -> { /* percent arrives via FlashEvent.Progress */ }
+            FlashPhase.FINALIZING -> emitFlashProgress("finalising", 100)
+            FlashPhase.DISCONNECTING -> { /* swallowed; finalised by Done */ }
         }
-        lastStateType = type
     }
 
-    /** Last ERROR-level notification text seen. `FlashingService.handleError`
-     *  fires `updateNotification(ERROR, …) + updateState(STATE_ERROR)` but
-     *  never `updateError(…)`, so the user-readable reason only reaches us
-     *  through this channel. */
-    private var latestErrorMessage: String? = null
-
-    private val notificationObserver = Observer<Event<Notification>?> { ev ->
-        val n = ev?.peekContent() ?: return@Observer
+    private fun onNotification(n: Notification) {
         when (n.type) {
             Notification.ERROR -> {
-                latestErrorMessage = n.message
                 if (flashInFlight) {
                     sendEvent("log", JSONObject().put("direction", "error").put("text", n.message ?: ""))
                 }
@@ -429,19 +437,19 @@ class BridgeController(
         }
     }
 
-    private val errorObserver = Observer<cc.calliope.mini.core.state.Error?> { e ->
-        if (!flashInFlight || e == null) return@Observer
-        finishFlash(success = false, error = e.message ?: "flash error ${e.code}")
-    }
-
     init {
-        // Observe the existing flash pipeline's progress/state once. Filtering
-        // by `flashInFlight` ensures we ignore flashes initiated outside the
-        // proxy (e.g. legacy WebFragment editors that share the same service).
-        ApplicationStateHandler.getProgressLiveData().observe(lifecycleOwner, progressObserver)
-        ApplicationStateHandler.getStateLiveData().observe(lifecycleOwner, stateObserver)
-        ApplicationStateHandler.getErrorLiveData().observe(lifecycleOwner, errorObserver)
-        ApplicationStateHandler.getNotificationLiveData().observe(lifecycleOwner, notificationObserver)
+        // Collect the flash pipeline's streams from the repository while the
+        // host is STARTED. Filtering by `flashInFlight` ignores flashes
+        // initiated outside the proxy (e.g. legacy WebFragment editors that
+        // share the same service). The failure reason travels inside
+        // FlashResult.Failure, so no separate error channel is needed.
+        lifecycleOwner.lifecycleScope.launch {
+            lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { AppStateRepository.flashEvents.collect { onFlashEvent(it) } }
+                launch { AppStateRepository.mode.collect { onMode(it) } }
+                launch { AppStateRepository.notifications.collect { onNotification(it) } }
+            }
+        }
     }
 
     private fun finishFlash(success: Boolean, error: String?) {
@@ -525,8 +533,8 @@ class BridgeController(
      * disconnect and kick FlashingService.
      */
     private fun beginFlash(id: String, hexFile: File, forceFullDfu: Boolean) {
-        // FlashingService reads its target MAC/version from SharedPreferences
-        // (already populated by the device-pairing flow). The radio is
+        // FlashLauncher resolves the target (the board picked in the pattern
+        // dialog) and hands it to FlashingService. The radio is
         // single-consumer on Android — partial flash needs an exclusive
         // GATT connection. We drop our proxy session and WAIT for the
         // STATE_DISCONNECTED callback (or a 1.5 s timeout) before starting
@@ -538,34 +546,29 @@ class BridgeController(
 
         pendingFlashReplyId = id
         flashInFlight = true
-        latestErrorMessage = null
-        lastStateType = State.STATE_IDLE
-        // Optimistic default: partial. FlashingService runs partial first
-        // unless EXTRA_FORCE_FULL_DFU is set. The progress observer flips
-        // to "dfu" the moment a DFU-only progress code arrives — that
-        // covers both forceFullDfu=true and partial→full fallback.
-        currentFlashMode = if (forceFullDfu) "dfu" else "partial"
+        lastPhase = null
+        // Optimistic default until FlashingService publishes the session's
+        // real mode (it may still be starting); the mode observer then
+        // tracks partial→full fallback as well.
+        currentFlashMode = if (forceFullDfu) FlashMode.FULL_DFU else FlashMode.PARTIAL
         emitFlashProgress(phase = "prepare", progress = 0)
 
         session.disconnect(onClosed = {
-            try {
-                val intent = Intent(context, FlashingService::class.java)
-                intent.putExtra(Constants.EXTRA_FILE_PATH, hexFile.absolutePath)
-                if (forceFullDfu) {
-                    intent.putExtra(FlashingService.EXTRA_FORCE_FULL_DFU, true)
-                }
-                context.startService(intent)
-            } catch (e: Exception) {
+            // The widget renders progress itself, and the background scan was
+            // paused for this session, so "in range" can't be required.
+            val result = FlashLauncher.launch(
+                context, hexFile.absolutePath,
+                screen = FlashLauncher.Screen.NONE,
+                forceFullDfu = forceFullDfu,
+                requireInRange = false,
+            )
+            if (!result.started) {
                 flashInFlight = false
                 pendingFlashReplyId = null
-                replyError(id, "could not start flashing service: ${e.message}")
+                replyError(id, result.error ?: "could not start flashing service")
             }
         }, timeoutMs = 1500)
     }
-
-    /** MbitMore service exposed by pxt-blocks-runtime. */
-    private val mbitMoreService: UUID = UUID.fromString("0b50f3e4-607f-4151-9091-7d008d6ffc5c")
-    private val mbitMoreState: UUID = UUID.fromString("0b500101-607f-4151-9091-7d008d6ffc5c")
 
     /**
      * Read MbitMore STATE and call `onResult(true)` if the device is
@@ -596,7 +599,7 @@ class BridgeController(
         }
         timeout = Runnable { finish(false) }
         main.postDelayed(timeout, 1500)
-        session.read(mbitMoreService, mbitMoreState) { data ->
+        session.read(BleUuids.MBIT_MORE_SERVICE, BleUuids.MBIT_MORE_STATE) { data ->
             val anyNonZero = data != null && data.any { it != 0.toByte() }
             main.post { finish(anyNonZero) }
         }
@@ -654,19 +657,22 @@ class BridgeController(
     }
 
     /**
-     * Map the persisted chip class (BondingService writes
-     * [Constants.CURRENT_DEVICE_VERSION]) to the widget's version strings, so
+     * Map the current board's [BoardGeneration] to the widget's version strings, so
      * the web layer doesn't have to guess. Returns (boardVersion, calliopeVersion).
-     * MINI_V2 = V1-class silicon (Calliope Mini 1 & 2); MINI_V3 = V2-class
-     * (Mini 3 == micro:bit v2). Unidentified → (null, null).
+     *
+     * Campus semantics: boardVersion is the silicon class ("V1" = nRF51,
+     * "V2" = nRF52), calliopeVersion is the product generation ("V1" = mini 1,
+     * "V2" = mini 2, "V3" = mini 3). BLE can't tell a mini 1 from a mini 2
+     * (both nRF51), so the nRF51 class is reported as mini 2 — agreed with the
+     * campus team: mini 1 hardware is practically extinct, reporting "V1" made
+     * the campus Blocks banner reject every real mini 2, and campus keeps its
+     * own RAM-fit gate for a genuine mini 1. Unidentified → (null, null).
      */
     private fun versionStrings(): Pair<String?, String?> {
-        val v = PreferenceManager.getDefaultSharedPreferences(context)
-            .getInt(Constants.CURRENT_DEVICE_VERSION, Constants.UNIDENTIFIED)
-        return when (v) {
-            Constants.MINI_V3 -> "V2" to "V3"
-            Constants.MINI_V2 -> "V1" to "V1"
-            else -> null to null
+        return when (BoardGeneration.current(context)) {
+            BoardGeneration.NRF52 -> "V2" to "V3"
+            BoardGeneration.NRF51 -> "V1" to "V2"
+            BoardGeneration.UNKNOWN -> null to null
         }
     }
 
@@ -685,7 +691,7 @@ class BridgeController(
                 .put("transport", "ble")
                 .put("phase", phase)
                 .put("progress", progress)
-                .put("partial", currentFlashMode == "partial"),
+                .put("partial", currentFlashMode == FlashMode.PARTIAL),
         )
     }
 

@@ -1,6 +1,7 @@
 package cc.calliope.mini.ui.model
 
 import cc.calliope.mini.R
+import cc.calliope.mini.core.bluetooth.BoardGeneration
 import java.util.Locale
 
 enum class EditorType(
@@ -19,8 +20,8 @@ enum class EditorType(
         infoResId = R.string.info_campus,
         // Cloudflare Pages preview of the feature/native-proxy branch.
         // Switch to https://campus.calliope.cc/ once the proxy ships.
-        urlV2 = "https://feature-native-proxy.calliope-campus.pages.dev/",
-        urlV3 = "https://feature-native-proxy.calliope-campus.pages.dev/",
+        urlV2 = "https://campus.calliope.cc/",
+        urlV3 = "https://campus.calliope.cc/",
         defaultOrder = 0
     ),
 
@@ -101,8 +102,9 @@ enum class EditorType(
     val directoryName: String
         get() = name
 
-    fun getLocalizedUrl(boardVersion: Int): String {
-        val baseUrl = if (boardVersion == 2) urlV2 else urlV3
+    fun getLocalizedUrl(generation: BoardGeneration): String {
+        // nRF51 covers mini 1/2; mini 3 and unknown boards get the V3 URL
+        val baseUrl = if (generation == BoardGeneration.NRF51) urlV2 else urlV3
         if (this != MAKECODE) return baseUrl
 
         val langTag = Locale.getDefault().toLanguageTag()

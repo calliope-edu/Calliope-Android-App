@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import cc.calliope.mini.R
 import cc.calliope.mini.bridge.CampusUrls
@@ -14,6 +15,7 @@ import cc.calliope.mini.databinding.FragmentEditorsBinding
 import cc.calliope.mini.ui.adapter.MenuAdapter
 import cc.calliope.mini.ui.model.MenuItem
 import cc.calliope.mini.ui.model.EditorType
+import cc.calliope.mini.core.bluetooth.BoardGeneration
 import cc.calliope.mini.ui.viewmodel.MenuViewModel
 import cc.calliope.mini.ui.dialog.DialogUtils
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -32,10 +34,29 @@ class EditorsFragment : Fragment() {
     private var _binding: FragmentEditorsBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: MenuViewModel by viewModels { 
-        MenuViewModel.Factory(requireContext()) 
-    }
+    private val viewModel: MenuViewModel by viewModels()
     private lateinit var adapter: MenuAdapter
+
+    /** Current column count; 2 on tablet landscape, 1 otherwise. */
+    private var columns = 1
+
+    /** (Re)applies the layout manager for the current configuration.
+     *  MainActivity handles orientation configChanges itself (the WebView
+     *  editors must survive rotation), so the fragment is NOT recreated on
+     *  rotate — onConfigurationChanged re-runs this instead. */
+    private fun applyLayoutManager() {
+        columns = resources.getInteger(R.integer.editors_columns)
+        binding.recyclerView.layoutManager = if (columns > 1) {
+            GridLayoutManager(requireContext(), columns)
+        } else {
+            LinearLayoutManager(requireContext())
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (_binding != null) applyLayoutManager()
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -57,13 +78,26 @@ class EditorsFragment : Fragment() {
             }
         )
 
-        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        applyLayoutManager()
         binding.recyclerView.adapter = adapter
 
         val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
-            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
+            0, // drag dirs are provided dynamically via getDragDirs below
             ItemTouchHelper.LEFT
         ) {
+            // In a grid, long-press drag must also move sideways across
+            // columns; queried per gesture so an in-place rotation (the
+            // activity handles orientation configChanges itself) is enough.
+            override fun getDragDirs(
+                recyclerView: RecyclerView,
+                viewHolder: RecyclerView.ViewHolder
+            ): Int = if (columns > 1) {
+                ItemTouchHelper.UP or ItemTouchHelper.DOWN or
+                        ItemTouchHelper.START or ItemTouchHelper.END
+            } else {
+                ItemTouchHelper.UP or ItemTouchHelper.DOWN
+            }
+
             override fun onChildDraw(
                 c: Canvas,
                 recyclerView: RecyclerView,
@@ -81,7 +115,7 @@ class EditorsFragment : Fragment() {
                         isAntiAlias = true
                     }
                     val context = requireContext()
-                    val icon = AppCompatResources.getDrawable(context, R.drawable.delete_icon) as? VectorDrawable
+                    val icon = AppCompatResources.getDrawable(context, R.drawable.ic_delete) as? VectorDrawable
 
                     if (dX < 0) { // Swiping to the left
                         val rect = RectF(
@@ -154,16 +188,15 @@ class EditorsFragment : Fragment() {
 
     private fun openEditor(item: MenuItem) {
         val context = requireContext()
-        val preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context)
-        val boardVersion = preferences.getInt("current_device_version", -1)
+        val generation = BoardGeneration.current(context)
 
         // Use custom URL from settings if the item is "CUSTOM"
         val editorType = EditorType.entries.find { it.id == item.id }
         val url = if (item.id == EditorType.CUSTOM.id) {
             cc.calliope.mini.utils.settings.Settings.getCustomLink(context)
         } else {
-            editorType?.getLocalizedUrl(boardVersion)
-                ?: (if (boardVersion == 2) item.urlV2 else item.urlV3)
+            editorType?.getLocalizedUrl(generation)
+                ?: (if (generation == BoardGeneration.NRF51) item.urlV2 else item.urlV3)
         }
 
         // Routing is decided by the resolved URL, not the editor id: any

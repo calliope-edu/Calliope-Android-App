@@ -64,6 +64,26 @@ public final class RetainedWebEditor implements HostAccess {
         this.url = url;
         this.contextWrapper = new MutableContextWrapper(activity);
         this.webView = new WebView(contextWrapper);
+        // The page — retained or on screen — is the only thing that can end
+        // its Blocks session cleanly (see WebFragment's auto-connect driver).
+        ScratchLinkServer.setUserDisconnectHook(() -> {
+            mainHandler.post(() -> {
+                if (!destroyed) {
+                    webView.evaluateJavascript(
+                            "(window.__calliopeDisconnect||function(){})();", null);
+                }
+            });
+            return kotlin.Unit.INSTANCE;
+        });
+        ScratchLinkServer.setUserConnectHook(() -> {
+            mainHandler.post(() -> {
+                if (!destroyed) {
+                    webView.evaluateJavascript(
+                            "(window.__calliopeConnectNow||function(){})();", null);
+                }
+            });
+            return kotlin.Unit.INSTANCE;
+        });
     }
 
     /**
@@ -148,6 +168,14 @@ public final class RetainedWebEditor implements HostAccess {
         });
     }
 
+    /** The user chose to close the editor: free the page and drop its BLE session. */
+    public static void closeByUser() {
+        RetainedWebEditor editor = current;
+        if (editor != null) {
+            editor.destroy("closed by user");
+        }
+    }
+
     /** Frees the retained editor whatever its state — the app is going away. */
     public static void destroyAll(@NonNull String reason) {
         RetainedWebEditor editor = current;
@@ -170,6 +198,8 @@ public final class RetainedWebEditor implements HostAccess {
         }
         destroyed = true;
         Log.i(TAG, "destroying retained editor (" + reason + "): " + url);
+        ScratchLinkServer.setUserDisconnectHook(null);
+        ScratchLinkServer.setUserConnectHook(null);
         host = null;
         removeFromParent();
         webView.stopLoading();
