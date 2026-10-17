@@ -33,7 +33,8 @@ import java.util.concurrent.Executors;
 import cc.calliope.mini.ui.activity.NotificationActivity;
 
 import cc.calliope.mini.utils.file.FirmwareZipCreator;
-import cc.calliope.mini.utils.hex.HexParser;
+import cc.calliope.mini.core.hex.ApplicationImage;
+import cc.calliope.mini.core.hex.IntelHexFile;
 import cc.calliope.mini.utils.hex.InitPacket;
 import cc.calliope.mini.R;
 import cc.calliope.mini.core.bluetooth.BleUuids;
@@ -445,8 +446,7 @@ public class FlashingService extends LifecycleService {
     private String prepareFirmwareZip() {
         try {
             // Prepare firmware file
-            HexParser parser = new HexParser(currentPath);
-            byte[] firmware = parser.getCalliopeBin(boardGeneration);
+            byte[] firmware = ApplicationImage.extract(IntelHexFile.read(currentPath), boardGeneration.getLayout());
 
             workDir = new File(new File(getCacheDir(), WORK_ROOT), UUID.randomUUID().toString());
             if (!workDir.mkdirs()) {

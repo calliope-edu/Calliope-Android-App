@@ -66,4 +66,7 @@ dependencies {
     // Loopback Scratch Link server for scratch-based editors —
     // open source (MIT), on-device, no Play Services.
     implementation libs.java.websocket
+
+    // Local JVM tests for the pure parts (hex parsing, partial-flash image).
+    testImplementation libs.junit
 }
