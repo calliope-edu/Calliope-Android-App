@@ -130,6 +130,8 @@ class WebBleFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         uart = UartSession(requireContext(), uartListener)
         AppStateRepository.setReconnectAction(reconnectAction)
+        // Leaving tears this page down, so a live session ends either way: ask.
+        LeaveEditorGuard.install(this, canKeep = false) { bridge.disconnect() }
         webView = WebView(requireContext())
         val marginBottom = resources.getDimensionPixelSize(R.dimen.bottom_bar_clearance)
         val params = FrameLayout.LayoutParams(

@@ -168,6 +168,14 @@ public final class RetainedWebEditor implements HostAccess {
         });
     }
 
+    /** The user chose to close the editor: free the page and drop its BLE session. */
+    public static void closeByUser() {
+        RetainedWebEditor editor = current;
+        if (editor != null) {
+            editor.destroy("closed by user");
+        }
+    }
+
     /** Frees the retained editor whatever its state — the app is going away. */
     public static void destroyAll(@NonNull String reason) {
         RetainedWebEditor editor = current;

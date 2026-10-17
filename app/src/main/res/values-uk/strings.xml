@@ -64,6 +64,12 @@
     <string name="button_enable">Увімкнути</string>
     <string name="content_description_script_editor">Редактор, у якому створено цей скрипт</string>
     <string name="button_retry">Повторити</string>
+    <string name="title_dialog_leave_editor">Вийти з редактора?</string>
+    <string name="info_dialog_leave_editor_keep">Проєкт лишиться відкритим у фоні, а під\'єднана mini — під\'єднаною. Закрий редактор, щоб звільнити mini.</string>
+    <string name="info_dialog_leave_editor_close">mini під\'єднана. Якщо вийти, з\'єднання розірветься.</string>
+    <string name="button_keep_editor">Згорнути</string>
+    <string name="button_stay_editor">Залишитись</string>
+    <string name="button_close_editor">Закрити</string>
     <string name="info_dialog_delete">Ви назавжди видалите \"%s\".</string>
     <string name="subject_dialog_share">Поділитися файлом…</string>
     <string name="text_dialog_share">Calliope mini firmware</string>

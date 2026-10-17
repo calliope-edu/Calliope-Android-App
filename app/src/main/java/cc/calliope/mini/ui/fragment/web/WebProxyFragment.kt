@@ -17,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import cc.calliope.mini.bridge.BridgeController
+import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.bridge.CalliopeProxyBridge
 
 /**
@@ -107,6 +108,7 @@ class WebProxyFragment : Fragment() {
 
         val ctrl = BridgeController(requireContext().applicationContext, webView, viewLifecycleOwner)
         controller = ctrl
+        LeaveEditorGuard.install(this, canKeep = false) { AppStateRepository.disconnectControl() }
         // Seed the controller's origin gate before the first load so a
         // request can't slip through against a stale/null URL.
         ctrl.onPageUrl(pageUrl)

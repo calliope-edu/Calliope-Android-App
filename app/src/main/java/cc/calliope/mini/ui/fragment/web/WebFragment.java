@@ -148,6 +148,13 @@ public class WebFragment extends Fragment implements DownloadListener {
 
         downloads = new EditorDownloadHandler(requireContext(), editorName);
 
+        // Back with a live Blocks session: keep the page running or close it.
+        LeaveEditorGuard.INSTANCE.install(this, true, () -> {
+            RetainedWebEditor.closeByUser();
+            editor = null;
+            return kotlin.Unit.INSTANCE;
+        });
+
         ViewGroup webViewContainer = view.findViewById(R.id.webViewContainer);
         editor = RetainedWebEditor.acquire(requireActivity(), editorUrl);
         webView = editor.getWebView();

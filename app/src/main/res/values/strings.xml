@@ -164,6 +164,12 @@
 
     <!-- Bonding -->
     <string name="button_retry">Retry</string>
+    <string name="title_dialog_leave_editor">Leave the editor?</string>
+    <string name="info_dialog_leave_editor_keep">The project stays open in the background and the connected mini stays connected. Close it to free the mini.</string>
+    <string name="info_dialog_leave_editor_close">The mini is connected. Leaving disconnects it.</string>
+    <string name="button_keep_editor">Keep open</string>
+    <string name="button_stay_editor">Stay</string>
+    <string name="button_close_editor">Close</string>
 
     <!-- GATT errors (non-translatable) -->
     <string name="gatt_success" translatable="false">GATT SUCCESS</string>

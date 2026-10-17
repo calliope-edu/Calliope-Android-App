@@ -65,6 +65,12 @@
     <string name="button_enable">aktivieren</string>
     <string name="content_description_script_editor">Editor, mit dem dieses Skript erstellt wurde</string>
     <string name="button_retry">wiederholen</string>
+    <string name="title_dialog_leave_editor">Editor verlassen?</string>
+    <string name="info_dialog_leave_editor_keep">Das Projekt bleibt im Hintergrund geöffnet und der verbundene mini bleibt verbunden. Schließen gibt den mini frei.</string>
+    <string name="info_dialog_leave_editor_close">Der mini ist verbunden. Beim Verlassen wird die Verbindung getrennt.</string>
+    <string name="button_keep_editor">Offen lassen</string>
+    <string name="button_stay_editor">Bleiben</string>
+    <string name="button_close_editor">Schließen</string>
     <string name="info_dialog_delete">\"%s\" wird entgültig gelöscht.</string>
     <string name="subject_dialog_share">Datei teilen…</string>
     <string name="text_dialog_share">Calliope mini Skript teilen</string>
