@@ -6,11 +6,10 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.bluetooth.*
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.ServiceInfo
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -21,6 +20,9 @@ import androidx.core.app.NotificationCompat
 import cc.calliope.mini.R
 import cc.calliope.mini.ui.activity.NotificationActivity
 import cc.calliope.mini.core.bluetooth.GattStatus
+import cc.calliope.mini.core.hex.FlashLayout
+import cc.calliope.mini.core.hex.IntelHexFile
+import cc.calliope.mini.core.hex.PartialFlashImage
 import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.core.state.Notification
 import cc.calliope.mini.core.state.FlashPhase
@@ -28,10 +30,7 @@ import cc.calliope.mini.core.state.FlashResult
 import cc.calliope.mini.utils.Permission
 import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import kotlinx.coroutines.*
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.util.*
-import java.util.zip.CRC32
 
 /**
  * Unified Partial Flashing Service
@@ -64,10 +63,6 @@ class PartialFlashingService : Service() {
         private val GENERIC_ATTRIBUTE_SERVICE: UUID = UUID.fromString("00001801-0000-1000-8000-00805f9b34fb")
         private val SERVICE_CHANGED_CHARACTERISTIC: UUID = UUID.fromString("00002a05-0000-1000-8000-00805f9b34fb")
 
-        // Flash memory page sizes
-        private const val PAGE_SIZE_NRF51 = 0x400   // 1KB for V1/V2 (nRF51)
-        private const val PAGE_SIZE_NRF52 = 0x1000  // 4KB for V3 (nRF52)
-
         // Status commands
         private const val STATUS_REQUEST: Byte = 0xEE.toByte()
         private const val MODE_APPLICATION: Byte = 0x01
@@ -93,11 +88,6 @@ class PartialFlashingService : Service() {
         const val RESULT_SUCCESS = 0
         const val RESULT_ATTEMPT_DFU = 1
         const val RESULT_FAILED = 2
-
-        // Magic strings for file type detection
-        private const val PXT_MAGIC = "708E3B92C615A841C49866C975EE5197"
-        private const val UPY_MAGIC1 = "FE307F59"
-        private const val UPY_MAGIC_REGEX = ".*FE307F59.{16}9DD7B1C1.*"
 
         // Timeouts (optimized)
         private const val CONNECTION_TIMEOUT_MS = 10_000L
@@ -136,7 +126,6 @@ class PartialFlashingService : Service() {
 
     // Flashing state
     private var isNrf52 = false  // true = nRF52 (V3), false = nRF51 (V1/V2)
-    private var isPython = false
     // Written on the BLE binder thread (handleCharacteristicChanged) and read
     // from the Dispatchers.IO worker — @Volatile plus writes under regionLock /
     // packetLock keep them coherent across the two threads.
@@ -174,12 +163,9 @@ class PartialFlashingService : Service() {
     @Volatile private var waitingForReboot = false
     @Volatile private var disconnectedByDevice = false  // Track if device initiated disconnect (reboot)
     @Volatile private var negotiatedMtu = 23  // Default BLE MTU
-    @Volatile private var bondingComplete = false
-    @Volatile private var bondingResultReceived = false  // Set on BOND_BONDED and BOND_NONE alike
 
     // Handler for delayed operations (avoid blocking Bluetooth thread)
     private val bleHandler = android.os.Handler(android.os.Looper.getMainLooper())
-    private val bondingLock = Object()
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -203,9 +189,12 @@ class PartialFlashingService : Service() {
             manager?.createNotificationChannel(channel)
         }
 
+        // Same icon and tint as the Nordic DFU notification, so a flash
+        // looks the same in the status bar whichever path it takes.
         val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setContentTitle(getString(R.string.partial_flashing_starting))
-            .setSmallIcon(R.drawable.ic_notification_flash)
+            .setSmallIcon(android.R.drawable.stat_sys_upload)
+            .setColor(Color.GRAY)
             .setContentIntent(NotificationActivity.contentIntent(this))
             .setOngoing(true)
             .build()
@@ -408,16 +397,11 @@ class PartialFlashingService : Service() {
             return false
         }
 
-        // EXPERIMENT (2026-08-09): bonding disabled. On nRF51 createBond() here
-        // triggered the PIN dialog and the board rebooted itself right after
-        // BOND_BONDED to apply encryption, killing the session mid-memory-map
-        // (GATT error 8 / status 19 in logs) and leaving the fallback DFU in a
-        // broken state. micro:bit partial flashing implementations do not bond
-        // at all — the PF characteristic should not require encryption.
-        // if (!ensureBonded()) {
-        //     Log.e(TAG, "Bonding failed")
-        //     return false
-        // }
+        // No bonding here, on purpose. The partial-flashing characteristic
+        // needs no encryption (micro:bit implementations never bond for it),
+        // and a createBond() at this point made an nRF51 board reboot right
+        // after BOND_BONDED to apply encryption — killing the session mid
+        // memory-map and leaving the fallback DFU to start from a dirty state.
 
         // Enable Service Changed indications for proper GATT cache handling (Android P+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -462,75 +446,6 @@ class PartialFlashingService : Service() {
             return mtuNegotiated
         } finally {
             gattLock.unlock()
-        }
-    }
-
-    /**
-     * Ensures device is bonded. Should already be paired during discovery,
-     * but initiates bonding as a safety net if not.
-     */
-    private fun ensureBonded(): Boolean {
-        val gatt = bluetoothGatt ?: return false
-        val device = gatt.device ?: return false
-
-        if (device.bondState == BluetoothDevice.BOND_BONDED) {
-            Log.d(TAG, "Device already bonded")
-            return true
-        }
-
-        Log.w(TAG, "Device not bonded, initiating bonding...")
-        bondingComplete = false
-        bondingResultReceived = false
-
-        val bondReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                if (intent.action != BluetoothDevice.ACTION_BOND_STATE_CHANGED) return
-                val bondDevice = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE) ?: return
-                if (bondDevice.address != device.address) return
-
-                when (intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR)) {
-                    BluetoothDevice.BOND_BONDED -> {
-                        Log.d(TAG, "Bonding completed")
-                        bondingComplete = true
-                        bondingResultReceived = true
-                        synchronized(bondingLock) { bondingLock.notifyAll() }
-                    }
-                    BluetoothDevice.BOND_NONE -> {
-                        Log.e(TAG, "Bonding failed")
-                        bondingResultReceived = true
-                        synchronized(bondingLock) { bondingLock.notifyAll() }
-                    }
-                }
-            }
-        }
-
-        val filter = IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
-        registerReceiver(bondReceiver, filter)
-
-        try {
-            if (!device.createBond()) {
-                Log.e(TAG, "createBond() failed")
-                return false
-            }
-
-            // Bonding can take time (user interaction); guarded wait so a
-            // result that lands before we start waiting is not lost.
-            synchronized(bondingLock) {
-                val deadline = SystemClock.elapsedRealtime() + 30_000
-                while (!bondingResultReceived) {
-                    val remaining = deadline - SystemClock.elapsedRealtime()
-                    if (remaining <= 0) break
-                    try {
-                        bondingLock.wait(remaining)
-                    } catch (_: InterruptedException) {
-                        return false
-                    }
-                }
-            }
-
-            return bondingComplete
-        } finally {
-            unregisterReceiver(bondReceiver)
         }
     }
 
@@ -831,25 +746,22 @@ class PartialFlashingService : Service() {
         AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_firmware_validating))
 
         try {
-            val hex = HexUtils(filePath!!)
-            if (hex.status != HexUtils.STATUS_INIT) {
-                Log.e(TAG, "Failed to open hex file")
+            val hex = try {
+                IntelHexFile.read(filePath!!)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to open hex file: $e")
                 return RESULT_ATTEMPT_DFU
             }
+            Log.d(TAG, "Hex file loaded: ${hex.size} lines")
 
-            isPython = false
-            Log.d(TAG, "Hex file loaded: ${hex.numOfLines()} lines")
-
-            val dataPos = findMakeCodeData(hex) ?: run {
-                findPythonData(hex)?.also { isPython = true }
-            }
-
-            if (dataPos == null) {
+            val layout = if (isNrf52) FlashLayout.NRF52 else FlashLayout.NRF51
+            val image = PartialFlashImage.locate(hex, layout)
+            if (image == null) {
                 Log.e(TAG, "No partial flash data found in file")
                 return RESULT_ATTEMPT_DFU
             }
-
-            Log.d(TAG, "Found data at line ${dataPos.line}, offset ${dataPos.part}")
+            fileHash = image.runtimeHash
+            Log.d(TAG, "Found ${if (image.isMicroPython) "MicroPython" else "MakeCode"} data at line ${image.startLine}, offset ${image.startNibble}")
 
             // Read memory map from device
             codeStartAddress = 0
@@ -918,9 +830,8 @@ class PartialFlashingService : Service() {
             Log.d(TAG, "Hash match confirmed: $fileHash")
 
             // Verify code start address matches hex file
-            val fileCodeAddr = hexPosToAddress(hex, dataPos)
-            if (fileCodeAddr != codeStartAddress) {
-                Log.e(TAG, "Code start address mismatch: file=0x${String.format("%08X", fileCodeAddr)}, device=0x${String.format("%08X", codeStartAddress)}")
+            if (image.codeStartAddress != codeStartAddress) {
+                Log.e(TAG, "Code start address mismatch: file=0x${String.format("%08X", image.codeStartAddress)}, device=0x${String.format("%08X", codeStartAddress)}")
                 return RESULT_ATTEMPT_DFU
             }
             Log.d(TAG, "Code start address verified: 0x${String.format("%08X", codeStartAddress)}, starting flash")
@@ -928,7 +839,7 @@ class PartialFlashingService : Service() {
             // Flash the data
             AppStateRepository.flashPhase(FlashPhase.UPLOADING)
             AppStateRepository.updateNotification(Notification.INFO, getString(R.string.flashing_uploading))
-            val flashResult = flashData(hex, dataPos, startTime)
+            val flashResult = flashData(image, startTime)
 
             val elapsed = (SystemClock.elapsedRealtime() - startTime) / 1000.0
             Log.i(TAG, "Flash completed in $elapsed seconds")
@@ -941,125 +852,57 @@ class PartialFlashingService : Service() {
         }
     }
 
-    private fun flashData(hex: HexUtils, dataPos: HexPos, startTime: Long): Int {
-        // Count actual data lines (type 0 or 0x0D) from start position
-        val numOfLines = countDataLines(hex, dataPos.line)
-        Log.d(TAG, "flashData: numOfLines=$numOfLines starting from line ${dataPos.line}")
+    private fun flashData(image: PartialFlashImage, startTime: Long): Int {
+        val batches = image.batches()
+        Log.d(TAG, "flashData: ${batches.size} batches, ${image.dataLineCount} data lines from line ${image.startLine}")
+        // Packet numbers only ever count up — a retransmitted batch goes out
+        // under new numbers, which is what the board expects.
         var packetNum = 0
-        var lineCount = 0
-        var part = dataPos.part
-        var line0 = 0
-        var part0 = 0
-        var addr0Lo = 0
-        var addr0Hi = 0
-        var count = 0
-        var endOfFile = false
+        var index = 0
 
-        while (true) {
-            // Timeout check
+        while (index < batches.size) {
             if (SystemClock.elapsedRealtime() - startTime > FLASH_TIMEOUT_MS) {
                 Log.e(TAG, "Flash timeout")
                 return RESULT_FAILED
             }
 
-            // Check EOF - type 0x00 (standard data) and 0x0D (micro:bit custom data) are valid
-            val recordType = hex.getRecordTypeFromIndex(dataPos.line + lineCount)
-            if (endOfFile || (recordType != 0 && recordType != 0x0D)) {
-                if (count == 0) break
-                endOfFile = true
-            }
-
-            val hexData: String
-            val partData: String
-            val addr: Long
-
-            if (endOfFile) {
-                // Padding mode - complete the batch with FF bytes
-                // Don't read address from hex file - use previous value
-                hexData = "F".repeat(32)
-                partData = hexData
-                addr = 0 // Address not used for padding (offset is 0 for count >= 2)
-            } else {
-                // Read data and address from hex file
-                val addrLo = hex.getRecordAddressFromIndex(dataPos.line + lineCount)
-                val addrHi = hex.getSegmentAddress(dataPos.line + lineCount)
-                addr = addrLo.toLong() + addrHi.toLong() * 256 * 256
-
-                hexData = hex.getDataFromIndex(dataPos.line + lineCount)
-                partData = if (part + 32 > hexData.length) {
-                    hexData.substring(part)
-                } else {
-                    hexData.substring(part, part + 32)
+            val batch = batches[index]
+            for (packet in batch.packets) {
+                if (!writeCharacteristicNoResponse(packet.encode(packetNum))) {
+                    Log.e(TAG, "Failed to write packet $packetNum")
+                    return RESULT_FAILED
                 }
+                packetNum++
             }
 
-            val offsetToSend = when (count) {
-                0 -> {
-                    // Save start position of this batch
-                    line0 = lineCount
-                    part0 = part
-                    val addr0 = addr + part / 2
-                    addr0Lo = (addr0 % (256 * 256)).toInt()
-                    addr0Hi = (addr0 / (256 * 256)).toInt()
-                    addr0Lo
-                }
-                1 -> addr0Hi  // Use saved high address from count 0
-                else -> 0     // Padding packets use offset 0
-            }
+            AppStateRepository.flashProgress(100 * batch.linesSent / image.dataLineCount)
 
-            // Build and send packet
-            val chunk = HexUtils.recordToByteArray(partData, offsetToSend, packetNum)
-            if (!writeCharacteristicNoResponse(chunk)) {
-                Log.e(TAG, "Failed to write packet $packetNum")
-                return RESULT_FAILED
-            }
-
-            var ack: Byte = PACKET_STATE_OK
-            count++
-            if (count == 4) {
-                count = 0
-
-                // Update progress
-                val percent = (100 * lineCount / numOfLines.coerceAtLeast(1))
-                AppStateRepository.flashProgress(percent)
-
-                // Wait for acknowledgment from device (uses separate lock)
-                synchronized(packetLock) {
-                    val timeout = SystemClock.elapsedRealtime()
-                    while (packetState == PACKET_STATE_WAITING) {
-                        try {
-                            packetLock.wait(OPERATION_TIMEOUT_MS)
-                        } catch (e: InterruptedException) {
-                            return RESULT_FAILED
-                        }
-                        if (SystemClock.elapsedRealtime() - timeout > OPERATION_TIMEOUT_MS) {
-                            Log.w(TAG, "Packet acknowledgment timeout at block starting line $line0, treating as retransmit")
-                            packetState = PACKET_STATE_RETRANSMIT
-                            break
-                        }
+            // Wait for acknowledgment from device (uses separate lock)
+            var ack: Byte
+            synchronized(packetLock) {
+                val timeout = SystemClock.elapsedRealtime()
+                while (packetState == PACKET_STATE_WAITING) {
+                    try {
+                        packetLock.wait(OPERATION_TIMEOUT_MS)
+                    } catch (e: InterruptedException) {
+                        return RESULT_FAILED
                     }
-                    ack = packetState
-                    packetState = PACKET_STATE_WAITING
+                    if (SystemClock.elapsedRealtime() - timeout > OPERATION_TIMEOUT_MS) {
+                        Log.w(TAG, "Packet acknowledgment timeout at batch $index, treating as retransmit")
+                        packetState = PACKET_STATE_RETRANSMIT
+                        break
+                    }
                 }
-
-                // Handle retransmit (explicit from device or timeout)
-                if (ack == PACKET_STATE_RETRANSMIT) {
-                    Log.w(TAG, "Retransmit block starting at line $line0")
-                    lineCount = line0
-                    part = part0
-                    endOfFile = false
-                }
+                ack = packetState
+                packetState = PACKET_STATE_WAITING
             }
 
-            if (ack != PACKET_STATE_RETRANSMIT && !endOfFile) {
-                part += partData.length
-                if (part >= hexData.length) {
-                    part = 0
-                    lineCount++
-                }
+            // Retransmit (explicit from device or timeout): same batch again.
+            if (ack == PACKET_STATE_RETRANSMIT) {
+                Log.w(TAG, "Retransmit batch $index (from line ${image.startLine + batch.linesSent})")
+                continue
             }
-
-            packetNum++
+            index++
         }
 
         // Send end of flash
@@ -1101,7 +944,6 @@ class PartialFlashingService : Service() {
                 Log.e(TAG, "Failed to write characteristic (no response)")
                 return false
             }
-
             // Wait for write callback even for NO_RESPONSE - Android requires this.
             // Guarded wait: if the callback fires before we get here, the flag is
             // already set and we don't sleep out the full timeout on a lost notify.
@@ -1494,222 +1336,6 @@ class PartialFlashingService : Service() {
         }
     }
 
-    // Hex file parsing helpers
-    private data class HexPos(
-        var line: Int = -1,
-        var part: Int = -1,
-        var sizeBytes: Int = 0
-    )
-
-    private fun findMakeCodeData(hex: HexUtils): HexPos? {
-        val line = hex.searchForData(PXT_MAGIC)
-        if (line < 0) return null
-
-        val pos = HexPos(line = line)
-        val magicData = hex.getDataFromIndex(line)
-        pos.part = magicData.indexOf(PXT_MAGIC)
-
-        val hdrAddress = hexPosToAddress(hex, pos)
-        val hashAddress = hdrAddress + PXT_MAGIC.length / 2
-        val hashPos = hexAddressToPos(hex, hashAddress) ?: return null
-
-        hashPos.sizeBytes = 8
-        fileHash = hexGetData(hex, hashPos)
-
-        if ((fileHash?.length ?: 0) < 16) return null
-
-        return pos
-    }
-
-    private fun findPythonData(hex: HexUtils): HexPos? {
-        val line = hex.searchForDataRegEx(UPY_MAGIC_REGEX)
-        Log.d(TAG, "findPythonData: regex match at line=$line")
-        if (line < 0) return null
-
-        val pos = HexPos(line = line)
-        val header = hex.getDataFromIndex(line)
-        pos.part = header.indexOf(UPY_MAGIC1)
-        pos.sizeBytes = 16
-        Log.d(TAG, "findPythonData: header data='$header', part=${pos.part}")
-
-        val headerData = hexGetData(hex, pos)
-        Log.d(TAG, "findPythonData: headerData='$headerData' (len=${headerData.length})")
-        if (headerData.length < 32) {
-            Log.e(TAG, "findPythonData: headerData too short (${headerData.length} < 32)")
-            return null
-        }
-
-        val version = hexToUint16(headerData, 8)
-        val tableLen = hexToUint16(headerData, 12)
-        val numReg = hexToUint16(headerData, 16)
-        val pageLog2 = hexToUint16(headerData, 20)
-        Log.d(TAG, "findPythonData: version=$version, tableLen=$tableLen, numReg=$numReg, pageLog2=$pageLog2")
-
-        if (version != 1) {
-            Log.e(TAG, "findPythonData: unsupported version $version")
-            return null
-        }
-        if (tableLen != numReg * 16) {
-            Log.e(TAG, "findPythonData: tableLen mismatch ($tableLen != ${numReg * 16})")
-            return null
-        }
-
-        // Page size depends on hardware: nRF52 (V3) = 4KB, nRF51 (V1/V2) = 1KB
-        val pageSize = if (isNrf52) PAGE_SIZE_NRF52 else PAGE_SIZE_NRF51
-        Log.d(TAG, "findPythonData: pageSize=$pageSize, 1<<pageLog2=${1 shl pageLog2}")
-        if (1 shl pageLog2 != pageSize) {
-            Log.e(TAG, "findPythonData: page size mismatch (${1 shl pageLog2} != $pageSize)")
-            return null
-        }
-
-        var codeStart = -1L
-        var codeLength = -1L
-
-        val hdrAddress = hexPosToAddress(hex, pos)
-        Log.d(TAG, "findPythonData: hdrAddress=0x${String.format("%08X", hdrAddress)}")
-
-        for (regionIndex in 0 until numReg) {
-            val regionAddress = hdrAddress - tableLen + (regionIndex * 16)
-            Log.d(TAG, "findPythonData: region[$regionIndex] address=0x${String.format("%08X", regionAddress)}")
-            val regionPos = hexAddressToPos(hex, regionAddress)
-            if (regionPos == null) {
-                Log.e(TAG, "findPythonData: failed to find region[$regionIndex] at address 0x${String.format("%08X", regionAddress)}")
-                return null
-            }
-            regionPos.sizeBytes = 16
-
-            val region = hexGetData(hex, regionPos)
-            if (region.length < 32) {
-                Log.e(TAG, "findPythonData: region[$regionIndex] data too short (${region.length})")
-                return null
-            }
-
-            val regionID = hexToUint8(region, 0)
-            val hashType = hexToUint8(region, 2)
-            val startPage = hexToUint16(region, 4)
-            val length = hexToUint32(region, 8)
-            val hashPtr = hexToUint32(region, 16)
-            val hash = region.substring(16, 32)
-            Log.d(TAG, "findPythonData: region[$regionIndex] id=$regionID, hashType=$hashType, startPage=$startPage, length=$length, data='$region'")
-
-            val regionHash: String? = when (hashType) {
-                0 -> null
-                1 -> hash
-                2 -> {
-                    val hashPos2 = hexAddressToPos(hex, hashPtr)
-                    if (hashPos2 == null) {
-                        Log.w(TAG, "findPythonData: hash pointer 0x${String.format("%08X", hashPtr)} not found in hex (partial hex without DAL)")
-                        null
-                    } else {
-                        hashPos2.sizeBytes = 100
-                        val hashData = hexGetData(hex, hashPos2)
-                        if (hashData.isEmpty()) return null
-
-                        var strLen = 0
-                        while (strLen < hashData.length / 2) {
-                            val chr = hexToUint8(hashData, strLen * 2)
-                            if (chr == 0) break
-                            strLen++
-                        }
-
-                        val strBytes = ByteArray(strLen)
-                        for (i in 0 until strLen) {
-                            strBytes[i] = hexToUint8(hashData, i * 2).toByte()
-                        }
-
-                        val crc32 = CRC32()
-                        crc32.update(strBytes)
-                        val crc = crc32.value
-                        val hashBytes = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(crc).array()
-                        bytesToHex(hashBytes)
-                    }
-                }
-                else -> return null
-            }
-
-            when (regionID) {
-                2 -> fileHash = regionHash
-                3 -> {
-                    codeStart = startPage.toLong() * pageSize
-                    codeLength = length
-                }
-            }
-        }
-
-        if (codeStart < 0 || codeLength < 0) return null
-
-        val codePos = hexAddressToPos(hex, codeStart) ?: return null
-        codePos.sizeBytes = codeLength.toInt()
-        return codePos
-    }
-
-    private fun hexPosToAddress(hex: HexUtils, pos: HexPos): Long {
-        val addrLo = hex.getRecordAddressFromIndex(pos.line)
-        val addrHi = hex.getSegmentAddress(pos.line)
-        return addrLo.toLong() + addrHi.toLong() * 256 * 256 + pos.part / 2
-    }
-
-    private fun hexAddressToPos(hex: HexUtils, address: Long): HexPos? {
-        val line = hex.searchForAddress(address)
-        if (line < 0) return null
-
-        val lineAddr = hex.getRecordAddressFromIndex(line)
-        val addressLo = address % 0x10000
-        val offset = (addressLo - lineAddr).toInt() * 2
-
-        return HexPos(line = line, part = offset)
-    }
-
-    private fun hexGetData(hex: HexUtils, pos: HexPos): String {
-        val data = StringBuilder()
-        var line = pos.line
-        var part = pos.part
-        var size = pos.sizeBytes * 2
-
-        while (size > 0 && line < hex.numOfLines()) {
-            val type = hex.getRecordTypeFromIndex(line)
-            if (type != 0 && type != 0x0D) {
-                line++
-                part = 0
-                continue
-            }
-
-            val lineData = hex.getDataFromIndex(line)
-            val chunk = minOf(lineData.length - part, size)
-
-            if (chunk > 0) {
-                data.append(lineData.substring(part, part + chunk))
-                part += chunk
-                size -= chunk
-            }
-
-            if (size > 0 && part >= lineData.length) {
-                line++
-                part = 0
-            }
-        }
-
-        return data.toString()
-    }
-
-    private fun hexToUint8(hex: String, offset: Int): Int {
-        return hex.substring(offset, offset + 2).toInt(16)
-    }
-
-    private fun hexToUint16(hex: String, offset: Int): Int {
-        val lo = hex.substring(offset, offset + 2).toInt(16)
-        val hi = hex.substring(offset + 2, offset + 4).toInt(16)
-        return lo + hi * 256
-    }
-
-    private fun hexToUint32(hex: String, offset: Int): Long {
-        val b0 = hex.substring(offset, offset + 2).toLong(16)
-        val b1 = hex.substring(offset + 2, offset + 4).toLong(16)
-        val b2 = hex.substring(offset + 4, offset + 6).toLong(16)
-        val b3 = hex.substring(offset + 6, offset + 8).toLong(16)
-        return b0 + b1 * 256 + b2 * 256 * 256 + b3 * 256 * 256 * 256
-    }
-
     private fun bytesToLong(bytes: ByteArray, offset: Int): Long {
         return (bytes[offset + 3].toLong() and 0xFF) +
                (bytes[offset + 2].toLong() and 0xFF) * 256 +
@@ -1725,28 +1351,5 @@ class PartialFlashingService : Service() {
             hexChars[i * 2 + 1] = "0123456789ABCDEF"[v and 0x0F]
         }
         return String(hexChars)
-    }
-
-    /**
-     * Count the number of data lines (record type 0x00 or 0x0D) starting from the given line.
-     * Type 0x0D is a custom micro:bit record type used in MicroPython hex files.
-     */
-    private fun countDataLines(hex: HexUtils, startLine: Int): Int {
-        var count = 0
-        var line = startLine
-        val totalLines = hex.numOfLines()
-
-        while (line < totalLines) {
-            val recordType = hex.getRecordTypeFromIndex(line)
-            if (recordType == 0 || recordType == 0x0D) {
-                count++
-                line++
-            } else {
-                break
-            }
-        }
-
-        Log.d(TAG, "countDataLines: counted $count data lines from line $startLine")
-        return count.coerceAtLeast(1) // Avoid division by zero
     }
 }

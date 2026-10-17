@@ -11,6 +11,7 @@ nordicScanner = "1.3.1"
 nordicDfu = "2.11.0"
 zxingEmbedded = "4.3.0"
 javaWebsocket = "1.6.0"
+junit = "4.13.2"
 
 [libraries]
 nordic-ble-scanner = { module = "no.nordicsemi.android.kotlin.ble:scanner", version.ref = "nordicScanner" }
@@ -29,6 +30,7 @@ localbroadcastmanager = { module = "androidx.localbroadcastmanager:localbroadcas
 material = { module = "com.google.android.material:material", version.ref = "material" }
 zxing-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxingEmbedded" }
 java-websocket = { module = "org.java-websocket:Java-WebSocket", version.ref = "javaWebsocket" }
+junit = { module = "junit:junit", version.ref = "junit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

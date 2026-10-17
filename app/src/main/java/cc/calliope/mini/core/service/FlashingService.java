@@ -11,6 +11,7 @@ import android.bluetooth.BluetoothDevice;
 import android.app.NotificationManager;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -33,7 +34,8 @@ import java.util.concurrent.Executors;
 import cc.calliope.mini.ui.activity.NotificationActivity;
 
 import cc.calliope.mini.utils.file.FirmwareZipCreator;
-import cc.calliope.mini.utils.hex.HexParser;
+import cc.calliope.mini.core.hex.ApplicationImage;
+import cc.calliope.mini.core.hex.IntelHexFile;
 import cc.calliope.mini.utils.hex.InitPacket;
 import cc.calliope.mini.R;
 import cc.calliope.mini.core.bluetooth.BleUuids;
@@ -161,9 +163,12 @@ public class FlashingService extends LifecycleService {
             }
         }
 
+        // Same icon and tint as the Nordic DFU notification (see DfuBaseService),
+        // so a flash looks the same in the status bar whichever path it takes.
         android.app.Notification notification = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
                 .setContentTitle(getString(R.string.flashing_notification_title))
-                .setSmallIcon(R.drawable.ic_notification_flash)
+                .setSmallIcon(android.R.drawable.stat_sys_upload)
+                .setColor(Color.GRAY)
                 .setContentIntent(NotificationActivity.contentIntent(this))
                 .setOngoing(true)
                 .build();
@@ -445,8 +450,7 @@ public class FlashingService extends LifecycleService {
     private String prepareFirmwareZip() {
         try {
             // Prepare firmware file
-            HexParser parser = new HexParser(currentPath);
-            byte[] firmware = parser.getCalliopeBin(boardGeneration);
+            byte[] firmware = ApplicationImage.extract(IntelHexFile.read(currentPath), boardGeneration.getLayout());
 
             workDir = new File(new File(getCacheDir(), WORK_ROOT), UUID.randomUUID().toString());
             if (!workDir.mkdirs()) {

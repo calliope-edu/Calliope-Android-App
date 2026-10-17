@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.annotation.StringRes
 import androidx.preference.PreferenceManager
 import cc.calliope.mini.R
+import cc.calliope.mini.core.hex.FlashLayout
 import cc.calliope.mini.utils.Constants
 
 /**
@@ -22,6 +23,14 @@ enum class BoardGeneration(val prefValue: Int, @StringRes val labelRes: Int) {
     UNKNOWN(0, R.string.board_generation_unknown),
     NRF51(1, R.string.board_generation_nrf51),
     NRF52(2, R.string.board_generation_nrf52);
+
+    /** How this silicon lays out flash — what hex files are read against. */
+    val layout: FlashLayout
+        get() = when (this) {
+            NRF51 -> FlashLayout.NRF51
+            NRF52 -> FlashLayout.NRF52
+            UNKNOWN -> throw IllegalStateException("Board generation unknown — cannot pick a flash layout")
+        }
 
     companion object {
         @JvmStatic

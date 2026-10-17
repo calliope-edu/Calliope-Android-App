@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import cc.calliope.mini.core.hex.HexVersionProbe;
 import cc.calliope.mini.utils.settings.Settings;
 
 public class FileUtils {
@@ -40,7 +41,7 @@ public class FileUtils {
 
     /**
      * Version-detection cache. {@link #getFileVersion} can scan an entire
-     * hex file (see containsV3Evidence) and is called per row while binding
+     * hex file (see HexVersionProbe) and is called per row while binding
      * the scripts list, so re-scanning the same file on every rebind caused
      * scroll jank. Keyed by path + lastModified + length so a rewritten file
      * (same path, new content) misses and is re-scanned.
@@ -171,69 +172,11 @@ public class FileUtils {
         // Reclassify VERSION_2 → UNIVERSAL when either signal fires.
         // Leave VERSION_3 and UNIVERSAL alone (the shallow match is
         // already definitive for those).
-        if (shallow == FileVersion.VERSION_2 && containsV3Evidence(filePath)) {
+        if (shallow == FileVersion.VERSION_2 && HexVersionProbe.containsV3Evidence(filePath)) {
             return FileVersion.UNIVERSAL;
         }
 
         return shallow;
-    }
-
-    /**
-     * Scan a hex file for irrefutable V3-compatibility evidence. Returns
-     * true on the first hit; bails out of the loop early. Worst-case
-     * O(file size) but only invoked for V2-classified files where the
-     * deeper check is needed.
-     */
-    /** First code address only an nRF52 (V3) can hold: nRF51 flash is 256 KB. */
-    private static final long V3_ONLY_FLASH_START = 0x40000L;
-    /** Above this lie UICR/FICR and peripherals, not code — ignore for version evidence. */
-    private static final long FLASH_REGION_END = 0x10000000L;
-
-    private static boolean containsV3Evidence(String filePath) {
-        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
-            long baseAddr = 0;
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (line.length() < 11 || line.charAt(0) != ':') continue;
-                // Intel HEX:  :LLAAAATT...CC
-                //   LL = byte count (2), AAAA = address (4), TT = type (2)
-                int recordType;
-                try {
-                    recordType = Integer.parseInt(line.substring(7, 9), 16);
-                } catch (NumberFormatException e) {
-                    continue;
-                }
-                if (recordType == 0x04) {
-                    // Extended Linear Address — updates the upper 16 bits
-                    // of subsequent data record addresses.
-                    if (line.length() >= 13) {
-                        try {
-                            int upperAddr = Integer.parseInt(line.substring(9, 13), 16);
-                            baseAddr = ((long) upperAddr) << 16;
-                        } catch (NumberFormatException ignored) { /* malformed */ }
-                    }
-                } else if (recordType == 0x00) {
-                    // Data record — combine with baseAddr to get the full
-                    // 32-bit destination address.
-                    try {
-                        int loAddr = Integer.parseInt(line.substring(3, 7), 16);
-                        long fullAddr = baseAddr + loAddr;
-                        if (fullAddr >= V3_ONLY_FLASH_START && fullAddr < FLASH_REGION_END) {
-                            return true;  // V3-only flash region
-                        }
-                    } catch (NumberFormatException ignored) { /* malformed */ }
-                } else if (recordType >= 0x0A && recordType <= 0x0D) {
-                    // Microsoft Universal-Hex block-marker records (Block
-                    // Start / End, Padded Data, Custom Data) — only present
-                    // in genuine universal hexes, whether or not the "C0DE"
-                    // line-2 marker is also there.
-                    return true;
-                }
-            }
-        } catch (IOException e) {
-            Log.w(TAG, "containsV3Evidence: scan failed", e);
-        }
-        return false;
     }
 
     /** Delete a file or a whole directory tree; missing paths are fine. */
