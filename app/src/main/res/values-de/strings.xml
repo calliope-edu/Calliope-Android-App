@@ -212,8 +212,8 @@
     <string name="gatt_request_not_supported">Anfrage nicht unterstützt</string>
     <string name="gatt_success">Erfolgreich</string>
     <string name="gatt_write_not_permitted">Schreiben nicht erlaubt</string>
-    <string name="info_cardboard_control">Steuern Sie Ihr Calliope mini mit der Cardboard Control-Oberfläche.</string>
-    <string name="info_cardboard_face">Erstellen und animieren Sie Gesichter mit dem Cardboard Face Editor.</string>
+    <string name="info_cardboard_control">Steuern Sie Ihren LOFI Robot mit dem Calliope mini per Bluetooth: Pfeiltasten oder Joystick, Hupe, Stopp und zwei Schieberegler.</string>
+    <string name="info_cardboard_face">Der Roboterkopf bewegt sich wie Sie: Die Kamera erkennt Kopf, Augen und Mund und sendet die Bewegungen an den Calliope mini.</string>
     <string name="editor_hidden">ausgeblendet</string>
     <string name="undo">Rückgängig</string>
 
