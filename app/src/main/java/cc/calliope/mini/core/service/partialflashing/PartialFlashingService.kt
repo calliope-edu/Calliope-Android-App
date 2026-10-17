@@ -9,6 +9,7 @@ import android.bluetooth.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
@@ -188,9 +189,12 @@ class PartialFlashingService : Service() {
             manager?.createNotificationChannel(channel)
         }
 
+        // Same icon and tint as the Nordic DFU notification, so a flash
+        // looks the same in the status bar whichever path it takes.
         val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setContentTitle(getString(R.string.partial_flashing_starting))
-            .setSmallIcon(R.drawable.ic_notification_flash)
+            .setSmallIcon(android.R.drawable.stat_sys_upload)
+            .setColor(Color.GRAY)
             .setContentIntent(NotificationActivity.contentIntent(this))
             .setOngoing(true)
             .build()
