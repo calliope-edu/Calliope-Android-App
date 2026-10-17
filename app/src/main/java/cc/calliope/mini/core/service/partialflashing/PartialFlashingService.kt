@@ -6,10 +6,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.bluetooth.*
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Bundle
@@ -174,12 +172,9 @@ class PartialFlashingService : Service() {
     @Volatile private var waitingForReboot = false
     @Volatile private var disconnectedByDevice = false  // Track if device initiated disconnect (reboot)
     @Volatile private var negotiatedMtu = 23  // Default BLE MTU
-    @Volatile private var bondingComplete = false
-    @Volatile private var bondingResultReceived = false  // Set on BOND_BONDED and BOND_NONE alike
 
     // Handler for delayed operations (avoid blocking Bluetooth thread)
     private val bleHandler = android.os.Handler(android.os.Looper.getMainLooper())
-    private val bondingLock = Object()
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -408,16 +403,11 @@ class PartialFlashingService : Service() {
             return false
         }
 
-        // EXPERIMENT (2026-08-09): bonding disabled. On nRF51 createBond() here
-        // triggered the PIN dialog and the board rebooted itself right after
-        // BOND_BONDED to apply encryption, killing the session mid-memory-map
-        // (GATT error 8 / status 19 in logs) and leaving the fallback DFU in a
-        // broken state. micro:bit partial flashing implementations do not bond
-        // at all — the PF characteristic should not require encryption.
-        // if (!ensureBonded()) {
-        //     Log.e(TAG, "Bonding failed")
-        //     return false
-        // }
+        // No bonding here, on purpose. The partial-flashing characteristic
+        // needs no encryption (micro:bit implementations never bond for it),
+        // and a createBond() at this point made an nRF51 board reboot right
+        // after BOND_BONDED to apply encryption — killing the session mid
+        // memory-map and leaving the fallback DFU to start from a dirty state.
 
         // Enable Service Changed indications for proper GATT cache handling (Android P+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -462,75 +452,6 @@ class PartialFlashingService : Service() {
             return mtuNegotiated
         } finally {
             gattLock.unlock()
-        }
-    }
-
-    /**
-     * Ensures device is bonded. Should already be paired during discovery,
-     * but initiates bonding as a safety net if not.
-     */
-    private fun ensureBonded(): Boolean {
-        val gatt = bluetoothGatt ?: return false
-        val device = gatt.device ?: return false
-
-        if (device.bondState == BluetoothDevice.BOND_BONDED) {
-            Log.d(TAG, "Device already bonded")
-            return true
-        }
-
-        Log.w(TAG, "Device not bonded, initiating bonding...")
-        bondingComplete = false
-        bondingResultReceived = false
-
-        val bondReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                if (intent.action != BluetoothDevice.ACTION_BOND_STATE_CHANGED) return
-                val bondDevice = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE) ?: return
-                if (bondDevice.address != device.address) return
-
-                when (intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR)) {
-                    BluetoothDevice.BOND_BONDED -> {
-                        Log.d(TAG, "Bonding completed")
-                        bondingComplete = true
-                        bondingResultReceived = true
-                        synchronized(bondingLock) { bondingLock.notifyAll() }
-                    }
-                    BluetoothDevice.BOND_NONE -> {
-                        Log.e(TAG, "Bonding failed")
-                        bondingResultReceived = true
-                        synchronized(bondingLock) { bondingLock.notifyAll() }
-                    }
-                }
-            }
-        }
-
-        val filter = IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
-        registerReceiver(bondReceiver, filter)
-
-        try {
-            if (!device.createBond()) {
-                Log.e(TAG, "createBond() failed")
-                return false
-            }
-
-            // Bonding can take time (user interaction); guarded wait so a
-            // result that lands before we start waiting is not lost.
-            synchronized(bondingLock) {
-                val deadline = SystemClock.elapsedRealtime() + 30_000
-                while (!bondingResultReceived) {
-                    val remaining = deadline - SystemClock.elapsedRealtime()
-                    if (remaining <= 0) break
-                    try {
-                        bondingLock.wait(remaining)
-                    } catch (_: InterruptedException) {
-                        return false
-                    }
-                }
-            }
-
-            return bondingComplete
-        } finally {
-            unregisterReceiver(bondReceiver)
         }
     }
 
@@ -1101,7 +1022,6 @@ class PartialFlashingService : Service() {
                 Log.e(TAG, "Failed to write characteristic (no response)")
                 return false
             }
-
             // Wait for write callback even for NO_RESPONSE - Android requires this.
             // Guarded wait: if the callback fires before we get here, the flag is
             // already set and we don't sleep out the full timeout on a lost notify.
