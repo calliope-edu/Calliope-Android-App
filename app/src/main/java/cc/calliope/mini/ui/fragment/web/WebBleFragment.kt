@@ -39,20 +39,22 @@ import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import kotlinx.coroutines.launch
 
 /**
- * Hosts the Cardboard editors (control / face) and bridges their UART calls
- * to a native [UartSession] with the current board. The fragment is a thin
- * JS bridge; the GATT work lives in the session.
+ * Hosts the Cardboard editors — LOFI Control (control.calliope.cc) and
+ * Facerobot (facerobot.calliope.cc) — and bridges their UART calls to a
+ * native [UartSession] with the current board. The fragment is a thin JS
+ * bridge; the GATT work lives in the session.
  *
  * Connection follows the same pattern as the Blocks editor: connect
  * silently in the background as soon as the page is up and the board is in
  * range, reconnect after a drop, and keep the page's own robot button as a
- * manual (re)connect. The page's connected indicator (`robotShow_connected`
- * on `#robotShow`) is mirrored from the native link state, since the page's
- * own Web Bluetooth code — which used to toggle it — never runs here.
+ * manual (re)connect. The page's connected indicator is mirrored from the
+ * native link state through the page's own state hooks
+ * (`setRobotConnected` on Control, `connectionState` on Facerobot), since
+ * the page's Web Bluetooth code — which used to drive them — never runs here.
  */
 class WebBleFragment : Fragment() {
 
-    private var pageUrl: String = "https://cardboard.lofirobot.com/control-calliope/"
+    private var pageUrl: String = "https://control.calliope.cc/"
     private var deviceMac: String = ""
     private var editorUrl: String? = null
     private var editorName: String? = null
@@ -305,40 +307,63 @@ class WebBleFragment : Fragment() {
 
     /**
      * Hide the page controls the app replaces:
-     *  - `#robotShow`, the page's Web Bluetooth "connect" button — the link is
-     *    handled natively and connects on its own; the FAB shows the state.
-     *  - `#fullscreenBtn` (face app) — the page's Fullscreen API does nothing
-     *    inside the WebView; the app has its own full-screen mode in the FAB menu.
-     * Both sit in the absolutely positioned top-right menu, so nothing reflows.
+     *  - `#robotShow`, the page's Web Bluetooth "connect" button, and on
+     *    Control the whole `#connect_group` around it (robot button plus the
+     *    Bluetooth/USB menu) — the link is handled natively and connects on
+     *    its own; the FAB shows the state.
+     *  - `#fullscreenBtn` / `#fullscreen_btn` — the page's Fullscreen API does
+     *    nothing inside the WebView; the app has its own full-screen mode in
+     *    the FAB menu.
+     * All sit in absolutely positioned corner menus, so nothing reflows.
      */
     private fun hideConnectButton() {
         evalJs("(function(){if(document.getElementById('__calliopeHideConnect'))return;" +
                "var s=document.createElement('style');s.id='__calliopeHideConnect';" +
-               "s.textContent='#robotShow,#fullscreenBtn{display:none !important;}';" +
+               "s.textContent='#robotShow,#connect_group,#fullscreenBtn,#fullscreen_btn{display:none !important;}';" +
                "(document.head||document.documentElement).appendChild(s);})();")
     }
 
-    /** Mirror the link state into the page: its (hidden) robot button class and the page hooks. */
+    /**
+     * Mirror the link state into the page through whatever it offers:
+     * `setRobotConnected(bool)` (Control), `connectionState(state)`
+     * (Facerobot, states disconnected/connecting/connected/error/lost), the
+     * legacy `robotShow_connected` class, and the `onBleReady` /
+     * `onBleDisconnected` hooks. The indicator itself is hidden; keeping the
+     * page's state right matters for anything it gates on being connected.
+     */
     private fun setPageConnected(connected: Boolean) {
         // A ready UART link is the only thing that resets the retry budget;
         // a bare GATT connect that drops again must not.
         if (connected) reconnectAttempts = 0
         val op = if (connected) "add" else "remove"
+        val state = if (connected) "connected" else "disconnected"
         val hook = if (connected) "if(window.onBleReady){onBleReady();}"
                    else "if(window.onBleDisconnected){onBleDisconnected();}"
-        evalJs("(function(){var b=document.getElementById('robotShow');" +
-               "if(b){b.classList.$op('robotShow_connected');}$hook})();")
+        evalJs("(function(){try{" +
+               "if(typeof setRobotConnected==='function'){setRobotConnected($connected);}" +
+               "else{var b=document.getElementById('robotShow');if(b){b.classList.$op('robotShow_connected');}}" +
+               "if(typeof connectionState==='function'){connectionState('$state');}" +
+               "}catch(e){}$hook})();")
     }
 
     private fun injectBridgeJs() {
         val js = """
             (function(){
-              function SEND(s){ try{ AndroidBle.writeText(String(s)); }catch(e){} }
+              // Control shows the last sent command in its TX monitor from
+              // inside its own sendUART; keep that working from the native path.
+              function SEND(s){
+                try{ if(window.updateTxDisplay){ updateTxDisplay(String(s)); } }catch(e){}
+                try{ AndroidBle.writeText(String(s)); }catch(e){}
+              }
               function hook(){
                 window.sendUART = function(s){ SEND(s); };
                 window.buttonPressed = function(name){ SEND(name); };
                 window.connectButtonPressed = function(){ try{ AndroidBle.connect(); }catch(e){} };
-                window.onUart = window.onUart || function(s){ console.log('[UART RX]', s); };
+                // Facerobot hands received text to data_received(); Control ignores it.
+                window.onUart = window.onUart || function(s){
+                  if(typeof data_received==='function'){ try{ data_received(s); }catch(e){} }
+                  else{ console.log('[UART RX]', s); }
+                };
                 window.onBleReady = window.onBleReady || function(){ console.log('[BLE] Ready'); };
 
                 // Camera functions

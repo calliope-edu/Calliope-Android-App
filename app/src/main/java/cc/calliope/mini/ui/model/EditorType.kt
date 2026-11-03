@@ -70,8 +70,10 @@ enum class EditorType(
         titleResId = R.string.title_cardboard_control,
         iconResId = R.drawable.ic_editors_cardboard_control,
         infoResId = R.string.info_cardboard_control,
-        urlV2 = "https://cardboard.lofirobot.com/control-calliope/",
-        urlV3 = "https://cardboard.lofirobot.com/control-calliope/",
+        // Without ?mobile=true: the page's welcome overlay is for browsers
+        // that need a tap before Web Bluetooth; here the app connects itself.
+        urlV2 = "https://control.calliope.cc/",
+        urlV3 = "https://control.calliope.cc/",
         defaultOrder = 6
     ),
 
@@ -80,8 +82,8 @@ enum class EditorType(
         titleResId = R.string.title_cardboard_face,
         iconResId = R.drawable.ic_editors_cardboard_face,
         infoResId = R.string.info_cardboard_face,
-        urlV2 = "https://cardboard.lofirobot.com/face-app/",
-        urlV3 = "https://cardboard.lofirobot.com/face-app/",
+        urlV2 = "https://facerobot.calliope.cc/",
+        urlV3 = "https://facerobot.calliope.cc/",
         defaultOrder = 7
     ),
 

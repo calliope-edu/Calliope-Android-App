@@ -19,7 +19,7 @@
             android:title="@string/title_partial_flashing"
             android:summaryOn="@string/summary_partial_flashing_on"
             android:summaryOff="@string/summary_partial_flashing_off"
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:enabled="true"
             app:iconSpaceReserved="false"/>
 
