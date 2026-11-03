@@ -13,6 +13,7 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 import cc.calliope.mini.R;
+import cc.calliope.mini.utils.WindowUtils;
 
 public final class DialogUtils {
     private DialogUtils() {
@@ -24,6 +25,8 @@ public final class DialogUtils {
                 .setView(view)
                 .create();
         setTransparentBackground(alertDialog);
+        alertDialog.setOnShowListener(d -> WindowUtils.blurBehindDialog(context, true));
+        alertDialog.setOnDismissListener(d -> WindowUtils.blurBehindDialog(context, false));
         return new Pair<>(alertDialog, view);
     }
 
@@ -96,6 +99,34 @@ public final class DialogUtils {
         });
 
         dialogCancelButton.setOnClickListener(v -> alertDialog.dismiss());
+        alertDialog.show();
+    }
+
+    /**
+     * A question with two answers and custom labels. Dismissing the dialog
+     * (Back, tap outside) picks neither — the caller does nothing.
+     */
+    public static void showChoiceDialog(Context context, String title, String message,
+                                        String leftLabel, Runnable onLeft,
+                                        String rightLabel, Runnable onRight) {
+        Pair<AlertDialog, View> pair = createDialog(context, R.layout.dialog_warning);
+        AlertDialog alertDialog = pair.first;
+        View view = pair.second;
+
+        ((TextView) view.findViewById(R.id.dialog_title)).setText(title);
+        ((TextView) view.findViewById(R.id.dialog_message)).setText(message);
+        Button left = view.findViewById(R.id.dialog_cancel);
+        Button right = view.findViewById(R.id.dialog_ok);
+        left.setText(leftLabel);
+        right.setText(rightLabel);
+        left.setOnClickListener(v -> {
+            alertDialog.dismiss();
+            onLeft.run();
+        });
+        right.setOnClickListener(v -> {
+            alertDialog.dismiss();
+            onRight.run();
+        });
         alertDialog.show();
     }
 

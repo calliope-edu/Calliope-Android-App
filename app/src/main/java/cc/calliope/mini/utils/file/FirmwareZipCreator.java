@@ -1,6 +1,5 @@
 package cc.calliope.mini.utils.file;
 
-import android.content.Context;
 import android.util.Log;
 
 import java.io.File;
@@ -10,84 +9,46 @@ import java.io.IOException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+/**
+ * Packs the firmware and its init packet into the zip Nordic DFU expects.
+ * The entry names are the source file names and matter to the library
+ * (application.bin / application.dat), so uniqueness comes from the
+ * directory the caller provides, not from the file names.
+ */
 public class FirmwareZipCreator {
     private static final String TAG = "FirmwareZipCreator";
 
-    private final Context context;
-    private final String firmwarePath;
-    private final String initPacketPath;
+    private final File zipFile;
+    private final String[] sourcePaths;
 
-    public FirmwareZipCreator(Context context, String firmwarePath, String initPacketPath) {
-        this.context = context;
-        this.firmwarePath = firmwarePath;
-        this.initPacketPath = initPacketPath;
+    public FirmwareZipCreator(File zipFile, String... sourcePaths) {
+        this.zipFile = zipFile;
+        this.sourcePaths = sourcePaths;
     }
 
+    /** @return the zip's absolute path, or null on failure. */
     public String createZip() {
-        String zipFilePath = context.getCacheDir() + "/update.zip";
-
-        File zipFile = initializeZipFile(zipFilePath);
-        if (zipFile == null) {
-            return null;
-        }
-
-        if (!addFilesToZip(zipFile, firmwarePath, initPacketPath)) {
-            return null;
-        }
-
-        return zipFilePath;
-    }
-
-    private File initializeZipFile(String path) {
-        File zipFile = new File(path);
-        try {
-            if (zipFile.exists() && !zipFile.delete()) {
-                Log.e(TAG, "Failed to delete existing file: " + path);
-                return null;
-            }
-
-            if (!zipFile.createNewFile()) {
-                Log.e(TAG, "Failed to create new file: " + path);
-                return null;
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "Error initializing zip file", e);
-            return null;
-        }
-
-        return zipFile;
-    }
-
-    private boolean addFilesToZip(File zipFile, String... srcFiles) {
-        byte[] buffer = new byte[1024];
-
-        try (FileOutputStream fileOutputStream = new FileOutputStream(zipFile);
-             ZipOutputStream zipOutputStream = new ZipOutputStream(fileOutputStream)) {
-
-            for (String file : srcFiles) {
-                File srcFile = new File(file);
-
-                if (!srcFile.exists()) {
-                    Log.e(TAG, "Source file does not exist: " + file);
-                    continue;
+        byte[] buffer = new byte[8192];
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(zipFile))) {
+            for (String path : sourcePaths) {
+                File source = new File(path);
+                if (!source.exists()) {
+                    Log.e(TAG, "Source file does not exist: " + path);
+                    return null;
                 }
-
-                try (FileInputStream fileInputStream = new FileInputStream(srcFile)) {
-                    zipOutputStream.putNextEntry(new ZipEntry(srcFile.getName()));
-
+                try (FileInputStream in = new FileInputStream(source)) {
+                    zip.putNextEntry(new ZipEntry(source.getName()));
                     int length;
-                    while ((length = fileInputStream.read(buffer)) > 0) {
-                        zipOutputStream.write(buffer, 0, length);
+                    while ((length = in.read(buffer)) > 0) {
+                        zip.write(buffer, 0, length);
                     }
-
-                    zipOutputStream.closeEntry();
+                    zip.closeEntry();
                 }
             }
-
-            return true;
+            return zipFile.getAbsolutePath();
         } catch (IOException e) {
-            Log.e(TAG, "Error adding files to zip", e);
-            return false;
+            Log.e(TAG, "Error creating zip", e);
+            return null;
         }
     }
 }

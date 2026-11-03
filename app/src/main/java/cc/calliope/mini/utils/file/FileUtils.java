@@ -6,20 +6,48 @@ import android.util.Log;
 import android.webkit.URLUtil;
 import androidx.core.content.FileProvider;
 
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+import cc.calliope.mini.core.hex.HexVersionProbe;
 import cc.calliope.mini.utils.settings.Settings;
 
 public class FileUtils {
     private static final String TAG = "FileUtils";
     private static final String FILE_EXTENSION = ".hex";
+
+    /**
+     * File name without its last extension ("script.hex" -> "script").
+     * The dot must come after the last path separator to count.
+     */
+    public static String removeExtension(String name) {
+        int dot = name.lastIndexOf('.');
+        int separator = Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\'));
+        return dot > separator ? name.substring(0, dot) : name;
+    }
+
+    /**
+     * Last path segment without its extension ("/a/b/script.hex" -> "script").
+     */
+    public static String getBaseName(String path) {
+        int separator = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+        return removeExtension(path.substring(separator + 1));
+    }
+
+    /**
+     * Version-detection cache. {@link #getFileVersion} can scan an entire
+     * hex file (see HexVersionProbe) and is called per row while binding
+     * the scripts list, so re-scanning the same file on every rebind caused
+     * scroll jank. Keyed by path + lastModified + length so a rewritten file
+     * (same path, new content) misses and is re-scanned.
+     */
+    private static final Map<String, FileVersion> VERSION_CACHE = new ConcurrentHashMap<>();
+    private static final int VERSION_CACHE_MAX = 256;
 
     public static File getFile(Context context, String editorName, String filename) {
 
@@ -64,11 +92,11 @@ public class FileUtils {
 
         if (start != -1 && end != -1) {
             name = url.substring(start, end); //this will give abc
-            name = StringUtils.remove(name, "data:");
-            name = StringUtils.remove(name, "mini-");
+            name = name.replace("data:", "");
+            name = name.replace("mini-", "");
             return name;
         } else if (URLUtil.isValidUrl(url) && url.endsWith(".hex")) {
-            return FilenameUtils.getBaseName(url);
+            return getBaseName(url);
         } else {
             return "firmware";
         }
@@ -80,6 +108,25 @@ public class FileUtils {
     }
 
     public static FileVersion getFileVersion(String filePath) {
+        File file = new File(filePath);
+        String cacheKey = filePath + ":" + file.lastModified() + ":" + file.length();
+        FileVersion cached = VERSION_CACHE.get(cacheKey);
+        if (cached != null) {
+            return cached;
+        }
+
+        FileVersion result = computeFileVersion(filePath);
+
+        // The set of distinct hex files is small; a hard clear is enough to
+        // keep the cache from growing without bound.
+        if (VERSION_CACHE.size() > VERSION_CACHE_MAX) {
+            VERSION_CACHE.clear();
+        }
+        VERSION_CACHE.put(cacheKey, result);
+        return result;
+    }
+
+    private static FileVersion computeFileVersion(String filePath) {
         String[] lines = new String[2];
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             lines[0] = br.readLine();
@@ -89,6 +136,7 @@ public class FileUtils {
             return FileVersion.UNDEFINED;
         }
 
+        FileVersion shallow = FileVersion.UNDEFINED;
         for (FileVersion fv : FileVersion.values()) {
             if (fv == FileVersion.UNDEFINED) {
                 continue;
@@ -97,12 +145,54 @@ public class FileUtils {
             if (lineIndex >= 0 && lineIndex < lines.length) {
                 String line = lines[lineIndex];
                 if (line != null && line.startsWith(fv.getPattern())) {
-                    return fv;
+                    shallow = fv;
+                    break;
                 }
             }
         }
 
-        return FileVersion.UNDEFINED;
+        // The shallow check tags every hex starting with ":020000040000FA"
+        // (an Extended Linear Address 0x0000 record — present at line 1 of
+        // basically every Intel HEX file) as VERSION_2. That misclassifies
+        // universal hexes that lack the Microsoft "C0DE" line-2 marker,
+        // e.g. MicroPython on V3 — they get rejected as V1/V2-only on V3
+        // boards.
+        //
+        // We can confirm V3-compatibility without trusting line 1 by
+        // scanning the records for either:
+        //   - a data record in the flash region at an address >= 0x40000
+        //     (nRF51 / V1+V2 only has 256 KB flash, so code addressed
+        //     >= 0x40000 must be V3-targeted) — the UICR block at
+        //     0x10001014 that every nRF51 hex carries does NOT count, OR
+        //   - a Microsoft-Universal-Hex block-marker record (0x0A–0x0D),
+        //     which only appears in genuine universal hexes. 0x0E is
+        //     MakeCode's embedded-source record and shows up in plain V1/V2
+        //     and V3 hexes alike, so it is no evidence.
+        //
+        // Reclassify VERSION_2 → UNIVERSAL when either signal fires.
+        // Leave VERSION_3 and UNIVERSAL alone (the shallow match is
+        // already definitive for those).
+        if (shallow == FileVersion.VERSION_2 && HexVersionProbe.containsV3Evidence(filePath)) {
+            return FileVersion.UNIVERSAL;
+        }
+
+        return shallow;
+    }
+
+    /** Delete a file or a whole directory tree; missing paths are fine. */
+    public static void deleteRecursively(File file) {
+        if (file == null || !file.exists()) {
+            return;
+        }
+        File[] children = file.listFiles();
+        if (children != null) {
+            for (File child : children) {
+                deleteRecursively(child);
+            }
+        }
+        if (!file.delete()) {
+            Log.w(TAG, "Could not delete " + file);
+        }
     }
 
     public static boolean writeFile(String path, byte[] data)  {

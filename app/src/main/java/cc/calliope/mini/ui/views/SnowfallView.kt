@@ -15,14 +15,14 @@ class SnowfallView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     /**
-     * Bitmaps for snowflakes (from R.mipmap).
+     * Bitmaps for snowflakes (from R.drawable).
      * Replace them with your own resources or VectorDrawable → Bitmap.
      */
     private val snowflakeBitmaps: List<Bitmap> by lazy {
         listOf(
-            BitmapFactory.decodeResource(resources, R.mipmap.ic_snowflake1),
-            BitmapFactory.decodeResource(resources, R.mipmap.ic_snowflake2),
-            BitmapFactory.decodeResource(resources, R.mipmap.ic_snowflake3)
+            BitmapFactory.decodeResource(resources, R.drawable.ic_snowflake1),
+            BitmapFactory.decodeResource(resources, R.drawable.ic_snowflake2),
+            BitmapFactory.decodeResource(resources, R.drawable.ic_snowflake3)
         )
     }
 

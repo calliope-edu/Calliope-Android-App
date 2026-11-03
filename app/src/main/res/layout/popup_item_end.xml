@@ -13,14 +13,14 @@
         android:id="@+id/custom_menu_item_title"
         android:layout_width="wrap_content"
         android:layout_height="32dp"
-        android:maxHeight="40dp"
+        android:maxHeight="@dimen/icon_size"
         android:gravity="center"
         android:background="@drawable/popup_item_background"
         android:paddingHorizontal="@dimen/fab_title_horizontal_padding"
         android:paddingVertical="@dimen/fab_title_vertical_padding"
         android:layout_marginEnd="@dimen/margin_half"
         android:text="@string/menu_fab_connect"
-        android:textColor="@color/white"
+        android:textColor="?attr/colorOnSurface"
         android:focusable="false"
         android:focusableInTouchMode="false"
         android:clickable="false"
@@ -28,8 +28,9 @@
 
     <ImageView
         android:id="@+id/custom_menu_item_icon"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:importantForAccessibility="no"
+        android:layout_width="@dimen/icon_size"
+        android:layout_height="@dimen/icon_size"
         android:layout_gravity="center"
         android:src="@drawable/ic_connect"
         android:background="@drawable/circle_shape"
@@ -39,5 +40,5 @@
         android:focusable="false"
         android:focusableInTouchMode="false"
         android:clickable="false"
-        app:tint="@color/white" />
+        app:tint="@color/brand_on_accent" />
 </LinearLayout>

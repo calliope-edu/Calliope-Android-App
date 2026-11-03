@@ -2,17 +2,17 @@ package cc.calliope.mini.core.bluetooth
 
 import android.app.Service
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.preference.PreferenceManager
-import cc.calliope.mini.core.state.ApplicationStateHandler
-import cc.calliope.mini.core.state.State
+import cc.calliope.mini.core.state.AppMode
+import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Permission
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -52,12 +53,34 @@ class CheckService : Service() {
     private val canScan: Boolean
         get() = isAppInForeground && isStateIdle && macAddress.isNotEmpty()
 
-    private val stateObserver = Observer<State> { state ->
+    /** Last logged canScan value — the gate is re-evaluated far more often
+     *  than it changes, so log transitions only. */
+    private var lastLoggedCanScan: Boolean? = null
+
+    private var stateJob: Job? = null
+
+    /**
+     * The current board is chosen in the pattern dialog and forgotten in
+     * Settings ("remove all"). Both only touch SharedPreferences, so this is
+     * the one place to learn that the target changed — without it the
+     * service kept scanning for the old MAC and the FAB kept showing a
+     * board that had just been removed. Kept as a field: the preference
+     * manager holds listeners weakly.
+     */
+    private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == null || key == Constants.CURRENT_DEVICE_ADDRESS) {
+            mainHandler.post { updateScanningState() }
+        }
+    }
+
+    /** Scanning is allowed only when nothing is running (no flash, no
+     *  bonding) and no editor holds a live BLE session with the board. */
+    private fun onStateChanged(mode: AppMode, control: Boolean) {
         val wasIdle = isStateIdle
-        isStateIdle = state.type == State.STATE_IDLE || state.type == State.STATE_ERROR
+        isStateIdle = (mode is AppMode.Idle || mode is AppMode.Error) && !control
 
         if (isStateIdle != wasIdle) {
-            Log.d(TAG, "State changed: ${if (isStateIdle) "IDLE/ERROR" else "BUSY/FLASHING"}")
+            Log.d(TAG, "State changed: ${if (isStateIdle) "idle" else "busy (mode=$mode, control=$control)"}")
             updateScanningState()
         }
     }
@@ -96,13 +119,18 @@ class CheckService : Service() {
         isRunning = true
         Log.d(TAG, "Service started")
 
-        // Get MAC address from preferences
+        // Get MAC address from preferences and follow it from now on
         val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
         macAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
+        preferences.registerOnSharedPreferenceChangeListener(prefsListener)
 
         // Observe application state and lifecycle on main thread
         mainHandler.post {
-            ApplicationStateHandler.getStateLiveData().observeForever(stateObserver)
+            stateJob = serviceScope.launch {
+                combine(AppStateRepository.mode, AppStateRepository.control) { mode, control ->
+                    mode to control
+                }.collect { (mode, control) -> onStateChanged(mode, control) }
+            }
             ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleObserver)
 
             // Check current lifecycle state — if app is already in foreground
@@ -122,12 +150,21 @@ class CheckService : Service() {
     }
 
     private fun updateScanningState() {
-        // Re-read MAC address in case it changed
+        // Re-read the target; a changed (or removed) board invalidates the
+        // running scan and the availability derived from it.
         val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        macAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
+        val newMac = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
+        if (newMac != macAddress) {
+            Log.d(TAG, "current device changed: '$macAddress' -> '$newMac'")
+            macAddress = newMac
+            stopScan()
+        }
 
-        Log.d(TAG, "updateScanningState: canScan=$canScan " +
-                "(foreground=$isAppInForeground, idle=$isStateIdle, mac='$macAddress', scanJob=${scanJob != null})")
+        if (lastLoggedCanScan != canScan) {
+            lastLoggedCanScan = canScan
+            Log.d(TAG, "scan gate: canScan=$canScan " +
+                    "(foreground=$isAppInForeground, idle=$isStateIdle, mac='$macAddress')")
+        }
 
         if (canScan) {
             startScan()
@@ -216,16 +253,18 @@ class CheckService : Service() {
     private fun updateAvailability(available: Boolean) {
         if (isDeviceAvailable != available) {
             isDeviceAvailable = available
-            ApplicationStateHandler.updateDeviceAvailability(available)
+            AppStateRepository.updateDeviceAvailability(available)
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         mainHandler.post {
-            ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver)
             ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleObserver)
         }
+        PreferenceManager.getDefaultSharedPreferences(applicationContext)
+            .unregisterOnSharedPreferenceChangeListener(prefsListener)
+        stateJob?.cancel()
         scanJob?.cancel()
         statusCheckJob?.cancel()
         job.cancel()

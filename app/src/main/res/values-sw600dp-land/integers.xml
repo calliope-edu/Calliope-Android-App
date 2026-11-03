@@ -1,0 +1,5 @@
+<resources>
+    <!-- Two columns of editor cards on tablet landscape: full-width rows
+         waste ~75% of the card and push half the list below the fold. -->
+    <integer name="editors_columns">2</integer>
+</resources>

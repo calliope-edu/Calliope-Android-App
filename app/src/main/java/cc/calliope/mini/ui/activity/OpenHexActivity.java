@@ -1,6 +1,5 @@
 package cc.calliope.mini.ui.activity;
 
-import static cc.calliope.mini.core.state.Notification.ERROR;
 
 import android.Manifest;
 import android.content.Intent;
@@ -10,7 +9,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
-import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -24,13 +22,11 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-import cc.calliope.mini.core.service.FlashingService;
+import cc.calliope.mini.core.service.FlashLauncher;
 import cc.calliope.mini.R;
 import cc.calliope.mini.databinding.ActivityHexBinding;
 import cc.calliope.mini.ui.model.EditorType;
-import cc.calliope.mini.core.state.ApplicationStateHandler;
 import cc.calliope.mini.utils.file.FileUtils;
-import cc.calliope.mini.utils.Constants;
 import cc.calliope.mini.utils.Utils;
 
 
@@ -47,7 +43,7 @@ public class OpenHexActivity extends BaseActivity {
         setContentView(binding.getRoot());
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            // Запитуємо дозвіл на читання зовнішнього сховища
+            // Request permission to read external storage
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, REQUEST_CODE_PERMISSIONS);
         }
 
@@ -72,7 +68,7 @@ public class OpenHexActivity extends BaseActivity {
                 throw new RuntimeException(e);
             }
 
-            String name = FilenameUtils.getBaseName(decodedUri);
+            String name = FileUtils.getBaseName(decodedUri);
 
             binding.infoTextView.setText(
                     String.format(getString(R.string.open_hex_info), name)
@@ -138,21 +134,6 @@ public class OpenHexActivity extends BaseActivity {
     }
 
     private void startDFUActivity(File file) {
-        if(!Utils.isBluetoothEnabled()){
-            ApplicationStateHandler.updateNotification(ERROR, R.string.error_snackbar_bluetooth_disabled);
-            return;
-        }
-
-        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()){
-            ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
-            return;
-        }
-
-        final Intent intent = new Intent(this, FlashingActivity.class);
-        startActivity(intent);
-
-        Intent serviceIntent = new Intent(this, FlashingService.class);
-        serviceIntent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
-        startService(serviceIntent);
+        FlashLauncher.launch(this, file.getAbsolutePath());
     }
 }
