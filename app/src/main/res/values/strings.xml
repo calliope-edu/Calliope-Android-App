@@ -13,7 +13,7 @@
     <string name="title_bluetooth_permission">BLUETOOTH PERMISSION REQUIRED</string>
     <string name="title_notification_permission">NOTIFICATION PERMISSION REQUIRED</string>
     <string name="info_location_permission">From Android 6.0 Marshmallow onwards the application requires Location permission in order to scan for Bluetooth devices.
-        \n\nThis is because Bluetooth may be used to determine the phone\'s and user\'s location, <b>Calliope</b> will not use this information in any way.</string>
+        \n\nThis is because Bluetooth may be used to determine the phone\'s and user\'s location, the <b>Calliope mini</b> app will not use this information in any way.</string>
     <string name="info_bluetooth_permission">To use Bluetooth features to communicate APP with your <b>Calliope mini</b> you must granted several permissions.</string>
     <string name="title_camera_permission">CAMERA PERMISSION REQUIRED</string>
     <string name="info_camera_permission">Camera permission is required to use face recognition and camera features in Cardboard Face editor.</string>
@@ -36,7 +36,7 @@
     <string name="info_python">MicroPython is a version of Python specifically adapted for microcontrollers. Python is an excellent first text-based programming language.</string>
     <string name="info_blocks">The Calliope mini Blocks editor enables programming of the Calliope mini using the Scratch programming language. This allows applications to be controlled on the computer with the Calliope mini and vice versa.</string>
     <string name="info_custom">Here you can enter to the custom editor.</string>
-    <string name="info_campus">Calliope Campus combines all Calliope editors in a single environment with shared projects and direct control over the Calliope mini.</string>
+    <string name="info_campus">Calliope Campus combines all Calliope mini editors in a single environment with shared projects and direct control over the Calliope mini.</string>
     <string name="info_cardboard_control">Drive your LOFI Robot with the Calliope mini over Bluetooth: arrow keys or joystick, horn, stop and two sliders.</string>
     <string name="info_cardboard_face">The robot head follows your face: the camera tracks your head, eyes and mouth and sends the movements to the Calliope mini.</string>
     <string name="info_scripts">Your programs will be here.</string>
@@ -49,7 +49,7 @@
     <br/>By using this app you can connect, code and flash programs to your <b>Calliope mini</b> via Bluetooth.
     ]]></string>
     <string name="info_app2"><![CDATA[
-    <br/>You can find inspiring and fun projects at the Calliope website at <a href="https://calliope.cc">calliope.cc</a>!
+    <br/>You can find inspiring and fun projects at the Calliope mini website at <a href="https://calliope.cc">calliope.cc</a>!
     <br/>
     <br/>Have fun!
     ]]></string>
@@ -58,7 +58,7 @@
     By using this app you can connect, code and flash programs to your Calliope mini via Bluetooth.
     </string>
     <string name="info_app_text2" translatable="false">
-    You can find inspiring and fun projects at the Calliope website at https://calliope.cc!
+    You can find inspiring and fun projects at the Calliope mini website at https://calliope.cc!
     Have fun!
     </string>
 
@@ -118,15 +118,15 @@
     <string name="partial_flashing_starting">Partial flashing starting…</string>
     <string name="partial_flashing_failed">Partial flashing failed, attempting full flashing</string>
     <string name="points" translatable="false">…</string>
-    <string name="menu_fab_connect">Choose a mini</string>
-    <string name="menu_fab_disconnect">Disconnect the mini</string>
-    <string name="menu_fab_reconnect">Connect the mini</string>
-    <string name="menu_fab_change_device">Choose another mini</string>
+    <string name="menu_fab_connect">Choose a Calliope mini</string>
+    <string name="menu_fab_disconnect">Disconnect the Calliope mini</string>
+    <string name="menu_fab_reconnect">Connect the Calliope mini</string>
+    <string name="menu_fab_change_device">Choose another Calliope mini</string>
     <string name="menu_fab_scripts">Programs</string>
     <string name="menu_fab_full_screen">Full screen</string>
     <string name="menu_fab_scan_qr">Scan QR</string>
     <string name="qr_scan_prompt">Point the camera at the project QR code</string>
-    <string name="error_qr_unsupported">This QR code is not a Calliope project link</string>
+    <string name="error_qr_unsupported">This QR code is not a Calliope mini project link</string>
     <string name="summary_custom">Link to the custom editor</string>
 
     <!-- Settings -->
@@ -165,8 +165,8 @@
     <!-- Bonding -->
     <string name="button_retry">Retry</string>
     <string name="title_dialog_leave_editor">Leave the editor?</string>
-    <string name="info_dialog_leave_editor_keep">The project stays open in the background and the connected mini stays connected. Close it to free the mini.</string>
-    <string name="info_dialog_leave_editor_close">The mini is connected. Leaving disconnects it.</string>
+    <string name="info_dialog_leave_editor_keep">The project stays open in the background and the connected Calliope mini stays connected. Close it to free the Calliope mini.</string>
+    <string name="info_dialog_leave_editor_close">The Calliope mini is connected. Leaving disconnects it.</string>
     <string name="button_keep_editor">Keep open</string>
     <string name="button_stay_editor">Stay</string>
     <string name="button_close_editor">Close</string>
@@ -246,12 +246,12 @@
     <string name="error_missing_dfu_characteristic">Cannot find DFU legacy characteristic.</string>
 
     <!-- Device management -->
-    <string name="title_remove_all_devices">Remove All Calliope Mini</string>
-    <string name="summary_remove_all_devices">Clear all connected Calliope Mini and bonds</string>
-    <string name="title_dialog_delete_all_devices">Remove All Calliope Mini</string>
-    <string name="info_dialog_delete_all_devices">Are you sure you want to remove %d connected Calliope Minis?</string>
-    <string name="snackbar_no_calliope_connected">No Calliope Mini connected</string>
-    <string name="snackbar_calliope_removed">All Calliope Minis removed</string>
+    <string name="title_remove_all_devices">Remove all Calliope mini</string>
+    <string name="summary_remove_all_devices">Clear all connected Calliope mini and their bonds</string>
+    <string name="title_dialog_delete_all_devices">Remove all Calliope mini</string>
+    <string name="info_dialog_delete_all_devices">Are you sure you want to remove %d connected Calliope mini?</string>
+    <string name="snackbar_no_calliope_connected">No Calliope mini connected</string>
+    <string name="snackbar_calliope_removed">All Calliope mini removed</string>
 
     <!-- File versions -->
     <string name="version_universal">v1,2,3</string>
@@ -269,7 +269,7 @@
     <string name="error_device_version_incorrect">Device version is incorrect. Service will stop.</string>
     <string name="error_file_path_missing">File path is missing. Service will stop.</string>
     <string name="error_dfu_failed">DFU failed. Service will stop.</string>
-    <string name="error_legacy_bootloader_unreachable">The board restarted its program before the phone could reach its DFU mode. On this phone a mini 1/2 can be flashed over Bluetooth only if the program on the board requires pairing. Flash a program with pairing enabled first, or use USB.</string>
+    <string name="error_legacy_bootloader_unreachable">The Calliope mini restarted its program before the phone could reach its DFU mode. On this phone a Calliope mini 1/2 can be flashed over Bluetooth only if the program on the board requires pairing. Flash a program with pairing enabled first, or use USB.</string>
     <string name="error_flashing_in_progress">Flashing is already in progress</string>
     <string name="error_unsupported_board_version">Unsupported board version: %d</string>
     <string name="error_failed_prepare_firmware_zip">Failed to prepare firmware ZIP</string>

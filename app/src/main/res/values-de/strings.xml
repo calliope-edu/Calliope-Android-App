@@ -11,7 +11,7 @@
     <string name="title_bluetooth_permission">BLUETOOTH-ERLAUBNIS ERFORDERLICH</string>
     <string name="title_notification_permission">ANZEIGEERLAUBNIS ERFORDERLICH</string>
     <string name="info_location_permission">Ab Android 6.0 (Marshmallow) benötigt die Anwendung eine Standortberechtigung, um nach Bluetooth-Geräten zu suchen.
-        \n\nDies liegt daran, dass Bluetoothn verwendet werden kannn, um den Standort des Telefons und des Benutzers zu bestimmen. <b>Calliope</b> wird diese Informationen in keiner Weise verwenden.</string>
+        \n\nDies liegt daran, dass Bluetooth verwendet werden kann, um den Standort des Telefons und des Benutzers zu bestimmen. Die <b>Calliope mini</b> App wird diese Informationen in keiner Weise verwenden.</string>
     <string name="info_bluetooth_permission">Um die Bluetooth-Funktionen für die Kommunikation der App mit deinem <b>Calliope mini</b> zu nutzen, musst du mehrere Berechtigungen vergeben.</string>
     <string name="title_camera_permission">KAMERA-BERECHTIGUNG ERFORDERLICH</string>
     <string name="info_camera_permission">Kamera-Berechtigung ist erforderlich, um Gesichtserkennung und Kamerafunktionen im Cardboard Face Editor zu nutzen.</string>
@@ -27,7 +27,7 @@
     <string name="info_python">MicroPython ist eine Version von Python, die speziell für Mikrocontroller angepasst wurde. Python ist eine ausgezeichnete erste textbasierte Programmiersprache.</string>
     <string name="info_blocks">Der Calliope mini Blocks-Editor ermöglicht die Programmierung des Calliope mini mit der Programmiersprache Scratch. So können Anwendungen auf dem Computer mit dem Calliope mini gesteuert werden und andersherum.</string>
     <string name="info_custom">Hier können Sie zum benutzerdefinierten Editor gehen.</string>
-    <string name="info_campus">Calliope Campus bündelt alle Calliope-Editoren in einer Umgebung mit gemeinsamen Projekten und direkter Steuerung des Calliope mini.</string>
+    <string name="info_campus">Calliope Campus bündelt alle Editoren für den Calliope mini in einer Umgebung mit gemeinsamen Projekten und direkter Steuerung des Calliope mini.</string>
     <string name="info_scripts">Hier sind deine Programme.</string>
     <string name="summary_custom">Link zum benutzerdefinierten Editor</string>
 
@@ -46,7 +46,7 @@
         <br/>
         <br/>Falls du Fragen oder Anmerkungen hast, kannst du uns an die Emailadresse <a href="mailto:info@calliope.cc">info@calliope.cc</a> eine Nachricht schreiben.
         <br/>
-        <br/>Viel Spaß wünscht dir das Calliope Team!
+        <br/>Viel Spaß wünscht dir das Calliope mini Team!
         ]]>
     </string>
 
@@ -66,23 +66,23 @@
     <string name="content_description_script_editor">Editor, mit dem dieses Skript erstellt wurde</string>
     <string name="button_retry">wiederholen</string>
     <string name="title_dialog_leave_editor">Editor verlassen?</string>
-    <string name="info_dialog_leave_editor_keep">Das Projekt bleibt im Hintergrund geöffnet und der verbundene mini bleibt verbunden. Schließen gibt den mini frei.</string>
-    <string name="info_dialog_leave_editor_close">Der mini ist verbunden. Beim Verlassen wird die Verbindung getrennt.</string>
+    <string name="info_dialog_leave_editor_keep">Das Projekt bleibt im Hintergrund geöffnet und der verbundene Calliope mini bleibt verbunden. Schließen gibt den Calliope mini frei.</string>
+    <string name="info_dialog_leave_editor_close">Der Calliope mini ist verbunden. Beim Verlassen wird die Verbindung getrennt.</string>
     <string name="button_keep_editor">Offen lassen</string>
     <string name="button_stay_editor">Bleiben</string>
     <string name="button_close_editor">Schließen</string>
     <string name="info_dialog_delete">\"%s\" wird entgültig gelöscht.</string>
     <string name="subject_dialog_share">Datei teilen…</string>
     <string name="text_dialog_share">Calliope mini Skript teilen</string>
-    <string name="menu_fab_connect">mini auswählen</string>
-    <string name="menu_fab_disconnect">mini trennen</string>
-    <string name="menu_fab_reconnect">mini verbinden</string>
-    <string name="menu_fab_change_device">Anderen mini auswählen</string>
+    <string name="menu_fab_connect">Calliope mini auswählen</string>
+    <string name="menu_fab_disconnect">Calliope mini trennen</string>
+    <string name="menu_fab_reconnect">Calliope mini verbinden</string>
+    <string name="menu_fab_change_device">Anderen Calliope mini auswählen</string>
     <string name="menu_fab_scripts">Programme</string>
     <string name="menu_fab_full_screen">Vollbild</string>
     <string name="menu_fab_scan_qr">QR scannen</string>
     <string name="qr_scan_prompt">Richte die Kamera auf den QR-Code des Projekts</string>
-    <string name="error_qr_unsupported">Dieser QR-Code ist kein Calliope-Projektlink</string>
+    <string name="error_qr_unsupported">Dieser QR-Code ist kein Link zu einem Calliope mini Projekt</string>
 
     <!-- Errors and messages -->
     <string name="error_no_connected">Kein Calliope mini verbunden</string>
@@ -174,12 +174,12 @@
     <string name="error_missing_dfu_characteristic">DFU-Legacy-Charakteristik nicht gefunden.</string>
 
     <!-- Device management -->
-    <string name="title_remove_all_devices">Alle Calliope Mini entfernen</string>
-    <string name="summary_remove_all_devices">Alle verbundenen Calliope Mini und Verbindungen löschen</string>
-    <string name="title_dialog_delete_all_devices">Alle Calliope Mini entfernen</string>
-    <string name="info_dialog_delete_all_devices">Sind Sie sicher, dass Sie %d verbundene Calliope Mini entfernen möchten?</string>
-    <string name="snackbar_no_calliope_connected">Kein Calliope Mini verbunden</string>
-    <string name="snackbar_calliope_removed">Alle Calliope Mini entfernt</string>
+    <string name="title_remove_all_devices">Alle Calliope mini entfernen</string>
+    <string name="summary_remove_all_devices">Alle verbundenen Calliope mini und Verbindungen löschen</string>
+    <string name="title_dialog_delete_all_devices">Alle Calliope mini entfernen</string>
+    <string name="info_dialog_delete_all_devices">Sind Sie sicher, dass Sie %d verbundene Calliope mini entfernen möchten?</string>
+    <string name="snackbar_no_calliope_connected">Kein Calliope mini verbunden</string>
+    <string name="snackbar_calliope_removed">Alle Calliope mini entfernt</string>
 
     <!-- File versions -->
     <string name="version_universal">v1,2,3</string>
@@ -197,7 +197,7 @@
     <string name="error_device_version_incorrect">Geräteversion ist falsch. Service wird gestoppt.</string>
     <string name="error_file_path_missing">Dateipfad fehlt. Service wird gestoppt.</string>
     <string name="error_dfu_failed">DFU fehlgeschlagen. Service wird gestoppt.</string>
-    <string name="error_legacy_bootloader_unreachable">Der mini hat sein Programm neu gestartet, bevor das Telefon den DFU-Modus erreichen konnte. Auf diesem Telefon lässt sich ein mini 1/2 nur per Bluetooth flashen, wenn das Programm auf dem Board eine Kopplung verlangt. Zuerst ein Programm mit Kopplung flashen oder USB verwenden.</string>
+    <string name="error_legacy_bootloader_unreachable">Der Calliope mini hat sein Programm neu gestartet, bevor das Telefon den DFU-Modus erreichen konnte. Auf diesem Telefon lässt sich ein Calliope mini 1/2 nur per Bluetooth flashen, wenn das Programm auf dem Board eine Kopplung verlangt. Zuerst ein Programm mit Kopplung flashen oder USB verwenden.</string>
     <string name="error_flashing_in_progress">Es läuft bereits ein Flash-Vorgang</string>
     <string name="error_unsupported_board_version">Nicht unterstützte Board-Version: %d</string>
     <string name="error_failed_prepare_firmware_zip">Firmware-ZIP konnte nicht vorbereitet werden</string>
