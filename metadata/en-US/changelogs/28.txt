@@ -1,0 +1,7 @@
+- New editors: Calliope Campus, LOFI Control and Calliope Facerobot
+- Calliope mini Blocks connects to the Calliope mini over Bluetooth by itself
+- Partial flashing on by default: programs are on the Calliope mini in seconds
+- New look with a dark theme; two columns of editors on tablets
+- QR scanner for shared MakeCode and Campus projects
+- Calliope mini 1/2 with newer phones: clear help when the board cannot be reached
+- Many stability fixes

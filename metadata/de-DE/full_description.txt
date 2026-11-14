@@ -1,2 +1,7 @@
-Mit dem Calliope mini liegen unzählige kreative Möglichkeiten in deiner Hand. Egal ob du einen Roboter bauen oder Nachrichten übertragen möchtest: Mit wenigen Klicks erstellst du im Nu deine eigenen Programme  und bringst Dinge in Bewegung.
-Neben 25 roten sowie drei RGB-LEDs und zwei programmierbaren Buttons enthält das Board einen kombinierten Lagesensor mit Bewegungssensor und Kompass sowie ein Bluetooth-Modul, mit dem Calliope mini mit anderen Geräten kommunizieren kann.
+Mit dem Calliope mini liegen dir unzählige kreative Möglichkeiten in der Hand. Ob du einen Roboter bauen oder Nachrichten übermitteln willst: Mit wenigen Klicks erstellst du im Handumdrehen eigene Programme und bringst Dinge in Bewegung.
+
+Die App bündelt alle Editoren für den Calliope mini an einem Ort: Calliope Campus, MakeCode, Open Roberta Lab, Calliope mini Blocks, MicroPython, LOFI Control und Calliope Facerobot. Schreibe dein Programm, und die App überträgt es per Bluetooth auf deinen Calliope mini - dank partiellem Flashen sind MakeCode- und MicroPython-Programme in wenigen Sekunden auf dem Board.
+
+Blocks, LOFI Control und Facerobot sprechen live per Bluetooth mit dem Calliope mini: Die App verbindet sich von selbst, sobald der Calliope mini in der Nähe ist.
+
+Neben 25 roten und drei RGB-LEDs und zwei programmierbaren Tasten enthält das Board einen kombinierten Lagesensor mit Bewegungssensor und Kompass sowie ein Bluetooth-Modul, mit dem der Calliope mini mit anderen Geräten kommunizieren kann.
