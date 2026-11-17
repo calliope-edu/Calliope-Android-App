@@ -2,6 +2,7 @@ package cc.calliope.mini.ui.dialog.scripts;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
@@ -21,7 +22,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
-import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,18 +43,16 @@ import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import cc.calliope.mini.core.state.State;
-import cc.calliope.mini.core.service.FlashingService;
+import cc.calliope.mini.core.service.FlashLauncher;
+import cc.calliope.mini.utils.file.FileUtils;
 import cc.calliope.mini.utils.file.FileWrapper;
 import cc.calliope.mini.R;
-import cc.calliope.mini.ui.activity.FlashingActivity;
 import cc.calliope.mini.ui.dialog.DialogUtils;
-import cc.calliope.mini.core.state.ApplicationStateHandler;
-import cc.calliope.mini.utils.Constants;
+import cc.calliope.mini.core.state.AppStateRepository;
 import cc.calliope.mini.databinding.FragmentScriptsBinding;
 import cc.calliope.mini.ui.model.EditorType;
-import cc.calliope.mini.utils.settings.Settings;
 import cc.calliope.mini.utils.Utils;
+import cc.calliope.mini.utils.WindowUtils;
 
 import static android.app.Activity.RESULT_OK;
 import static cc.calliope.mini.core.state.Notification.ERROR;
@@ -88,6 +86,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         BottomSheetDialog dialog = (BottomSheetDialog) super.onCreateDialog(savedInstanceState);
         dialog.setOnShowListener(di -> {
+            WindowUtils.blurBehindDialog(getActivity(), true);
             BottomSheetDialog d = (BottomSheetDialog) di;
             bottomSheet = d.findViewById(com.google.android.material.R.id.design_bottom_sheet);
             if (bottomSheet != null) {
@@ -96,6 +95,12 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
             }
         });
         return dialog;
+    }
+
+    @Override
+    public void onDismiss(@NonNull DialogInterface dialog) {
+        WindowUtils.blurBehindDialog(getActivity(), false);
+        super.onDismiss(dialog);
     }
 
     @Override
@@ -152,25 +157,10 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
     }
 
     private void openDfuActivity(FileWrapper file) {
-        if (!Utils.isBluetoothEnabled()) {
-            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
+        // On a refusal the sheet stays open: the reason shows as a snackbar in it.
+        if (FlashLauncher.launch(activity, file.getAbsolutePath()).started) {
             dismiss();
-            return;
         }
-        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null
-                || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()) {
-            ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
-            return;
-        }
-        if (!Settings.isBackgroundFlashingEnable(activity)) {
-            final Intent intent = new Intent(activity, FlashingActivity.class);
-            intent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
-            startActivity(intent);
-        }
-        Intent serviceIntent = new Intent(activity, FlashingService.class);
-        serviceIntent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
-        activity.startService(serviceIntent);
-        dismiss();
     }
 
     private void openPopupMenu(View view, FileWrapper file) {
@@ -200,18 +190,18 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
 
     private void renameFile(FileWrapper file) {
         String title = getResources().getString(R.string.title_dialog_rename);
-        String input = FilenameUtils.removeExtension(file.getName());
+        String input = FileUtils.removeExtension(file.getName());
         DialogUtils.showEditDialog(activity, title, input, output -> {
-            File dir = new File(FilenameUtils.getFullPath(file.getAbsolutePath()));
-            if (dir.exists()) {
+            File dir = new File(file.getAbsolutePath()).getParentFile();
+            if (dir != null && dir.exists()) {
                 FileWrapper dest = new FileWrapper(new File(dir, output + FILE_EXTENSION), file.editor());
                 if (file.exists()) {
                     if (!dest.exists() && file.renameTo(dest.file())) {
                         scriptsRecyclerAdapter.change(file, dest);
                     } else {
                         activity.runOnUiThread(() -> {
-                            ApplicationStateHandler.updateNotification(ERROR, R.string.error_snackbar_name_exists);
-                            ApplicationStateHandler.updateState(State.STATE_ERROR);
+                            AppStateRepository.updateNotification(ERROR, R.string.error_snackbar_name_exists);
+                            AppStateRepository.setError(getString(R.string.error_snackbar_name_exists));
                         });
                     }
                 }
@@ -221,7 +211,7 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
 
     private void removeFile(FileWrapper file) {
         String title = getResources().getString(R.string.title_dialog_delete);
-        String message = String.format(getString(R.string.info_dialog_delete), FilenameUtils.removeExtension(file.getName()));
+        String message = String.format(getString(R.string.info_dialog_delete), FileUtils.removeExtension(file.getName()));
         DialogUtils.showWarningDialog(activity, title, message, () -> {
             if (file.delete()) {
                 scriptsRecyclerAdapter.remove(file);
@@ -283,8 +273,8 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
                     } catch (SecurityException e) {
                         Log.e(TAG, "Persistable URI permission failed", e);
                         activity.runOnUiThread(() -> {
-                            ApplicationStateHandler.updateNotification(ERROR, R.string.usb_copy_access_denied);
-                            ApplicationStateHandler.updateState(State.STATE_ERROR);
+                            AppStateRepository.updateNotification(ERROR, R.string.usb_copy_access_denied);
+                            AppStateRepository.setError(getString(R.string.usb_copy_access_denied));
                         });
                     }
                 }
@@ -295,54 +285,56 @@ public class ScriptsFragment extends BottomSheetDialogFragment {
         new Thread(() -> {
             try {
                 DocumentFile directory = DocumentFile.fromTreeUri(activity, uri);
-                DocumentFile file = directory.createFile("application/octet-stream", "firmware.hex");
-
-                FileInputStream inputStream = new FileInputStream(sourceFilePath);
-                long sourceFileSize = new File(sourceFilePath).length();
-
-                ParcelFileDescriptor pfd = activity.getContentResolver().openFileDescriptor(file.getUri(), "w");
-                FileOutputStream outputStream = new FileOutputStream(pfd.getFileDescriptor());
-
-                activity.runOnUiThread(() -> {
-                    ApplicationStateHandler.updateNotification(INFO, R.string.usb_copy_started);
-                    ApplicationStateHandler.updateState(State.STATE_BUSY);
-                });
-
-                byte[] buffer = new byte[8192];
-                int bytesRead;
-                long totalBytesWritten = 0;
-
-                while ((bytesRead = inputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytesRead);
-                    totalBytesWritten += bytesRead;
+                DocumentFile file = directory == null ? null
+                        : directory.createFile("application/octet-stream", "firmware.hex");
+                if (file == null) {
+                    throw new IOException("Could not create firmware.hex in " + uri);
                 }
 
-                outputStream.flush();
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                activity.runOnUiThread(() -> {
+                    AppStateRepository.updateNotification(INFO, R.string.usb_copy_started);
+                    AppStateRepository.setBusy();
+                });
+
+                // Every descriptor on the USB volume must be closed before the
+                // board is unplugged: vold kills any process still holding a
+                // file on a volume it unmounts (SIGINT — seen as an app "crash"
+                // right after detaching the mini). A FileOutputStream built from
+                // pfd.getFileDescriptor() does not own the fd, so closing it
+                // left the ParcelFileDescriptor open until GC. AutoCloseOutputStream
+                // owns the pfd; try-with-resources covers the failure paths too.
+                try (FileInputStream inputStream = new FileInputStream(sourceFilePath);
+                     ParcelFileDescriptor pfd = activity.getContentResolver().openFileDescriptor(file.getUri(), "w");
+                     FileOutputStream outputStream = new ParcelFileDescriptor.AutoCloseOutputStream(pfd)) {
+
+                    byte[] buffer = new byte[8192];
+                    int bytesRead;
+                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+                        outputStream.write(buffer, 0, bytesRead);
+                    }
+
+                    outputStream.flush();
                     try {
                         outputStream.getFD().sync();
                     } catch (Exception ignored) {
                     }
                 }
 
-                inputStream.close();
-                outputStream.close();
-
                 activity.runOnUiThread(() -> {
-                    ApplicationStateHandler.updateNotification(INFO, R.string.usb_copy_finished);
-                    ApplicationStateHandler.updateState(State.STATE_IDLE);
+                    AppStateRepository.updateNotification(INFO, R.string.usb_copy_finished);
+                    AppStateRepository.setIdle();
                 });
             } catch (IOException e) {
                 Log.e(TAG, "File copy error", e);
                 activity.runOnUiThread(() -> {
-                    ApplicationStateHandler.updateNotification(ERROR, R.string.usb_copy_failed);
-                    ApplicationStateHandler.updateState(State.STATE_ERROR);
+                    AppStateRepository.updateNotification(ERROR, R.string.usb_copy_failed);
+                    AppStateRepository.setError(getString(R.string.usb_copy_failed));
                 });
             } catch (Exception e) {
                 Log.e(TAG, "Unexpected error", e);
                 activity.runOnUiThread(() -> {
-                    ApplicationStateHandler.updateNotification(ERROR, R.string.usb_copy_unexpected_error);
-                    ApplicationStateHandler.updateState(State.STATE_ERROR);
+                    AppStateRepository.updateNotification(ERROR, R.string.usb_copy_unexpected_error);
+                    AppStateRepository.setError(getString(R.string.usb_copy_unexpected_error));
                 });
             }
         }).start();

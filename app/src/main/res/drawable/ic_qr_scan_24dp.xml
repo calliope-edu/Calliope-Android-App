@@ -1,0 +1,23 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Viewfinder corner brackets -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M3,3 h5 v2 h-3 v3 h-2 z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M21,3 h-5 v2 h3 v3 h2 z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M3,21 h5 v-2 h-3 v-3 h-2 z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M21,21 h-5 v-2 h3 v-3 h2 z" />
+    <!-- Central QR modules -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M9,9 h3 v3 h-3 z M13,9 h2 v2 h-2 z M9,13 h2 v2 h-2 z M13,13 h2 v2 h-2 z" />
+</vector>

@@ -1,6 +1,5 @@
 #PERSONAL
 .idea/
-gradle/
 
 # Built application files
 *.apk
@@ -89,3 +88,6 @@ lint/tmp/
 # lint/reports/
 
 app/release/
+/.tmp/
+/.claude/
+/.kotlin/

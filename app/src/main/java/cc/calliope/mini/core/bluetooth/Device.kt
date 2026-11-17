@@ -8,7 +8,7 @@ import no.nordicsemi.android.kotlin.ble.core.scanner.BleScanResults
 
 class Device(bleScanResults: BleScanResults) {
     companion object {
-        private val RELEVANT_LIMIT: Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) 5 else 10 // Секунди
+        private val RELEVANT_LIMIT: Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) 5 else 10 // Seconds
     }
 
     private var serverDevice: ServerDevice = bleScanResults.device

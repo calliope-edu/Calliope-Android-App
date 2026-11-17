@@ -1,0 +1,4 @@
+<resources>
+    <!-- Editors list column count; 2 on tablet-landscape (sw600dp-land). -->
+    <integer name="editors_columns">1</integer>
+</resources>

@@ -1,35 +1,14 @@
 package cc.calliope.mini.ui.fragment.web;
 
-
-import static cc.calliope.mini.core.state.Notification.ERROR;
-
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
-
-import androidx.annotation.NonNull;
-import androidx.fragment.app.Fragment;
-
-import cc.calliope.mini.ui.SnackbarHelper;
-import cc.calliope.mini.core.service.FlashingService;
-import cc.calliope.mini.R;
-import cc.calliope.mini.ui.activity.FlashingActivity;
-import cc.calliope.mini.core.state.ApplicationStateHandler;
-import cc.calliope.mini.utils.settings.Settings;
-import cc.calliope.mini.utils.Constants;
-import cc.calliope.mini.utils.file.FileUtils;
-import cc.calliope.mini.utils.Utils;
-
-import android.os.StrictMode;
-import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.DownloadListener;
 import android.webkit.JavascriptInterface;
-import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -38,25 +17,29 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-import java.io.Writer;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
 
+import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+
+import cc.calliope.mini.BuildConfig;
+import cc.calliope.mini.R;
+import cc.calliope.mini.core.service.FlashLauncher;
+import cc.calliope.mini.scratchlink.ScratchLinkServer;
+import cc.calliope.mini.ui.SnackbarHelper;
+import cc.calliope.mini.utils.settings.Settings;
 
 /**
- * A simple {@link Fragment} subclass.
- * Use the {@link WebFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * Hosts a web editor (MakeCode, Python, Blocks, …).
+ *
+ * <p>The WebView is retained across view recreation by
+ * {@link RetainedWebEditor}, so leaving the editor and coming back keeps the
+ * open project and any live BLE session. The fragment itself is glue: it
+ * injects the page scripts ({@link WebScripts}), routes downloads to
+ * {@link EditorDownloadHandler} and starts a flash through
+ * {@link FlashLauncher}.
  */
 public class WebFragment extends Fragment implements DownloadListener {
 
@@ -64,139 +47,44 @@ public class WebFragment extends Fragment implements DownloadListener {
     private static final String UTF_8 = "UTF-8";
     private static final String TARGET_URL = "editorUrl";
     private static final String TARGET_NAME = "editorName";
+    private static final String STATE_WEB_VIEW = "webViewState";
     private String editorUrl;
     private String editorName;
     private WebView webView;
+    private RetainedWebEditor editor;
+    private EditorDownloadHandler downloads;
 
-    private class JavaScriptInterface {
-        private final Context context;
+    /**
+     * The {@code Android} object the editors call into. Bound to the WebView
+     * rather than to a fragment, because replacing a JavaScript interface
+     * only takes effect on the next page load — the very thing retaining the
+     * page avoids.
+     */
+    private static class JavaScriptInterface {
+        private final HostAccess hostAccess;
 
-        public JavaScriptInterface(Context context) {
-            this.context = context;
+        JavaScriptInterface(HostAccess hostAccess) {
+            this.hostAccess = hostAccess;
         }
 
         @JavascriptInterface
         public void getBase64FromBlobData(String url, String name) {
-            Log.d(TAG, "Received file: " + name);
-
-            File file = FileUtils.getFile(context, editorName, name);
-            if (file == null) {
-                SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_save_file_error)).show();
-            } else {
-                if (createAndSaveFileFromBase64Url(url, file)) {
-                    startDfuActivity(file);
-                } else {
-                    SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_download_error)).show();
-                }
-            }
+            hostAccess.runOnHost(host -> host.onBlobDownload(url, name));
         }
 
         /**
          * Handle download from MakeCode controller mode.
          * Called when MakeCode sends postMessage with download data and project name.
-         * @param hexData The hex file content as string
-         * @param name The project name from MakeCode
          */
         @JavascriptInterface
         public void handleControllerDownload(String hexData, String name) {
-            Log.d(TAG, "Controller download: " + name);
-
-            String fileName = cleanFileName(name);
-            File file = FileUtils.getFile(context, editorName, fileName);
-            if (file == null) {
-                SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_save_file_error)).show();
-            } else {
-                if (saveHexFile(hexData, file)) {
-                    startDfuActivity(file);
-                } else {
-                    SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_download_error)).show();
-                }
-            }
-        }
-
-        public static String getBase64StringFromBlobUrl(String blobUrl, String mimeType, String fileName) {
-            if (blobUrl.startsWith("blob")) {
-                return "javascript: " +
-                        "var xhr = new XMLHttpRequest();" +
-                        "xhr.open('GET', '" + blobUrl + "', true);" +
-                        "xhr.setRequestHeader('Content-type','" + mimeType + ";charset=UTF-8');" +
-                        "xhr.responseType = 'blob';" +
-                        "xhr.onload = function(e) {" +
-                        "    if (this.status == 200) {" +
-                        "        var blobFile = this.response;" +
-                        "        var name = window.androidLastDownloadName;" +
-                        "        if (name) {" +
-                        "            name = name.replace(/\\.hex$/i, '').replace(/^mini-/i, '');" +
-                        "        } else {" +
-                        "            name = blobFile.name;" +
-                        "        }" +
-                        "        if (!name) {" +
-                        "            name = '" + fileName + "';" +
-                        "        }" +
-                        "        window.androidLastDownloadName = null;" +
-                        "        var reader = new FileReader();" +
-                        "        reader.readAsDataURL(blobFile);" +
-                        "        reader.onloadend = function() {" +
-                        "            base64data = reader.result;" +
-                        "            Android.getBase64FromBlobData(base64data, name);" +
-                        "        }" +
-                        "    }" +
-                        "};" +
-                        "xhr.send();";
-            }
-            return "javascript: console.log('It is not a Blob URL');";
-        }
-
-        /**
-         * JavaScript to inject for intercepting download links.
-         * This hooks into anchor element clicks and URL.createObjectURL to capture the download filename.
-         */
-        public static String getDownloadInterceptScript() {
-            return "javascript: " +
-                    "if (!window.androidDownloadInterceptAdded) {" +
-                    "    window.androidDownloadInterceptAdded = true;" +
-                    "    window.androidLastDownloadName = null;" +
-                    "    var originalClick = HTMLAnchorElement.prototype.click;" +
-                    "    HTMLAnchorElement.prototype.click = function() {" +
-                    "        if (this.download && this.href && this.href.startsWith('blob:')) {" +
-                    "            window.androidLastDownloadName = this.download;" +
-                    "        }" +
-                    "        return originalClick.apply(this, arguments);" +
-                    "    };" +
-                    "    var originalCreateElement = document.createElement.bind(document);" +
-                    "    document.createElement = function(tag) {" +
-                    "        var el = originalCreateElement(tag);" +
-                    "        if (tag.toLowerCase() === 'a') {" +
-                    "            var desc = Object.getOwnPropertyDescriptor(HTMLAnchorElement.prototype, 'download');" +
-                    "            Object.defineProperty(el, 'download', {" +
-                    "                set: function(val) { window.androidLastDownloadName = val; desc.set.call(this, val); }," +
-                    "                get: function() { return desc.get.call(this); }" +
-                    "            });" +
-                    "        }" +
-                    "        return el;" +
-                    "    };" +
-                    "    window.addEventListener('message', function(ev) {" +
-                    "        var msg = ev.data;" +
-                    "        if (msg && msg.download && msg.name) {" +
-                    "            Android.handleControllerDownload(msg.download, msg.name);" +
-                    "        }" +
-                    "    }, false);" +
-                    "}";
+            hostAccess.runOnHost(host -> host.onControllerDownload(hexData, name));
         }
     }
 
     public WebFragment() {
         // Required empty public constructor
     }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param editorName Editor name.
-     * @param url        Editor URL.
-     * @return A new instance of fragment WebFragment.
-     */
 
     public static WebFragment newInstance(@NonNull String url, @NonNull String editorName) {
         WebFragment fragment = new WebFragment();
@@ -211,29 +99,29 @@ public class WebFragment extends Fragment implements DownloadListener {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-        StrictMode.setThreadPolicy(policy);
-
         Bundle arguments = getArguments();
         if (arguments != null) {
             editorUrl = arguments.getString(TARGET_URL);
             editorName = arguments.getString(TARGET_NAME);
         }
         Log.d(TAG, "WebFragment created for editor: " + editorName + ", URL: " + editorUrl);
+
+        // Scratch-based editors (Blocks) drive BLE through the Scratch Link
+        // protocol when navigator.bluetooth is unavailable. Start the loopback
+        // server only for those editors; it is idempotent and lives for the
+        // process, so non-scratch editors never open the port.
+        if (ScratchLinkServer.isScratchEditorUrl(editorUrl)) {
+            ScratchLinkServer.start(requireContext());
+        }
     }
 
-    public int getLayoutId() {
-        return R.layout.fragment_web;
-    }
-
+    /**
+     * Applies the settings every editor page needs and binds the JavaScript
+     * bridge. Called once per WebView — the retained one — which is why the
+     * bridge talks to {@code hostAccess} instead of a fragment.
+     */
     @SuppressLint("SetJavaScriptEnabled")
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        View view = inflater.inflate(getLayoutId(), container, false);
-
-        webView = view.findViewById(R.id.webView);
+    static void configureWebView(@NonNull WebView webView, @NonNull HostAccess hostAccess) {
         WebSettings webSettings = webView.getSettings();
 
         webSettings.setJavaScriptEnabled(true);
@@ -243,14 +131,65 @@ public class WebFragment extends Fragment implements DownloadListener {
         webSettings.setDatabaseEnabled(true);
         webSettings.setDefaultTextEncodingName("utf-8");
 
-        webView.addJavascriptInterface(new JavaScriptInterface(getContext()), "Android");
+        webView.addJavascriptInterface(new JavaScriptInterface(hostAccess), "Android");
         webView.setWebChromeClient(new WebChromeClient());
-        webView.setWebViewClient(new WebViewClient() {
+    }
+
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_web, container, false);
+
+        // Allow inspecting the editor's WebView via chrome://inspect in debug
+        // builds only (no-op in release).
+        if (BuildConfig.DEBUG) {
+            WebView.setWebContentsDebuggingEnabled(true);
+        }
+
+        downloads = new EditorDownloadHandler(requireContext(), editorName);
+
+        // Back with a live Blocks session: keep the page running or close it.
+        LeaveEditorGuard.INSTANCE.install(this, true, () -> {
+            RetainedWebEditor.closeByUser();
+            editor = null;
+            return kotlin.Unit.INSTANCE;
+        });
+
+        ViewGroup webViewContainer = view.findViewById(R.id.webViewContainer);
+        editor = RetainedWebEditor.acquire(requireActivity(), editorUrl);
+        webView = editor.getWebView();
+        boolean alreadyLoaded = editor.isLoaded();
+        editor.attach(this, webViewContainer);
+
+        // Rebound on every attach: these callbacks reference this fragment, so
+        // they must not outlive it (detach()/onDestroyView() clear them).
+        webView.setWebViewClient(createWebViewClient());
+        webView.setDownloadListener(this);
+
+        if (!alreadyLoaded) {
+            // Only reached for a WebView with no page yet. A saved bundle is
+            // present when the process was killed and rebuilt; it restores the
+            // navigation history, not the page state, so it is a fallback
+            // rather than the mechanism that keeps the project alive.
+            Bundle webViewState = savedInstanceState != null
+                    ? savedInstanceState.getBundle(STATE_WEB_VIEW) : null;
+            if (webViewState == null || webView.restoreState(webViewState) == null) {
+                Log.d(TAG, "Loading URL in WebFragment: " + editorUrl);
+                webView.loadUrl(editorUrl);
+            }
+            editor.markLoaded();
+        }
+        return view;
+    }
+
+    private WebViewClient createWebViewClient() {
+        return new WebViewClient() {
+            @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 // Only show error for main page, not for sub-resources
                 if (request.isForMainFrame()) {
                     Log.e(TAG, "Main page error: " + error.getDescription() + " for URL: " + request.getUrl());
-                    SnackbarHelper.errorSnackbar(webView, String.format(getString(R.string.web_error_oh_no), error.getDescription())).show();
+                    showError(String.format(getString(R.string.web_error_oh_no), error.getDescription()));
                 } else {
                     // Log sub-resource errors but don't show to user
                     Log.d(TAG, "Sub-resource error: " + error.getDescription() + " for URL: " + request.getUrl());
@@ -268,24 +207,78 @@ public class WebFragment extends Fragment implements DownloadListener {
             }
 
             @Override
+            public void onPageCommitVisible(WebView view, String url) {
+                super.onPageCommitVisible(view, url);
+                // Hide the Blocks connection modal before scratch-gui renders
+                // it from its initial state (modals.connectionModal starts
+                // true), so the auto-connect driver can dismiss it without the
+                // user seeing a flash. onPageFinished is already too late —
+                // React has mounted the modal by then. The rule is scoped to
+                // the connection modal's own overlay via :has() (Chromium
+                // 105+); on anything older it is ignored and the modal briefly
+                // shows before the driver closes it.
+                if (ScratchLinkServer.isScratchEditorUrl(url)) {
+                    inject(view, WebScripts.CONNECTION_MODAL_HIDE);
+                }
+            }
+
+            @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 // Inject download intercept for editors that use blob URLs
                 if (url.contains("makecode") || url.contains("python.calliope")) {
                     Log.d(TAG, "Injecting download intercept for: " + url);
-                    view.evaluateJavascript(JavaScriptInterface.getDownloadInterceptScript(), null);
+                    inject(view, WebScripts.DOWNLOAD_INTERCEPT);
+                }
+                // Scratch-based editors (Blocks): drive scratch-vm to auto-connect
+                // to the first peripheral in the background and suppress the
+                // startup connection modal, while leaving a user-tapped modal
+                // open — no scratch-gui changes required. Note: it connects to
+                // the FIRST peripheral found (like Scratch's own
+                // AutoScanningStep); in a room with several minis that is the
+                // nearest/first to advertise.
+                if (ScratchLinkServer.isScratchEditorUrl(url)) {
+                    Log.d(TAG, "Injecting Scratch auto-connect for: " + url);
+                    inject(view, WebScripts.SCRATCH_AUTO_CONNECT);
                 }
             }
-        });
-        webView.setDownloadListener(this);
+        };
+    }
 
-        if (savedInstanceState != null) {
-            webView.restoreState(savedInstanceState.getBundle("webViewState"));
-        } else {
-            Log.d(TAG, "Loading URL in WebFragment: " + editorUrl);
-            webView.loadUrl(editorUrl);
+    private static void inject(WebView view, String scriptName) {
+        view.evaluateJavascript(WebScripts.load(view.getContext(), scriptName), null);
+    }
+
+    // ---- Downloads ---------------------------------------------------------
+
+    /** Saved on a worker thread; on success the program is flashed if the user wants that. */
+    private final EditorDownloadHandler.Callback downloadCallback = new EditorDownloadHandler.Callback() {
+        @Override
+        public void onSaved(@NonNull File file) {
+            Context context = getContext();
+            if (context != null && Settings.isAutoFlashingEnable(context)) {
+                FlashLauncher.launch(requireActivity(), file.getAbsolutePath());
+            }
         }
-        return view;
+
+        @Override
+        public void onFailed(int messageRes) {
+            if (isAdded()) {
+                showError(getString(messageRes));
+            }
+        }
+    };
+
+    /** A blob download finished in the page and arrived as a data URL. */
+    void onBlobDownload(String url, String name) {
+        Log.d(TAG, "Received file: " + name);
+        downloads.saveBase64DataUrl(url, name, downloadCallback);
+    }
+
+    /** MakeCode controller mode posted a hex payload and its project name. */
+    void onControllerDownload(String hexData, String name) {
+        Log.d(TAG, "Controller download: " + name);
+        downloads.saveHexText(hexData, cleanFileName(name), downloadCallback);
     }
 
     @Override
@@ -304,13 +297,15 @@ public class WebFragment extends Fragment implements DownloadListener {
                     fileName = cleanFileName(fileName);
                 }
                 Log.d(TAG, "Resolved fileName: " + fileName);
-                String javaScript = JavaScriptInterface.getBase64StringFromBlobUrl(url, mimetype, fileName);
-                webView.loadUrl(javaScript);
+                // The page reads its own blob and calls back into
+                // Android.getBase64FromBlobData (see onBlobDownload).
+                webView.evaluateJavascript(
+                        WebScripts.blobToBase64(requireContext(), url, mimetype, fileName), null);
             } else {
-                selectDownloadMethod(decodedUrl);
+                downloads.saveFromUrl(decodedUrl, downloadCallback);
             }
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Could not decode download url", e);
         }
     }
 
@@ -355,142 +350,36 @@ public class WebFragment extends Fragment implements DownloadListener {
         return fileName;
     }
 
-    private void selectDownloadMethod(String url) {
-        Context context = getContext();
-        if (context == null) {
-            return;
-        }
-
-        String name = FileUtils.getFileName(url);
-        File file = FileUtils.getFile(context, editorName, name);
-        boolean result = false;
-
-        if (file == null) {
-            Log.e(TAG, "File is null");
-            SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_save_file_error)).show();
-        } else {
-            if (url.startsWith("data:text/hex")) {
-                result = createAndSaveFileFromHexUrl(url, file);
-            } else if (url.startsWith("data:") && url.contains("base64")) {
-                result = createAndSaveFileFromBase64Url(url, file);
-            } else if (URLUtil.isValidUrl(url) && url.endsWith(".hex")) {
-                result = downloadFileFromURL(url, file);
-            }
-            if (result) {
-                startDfuActivity(file);
-            } else {
-                SnackbarHelper.errorSnackbar(webView, getString(R.string.error_snackbar_download_error)).show();
-            }
+    private void showError(String message) {
+        if (webView != null) {
+            SnackbarHelper.errorSnackbar(webView, message).show();
         }
     }
 
-    private boolean saveHexFile(String hexData, File file) {
-        if (hexData == null || hexData.isEmpty()) {
-            Log.e(TAG, "saveHexFile: hexData is null or empty");
-            return false;
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (downloads != null) {
+            downloads.close();
+            downloads = null;
         }
-        try (FileOutputStream os = new FileOutputStream(file)) {
-            os.write(hexData.getBytes(StandardCharsets.UTF_8));
-            Log.i(TAG, "saveHexFile: " + file.toString());
-            return true;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
+        if (editor != null) {
+            // Keep the page (and its BLE session) running for the next visit.
+            editor.detach(this);
+            editor = null;
         }
-    }
-
-    public boolean createAndSaveFileFromHexUrl(String url, File file) {
-        try {
-            String hexEncodedString = url.substring(url.indexOf(",") + 1);
-            OutputStream outputStream = new FileOutputStream(file);
-            try (Writer writer = new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)) {
-                writer.write(hexEncodedString);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return false;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-        Log.i(TAG, "createAndSaveFileFromHexUrl: " + file.toString());
-        return true;
-    }
-
-    public Boolean createAndSaveFileFromBase64Url(String url, File file) {
-        try {
-            String base64EncodedString = url.substring(url.indexOf(",") + 1);
-            byte[] decodedBytes = Base64.decode(base64EncodedString, Base64.DEFAULT);
-            OutputStream os = new FileOutputStream(file);
-            os.write(decodedBytes);
-            os.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-        Log.i(TAG, "createAndSaveFileFromBase64Url: " + file.toString());
-        return true;
-    }
-
-
-    public Boolean downloadFileFromURL(String link, File file) {
-        try {
-            URL url = new URL(link);
-            URLConnection ucon = url.openConnection();
-            ucon.setReadTimeout(5000);
-            ucon.setConnectTimeout(10000);
-
-            InputStream is = ucon.getInputStream();
-            BufferedInputStream inStream = new BufferedInputStream(is, 1024 * 5);
-            FileOutputStream outStream = new FileOutputStream(file);
-            byte[] buff = new byte[5 * 1024];
-            int len;
-            while ((len = inStream.read(buff)) != -1) {
-                outStream.write(buff, 0, len);
-            }
-            outStream.flush();
-            outStream.close();
-            inStream.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-        Log.i(TAG, "downloadFileFromURL: " + file.toString());
-        return true;
-    }
-
-    private void startDfuActivity(File file) {
-        boolean autoFlashing = Settings.isAutoFlashingEnable(getContext());
-        if (!autoFlashing) {
-            return;
-        }
-
-        if (!Utils.isBluetoothEnabled()) {
-            ApplicationStateHandler.updateNotification(ERROR, getString(R.string.error_snackbar_bluetooth_disabled));
-            return;
-        }
-
-        if (ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue() == null || !ApplicationStateHandler.getDeviceAvailabilityLiveData().getValue()) {
-            ApplicationStateHandler.updateNotification(ERROR, R.string.error_no_connected);
-            return;
-        }
-
-        if (!Settings.isBackgroundFlashingEnable(getActivity())) {
-            final Intent intent = new Intent(getActivity(), FlashingActivity.class);
-            intent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
-            startActivity(intent);
-        }
-
-        Intent serviceIntent = new Intent(getActivity(), FlashingService.class);
-        serviceIntent.putExtra(Constants.EXTRA_FILE_PATH, file.getAbsolutePath());
-        getActivity().startService(serviceIntent);
+        webView = null;
     }
 
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
+        WebView view = webView;
+        if (view == null || (editor != null && editor.isDestroyed())) {
+            return;
+        }
         Bundle bundle = new Bundle();
-        webView.saveState(bundle);
-        outState.putBundle("webViewState", bundle);
+        view.saveState(bundle);
+        outState.putBundle(STATE_WEB_VIEW, bundle);
     }
 }

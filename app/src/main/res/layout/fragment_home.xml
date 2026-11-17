@@ -20,7 +20,7 @@
             android:id="@+id/linearLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="70dp"
+            android:paddingBottom="@dimen/bottom_bar_clearance"
             android:layout_marginHorizontal="@dimen/margin"
             android:orientation="vertical">
 
@@ -57,7 +57,7 @@
                 android:id="@+id/open_web_button"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
-                android:layout_marginTop="16dp">
+                android:layout_marginTop="@dimen/margin">
 
                 <include
                     android:layout_width="match_parent"

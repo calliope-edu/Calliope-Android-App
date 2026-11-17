@@ -1,6 +1,0 @@
-<resources>
-    <declare-styleable name="SvgPatternBar">
-        <attr name="column" format="integer"/>
-        <attr name="onChange" format="string" />
-    </declare-styleable>
-</resources>

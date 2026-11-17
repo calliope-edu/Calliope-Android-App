@@ -1,26 +1,33 @@
 package cc.calliope.mini.core.bluetooth
 
 import android.app.Service
+import android.bluetooth.BluetoothAdapter
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.preference.PreferenceManager
-import cc.calliope.mini.core.state.ApplicationStateHandler
-import cc.calliope.mini.core.state.State
+import cc.calliope.mini.core.state.AppMode
+import cc.calliope.mini.core.state.AppStateRepository
 import cc.calliope.mini.utils.Constants
 import cc.calliope.mini.utils.Permission
+import cc.calliope.mini.utils.bluetooth.BluetoothUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import no.nordicsemi.android.kotlin.ble.core.scanner.BleNumOfMatches
@@ -39,6 +46,9 @@ class CheckService : Service() {
 
     private var scanner: BleScanner? = null
     private var scanJob: Job? = null
+    /** Bumped on every scan start, so a late completion of an old scan
+     *  cannot clear the one that replaced it. */
+    private var scanGeneration = 0
     private var statusCheckJob: Job? = null
 
     private var lastSeenTime: Long = 0
@@ -48,16 +58,59 @@ class CheckService : Service() {
     // Conditions for scanning
     private var isAppInForeground: Boolean = false
     private var isStateIdle: Boolean = true
+    private var isBluetoothOn: Boolean = false
 
     private val canScan: Boolean
-        get() = isAppInForeground && isStateIdle && macAddress.isNotEmpty()
+        get() = isAppInForeground && isStateIdle && isBluetoothOn && macAddress.isNotEmpty()
 
-    private val stateObserver = Observer<State> { state ->
+    /** Last logged canScan value — the gate is re-evaluated far more often
+     *  than it changes, so log transitions only. */
+    private var lastLoggedCanScan: Boolean? = null
+
+    private var stateJob: Job? = null
+
+    /**
+     * The current board is chosen in the pattern dialog and forgotten in
+     * Settings ("remove all"). Both only touch SharedPreferences, so this is
+     * the one place to learn that the target changed — without it the
+     * service kept scanning for the old MAC and the FAB kept showing a
+     * board that had just been removed. Kept as a field: the preference
+     * manager holds listeners weakly.
+     */
+    private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == null || key == Constants.CURRENT_DEVICE_ADDRESS) {
+            mainHandler.post { updateScanningState() }
+        }
+    }
+
+    /**
+     * Turning Bluetooth off ends the system scan underneath us, and nothing
+     * started it again when Bluetooth came back: the service kept a dead
+     * scan job, refused to start a new one ("already scanning"), and the
+     * board stayed unavailable until the app was restarted.
+     */
+    private val bluetoothStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (intent.action != BluetoothAdapter.ACTION_STATE_CHANGED) return
+            val on = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.STATE_OFF) ==
+                BluetoothAdapter.STATE_ON
+            if (on == isBluetoothOn) return
+            Log.d(TAG, "Bluetooth turned ${if (on) "on" else "off"}")
+            isBluetoothOn = on
+            // A scanner from before the restart belongs to the old adapter session.
+            if (on) scanner = null
+            updateScanningState()
+        }
+    }
+
+    /** Scanning is allowed only when nothing is running (no flash, no
+     *  bonding) and no editor holds a live BLE session with the board. */
+    private fun onStateChanged(mode: AppMode, control: Boolean) {
         val wasIdle = isStateIdle
-        isStateIdle = state.type == State.STATE_IDLE || state.type == State.STATE_ERROR
+        isStateIdle = (mode is AppMode.Idle || mode is AppMode.Error) && !control
 
         if (isStateIdle != wasIdle) {
-            Log.d(TAG, "State changed: ${if (isStateIdle) "IDLE/ERROR" else "BUSY/FLASHING"}")
+            Log.d(TAG, "State changed: ${if (isStateIdle) "idle" else "busy (mode=$mode, control=$control)"}")
             updateScanningState()
         }
     }
@@ -96,13 +149,21 @@ class CheckService : Service() {
         isRunning = true
         Log.d(TAG, "Service started")
 
-        // Get MAC address from preferences
+        // Get MAC address from preferences and follow it from now on
         val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
         macAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
+        preferences.registerOnSharedPreferenceChangeListener(prefsListener)
+
+        isBluetoothOn = BluetoothUtils.getAdapter(applicationContext)?.isEnabled == true
+        registerReceiver(bluetoothStateReceiver, IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED))
 
         // Observe application state and lifecycle on main thread
         mainHandler.post {
-            ApplicationStateHandler.getStateLiveData().observeForever(stateObserver)
+            stateJob = serviceScope.launch {
+                combine(AppStateRepository.mode, AppStateRepository.control) { mode, control ->
+                    mode to control
+                }.collect { (mode, control) -> onStateChanged(mode, control) }
+            }
             ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleObserver)
 
             // Check current lifecycle state — if app is already in foreground
@@ -122,12 +183,21 @@ class CheckService : Service() {
     }
 
     private fun updateScanningState() {
-        // Re-read MAC address in case it changed
+        // Re-read the target; a changed (or removed) board invalidates the
+        // running scan and the availability derived from it.
         val preferences = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        macAddress = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
+        val newMac = preferences.getString(Constants.CURRENT_DEVICE_ADDRESS, "") ?: ""
+        if (newMac != macAddress) {
+            Log.d(TAG, "current device changed: '$macAddress' -> '$newMac'")
+            macAddress = newMac
+            stopScan()
+        }
 
-        Log.d(TAG, "updateScanningState: canScan=$canScan " +
-                "(foreground=$isAppInForeground, idle=$isStateIdle, mac='$macAddress', scanJob=${scanJob != null})")
+        if (lastLoggedCanScan != canScan) {
+            lastLoggedCanScan = canScan
+            Log.d(TAG, "scan gate: canScan=$canScan " +
+                    "(foreground=$isAppInForeground, idle=$isStateIdle, bluetooth=$isBluetoothOn, mac='$macAddress')")
+        }
 
         if (canScan) {
             startScan()
@@ -168,6 +238,7 @@ class CheckService : Service() {
 
         Log.d(TAG, "Starting scan for device: $macAddress")
 
+        val generation = ++scanGeneration
         scanJob = scanner?.scan(filters, settings)
             ?.onEach {
                 lastSeenTime = System.currentTimeMillis()
@@ -178,6 +249,17 @@ class CheckService : Service() {
             }
             ?.catch { e ->
                 Log.e(TAG, "Scan error: ${e.message}")
+            }
+            ?.onCompletion {
+                // The system can end a scan by itself (Bluetooth off, a
+                // scanner failure). Forget it, so the next state change
+                // starts a fresh scan instead of reporting a running one.
+                if (generation == scanGeneration && scanJob != null) {
+                    Log.d(TAG, "Scan ended")
+                    scanJob = null
+                    lastSeenTime = 0
+                    updateAvailability(false)
+                }
             }
             ?.launchIn(serviceScope)
     }
@@ -216,16 +298,19 @@ class CheckService : Service() {
     private fun updateAvailability(available: Boolean) {
         if (isDeviceAvailable != available) {
             isDeviceAvailable = available
-            ApplicationStateHandler.updateDeviceAvailability(available)
+            AppStateRepository.updateDeviceAvailability(available)
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         mainHandler.post {
-            ApplicationStateHandler.getStateLiveData().removeObserver(stateObserver)
             ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleObserver)
         }
+        PreferenceManager.getDefaultSharedPreferences(applicationContext)
+            .unregisterOnSharedPreferenceChangeListener(prefsListener)
+        try { unregisterReceiver(bluetoothStateReceiver) } catch (_: IllegalArgumentException) {}
+        stateJob?.cancel()
         scanJob?.cancel()
         statusCheckJob?.cancel()
         job.cancel()

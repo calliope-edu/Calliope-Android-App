@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Checkbox box tint: brand accent when checked, themed outline otherwise. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false" android:alpha="0.38" android:color="?attr/colorOnSurface" />
+    <item android:state_checked="true" android:color="@color/brand_accent" />
+    <item android:color="?attr/colorOnSurfaceVariant" />
+</selector>
